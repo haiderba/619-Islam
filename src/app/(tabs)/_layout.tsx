@@ -33,7 +33,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           headerShown: false,
-          tabBarIcon: ({ color }: { color: string }) => <Text style={{ fontSize: 20, color }}>🏠</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>🏠</Text>,
         }}
       />
       <Tabs.Screen
@@ -41,7 +41,7 @@ export default function TabLayout() {
         options={{
           title: 'Goals',
           headerTitle: 'Goal Management',
-          tabBarIcon: ({ color }: { color: string }) => <Text style={{ fontSize: 20, color }}>🎯</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>🎯</Text>,
         }}
       />
       <Tabs.Screen
@@ -49,7 +49,7 @@ export default function TabLayout() {
         options={{
           title: 'Progress',
           headerTitle: 'Analytics & Streaks',
-          tabBarIcon: ({ color }: { color: string }) => <Text style={{ fontSize: 20, color }}>📈</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>📈</Text>,
         }}
       />
       <Tabs.Screen
@@ -57,7 +57,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           headerTitle: 'App Settings',
-          tabBarIcon: ({ color }: { color: string }) => <Text style={{ fontSize: 20, color }}>⚙️</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>⚙️</Text>,
         }}
       />
     </Tabs>

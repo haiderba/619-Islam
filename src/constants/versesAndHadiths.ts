@@ -1,66 +1,74 @@
-export interface IslamicReminder {
+export interface QuranQuote {
   id: number;
-  type: 'Verse' | 'Hadith';
-  arabic?: string;
-  text: string;
-  source: string;
+  arabic: string;
+  urdu: string;
+  english: string;
+  surah: string;
 }
 
-export const DAILY_ISLAMIC_REMINDERS: IslamicReminder[] = [
+export const QURAN_QUOTES: QuranQuote[] = [
   {
     id: 1,
-    type: 'Verse',
-    text: 'Indeed, with hardship will come ease.',
-    source: 'Surah Ash-Sharh (94:6)',
+    arabic: 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا ۝ إِنَّ مَعَ الْعُسْرِ يُسْرًا',
+    urdu: 'پس یقیناً تنگی کے ساتھ آسانی ہے، بے شک تنگی کے ساتھ آسانی ہے۔',
+    english: 'For indeed, with hardship will come ease. Indeed, with hardship will come ease.',
+    surah: 'Surah Ash-Sharh (94:5-6)',
   },
   {
     id: 2,
-    type: 'Hadith',
-    text: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.',
-    source: 'Sahih Bukhari & Muslim',
+    arabic: 'فَاذْكُرُونِي أَذْكُرْكُمْ وَاشْكُرُوا لِي وَلَا تَكْفُرُونِ',
+    urdu: 'پس تم مجھے یاد کرو، میں تمہیں یاد رکھوں گا اور میرا شکر ادا کرو اور ناشکری نہ کرو۔',
+    english: 'So remember Me; I will remember you. And be grateful to Me and do not deny Me.',
+    surah: 'Surah Al-Baqarah (2:152)',
   },
   {
     id: 3,
-    type: 'Verse',
-    text: 'And He found you lost and guided [you].',
-    source: 'Surah Ad-Duha (93:7)',
+    arabic: 'وَوَجَدَكَ ضَالًّا فَهَدَىٰ',
+    urdu: 'اور اس نے آپ کو تلاشِ حق میں پایا تو سیدھی راہ دکھائی۔',
+    english: 'And He found you lost and guided you.',
+    surah: 'Surah Ad-Duha (93:7)',
   },
   {
     id: 4,
-    type: 'Hadith',
-    text: 'Take advantage of five before five: your youth before your old age, your health before your sickness, your wealth before your poverty, your free time before your busyness, and your life before your death.',
-    source: 'Shu’ab al-Iman',
+    arabic: 'لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ',
+    urdu: 'اگر تم شکر ادا کرو گے تو میں تمہیں اور زیادہ نعمتوں سے نوازوں گا۔',
+    english: 'If you are grateful, I will surely increase you in favor.',
+    surah: 'Surah Ibrahim (14:7)',
   },
   {
     id: 5,
-    type: 'Verse',
-    text: 'So remember Me; I will remember you.',
-    source: 'Surah Al-Baqarah (2:152)',
+    arabic: 'لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا',
+    urdu: 'اللہ کسی جان پر اس کی طاقت سے زیادہ بوجھ نہیں ڈالتا۔',
+    english: 'Allah does not burden a soul beyond that it can bear.',
+    surah: 'Surah Al-Baqarah (2:286)',
   },
   {
     id: 6,
-    type: 'Hadith',
-    text: 'The best among you are those who learn the Quran and teach it.',
-    source: 'Sahih Bukhari',
+    arabic: 'أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ',
+    urdu: 'خبردار! اللہ کے ذکر ہی سے دلوں کو اطمینان و سکون حاصل ہوتا ہے۔',
+    english: 'Unquestionably, by the remembrance of Allah do hearts find rest.',
+    surah: 'Surah Ar-Ra’d (13:28)',
   },
   {
     id: 7,
-    type: 'Verse',
-    text: 'Allah does not burden a soul beyond that it can bear.',
-    source: 'Surah Al-Baqarah (2:286)',
+    arabic: 'وَلَا تَهِنُوا وَلَا تَحْزَنُوا وَأَنتُمُ الْأَعْلَوْنَ إِن كُنتُم مُّؤْمِنِينَ',
+    urdu: 'اور تم ہمت نہ ہارو اور نہ غمگین ہو، تم ہی غالب رہو گے اگر تم مومن ہو۔',
+    english: 'Do not falter and do not grieve, for you will be supreme if you are true believers.',
+    surah: 'Surah Al-Imran (3:139)',
   },
   {
     id: 8,
-    type: 'Hadith',
-    text: 'Prayer is better than sleep.',
-    source: 'Sunan an-Nasa’i (Fajr Call to Prayer)',
+    arabic: 'وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ',
+    urdu: 'اور وہ تمہارے ساتھ ہے تم جہاں کہیں بھی ہو۔',
+    english: 'And He is with you wherever you are.',
+    surah: 'Surah Al-Hadid (57:4)',
   },
 ];
 
-export function getDailyReminder(): IslamicReminder {
+export function getDailyQuranQuote(): QuranQuote {
   const dayOfYear = Math.floor(
     (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24
   );
-  const index = dayOfYear % DAILY_ISLAMIC_REMINDERS.length;
-  return DAILY_ISLAMIC_REMINDERS[index];
+  const index = dayOfYear % QURAN_QUOTES.length;
+  return QURAN_QUOTES[index];
 }

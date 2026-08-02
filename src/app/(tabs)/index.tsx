@@ -13,7 +13,7 @@ import { Colors } from '@/constants/colors';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useGoals } from '@/hooks/useGoals';
 import { useStreak } from '@/hooks/useStreak';
-import { getDailyReminder } from '@/constants/versesAndHadiths';
+import { getDailyQuranQuote } from '@/constants/versesAndHadiths';
 import { DailyVerseCard } from '@/components/dashboard/DailyVerseCard';
 import { ProgressRing } from '@/components/dashboard/ProgressRing';
 import { StreakBadge } from '@/components/dashboard/StreakBadge';
@@ -34,7 +34,7 @@ export default function HomeScreen() {
     }, [refreshGoals, refreshStreak])
   );
 
-  const dailyReminder = getDailyReminder();
+  const dailyQuote = getDailyQuranQuote();
 
   const completedGoalIds = new Set(
     completions.filter((c) => c.completed).map((c) => c.goalId)
@@ -68,8 +68,8 @@ export default function HomeScreen() {
           <StreakBadge streak={streakData.currentStreak} />
         </View>
 
-        {/* Daily Quran Verse / Hadith Card */}
-        <DailyVerseCard reminder={dailyReminder} />
+        {/* Daily Quran Quote Card (Arabic, Urdu, English & Export as PNG) */}
+        <DailyVerseCard quote={dailyQuote} />
 
         {/* Today's Overview Ring Card */}
         <Card style={styles.overviewCard}>
