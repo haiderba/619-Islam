@@ -27,12 +27,17 @@ export default function HubsScreen() {
 
   const [activeHubs, setActiveHubs] = useState<HabitHub[]>([]);
   const [pendingInvites, setPendingInvites] = useState<{ hub: HabitHub; member: HubMember }[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
 
-  // New Hub Form
+  // Create Hub Modal
+  const [modalVisible, setModalVisible] = useState(false);
   const [hubName, setHubName] = useState('');
   const [hubDesc, setHubDesc] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Join Hub by Code Modal
+  const [joinModalVisible, setJoinModalVisible] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [joining, setJoining] = useState(false);
 
   const activeUserId = user?.uid || firebaseUser?.uid;
 
@@ -56,11 +61,33 @@ export default function HubsScreen() {
       setModalVisible(false);
       setHubName('');
       setHubDesc('');
-      Alert.alert('Hub Created 🎉', `"${newHub.name}" is active. Invite members using their @username!`);
+      Alert.alert(
+        'Hub Created 🎉',
+        `"${newHub.name}" is active!\nUnique Code: ${newHub.hubCode || '619-HUB'}\nShare this code with friends so they can request to join!`
+      );
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Could not create Hub.');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleJoinByCode = async () => {
+    if (!joinCode.trim()) return;
+
+    setJoining(true);
+    try {
+      const targetHub = await HubService.requestJoinHubByCode(joinCode);
+      setJoinModalVisible(false);
+      setJoinCode('');
+      Alert.alert(
+        'Request Sent 📩',
+        `Your request to join "${targetHub.name}" has been sent to @${targetHub.ownerUsername} for approval!`
+      );
+    } catch (e: any) {
+      Alert.alert('Join Request Error', e.message || 'Could not send join request.');
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -107,7 +134,7 @@ export default function HubsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* User Handle Banner */}
+        {/* User Handle & Action Controls Banner */}
         <View style={styles.topBanner}>
           <View>
             <Text style={[styles.bannerTitle, { color: colors.text }]}>Habit Hubs</Text>
@@ -115,19 +142,28 @@ export default function HubsScreen() {
               Logged in as <Text style={{ fontWeight: '800' }}>@{user?.username || 'user'}</Text>
             </Text>
           </View>
-          <Button
-            title="+ Create Hub"
-            size="small"
-            variant="primary"
-            onPress={() => setModalVisible(true)}
-          />
+          <View style={styles.headerButtonRow}>
+            <Button
+              title="🔑 Join Code"
+              size="small"
+              variant="outline"
+              onPress={() => setJoinModalVisible(true)}
+              style={{ marginRight: 6 }}
+            />
+            <Button
+              title="+ Create Hub"
+              size="small"
+              variant="primary"
+              onPress={() => setModalVisible(true)}
+            />
+          </View>
         </View>
 
-        {/* Pending Invites Section */}
+        {/* Pending Invites / Requests Section */}
         {pendingInvites.length > 0 ? (
           <View style={{ marginBottom: 16 }}>
             <Text style={[styles.sectionTitle, { color: colors.accentGold }]}>
-              Pending Invites ({pendingInvites.length})
+              Pending Invites & Requests ({pendingInvites.length})
             </Text>
             {pendingInvites.map((item) => (
               <PendingInviteCard
@@ -149,14 +185,22 @@ export default function HubsScreen() {
           <Card style={styles.emptyCard}>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No Habit Hubs Joined Yet</Text>
             <Text style={[styles.emptySub, { color: colors.secondaryText }]}>
-              Create a group circle to track habits with friends, family, or study partners, or ask a friend to invite you by your username <Text style={{ color: colors.primary, fontWeight: '800' }}>@{user?.username}</Text>.
+              Create a group circle or enter a 6-character Unique Hub Code (e.g. 619-FAJR) to request to join!
             </Text>
-            <Button
-              title="+ Create First Habit Hub"
-              variant="primary"
-              onPress={() => setModalVisible(true)}
-              style={{ marginTop: 16 }}
-            />
+            <View style={{ flexDirection: 'row', marginTop: 16 }}>
+              <Button
+                title="🔑 Join with Code"
+                variant="outline"
+                onPress={() => setJoinModalVisible(true)}
+                style={{ flex: 1, marginRight: 6 }}
+              />
+              <Button
+                title="+ Create Hub"
+                variant="primary"
+                onPress={() => setModalVisible(true)}
+                style={{ flex: 1, marginLeft: 6 }}
+              />
+            </View>
           </Card>
         ) : (
           activeHubs.map((hub) => (
@@ -214,6 +258,45 @@ export default function HubsScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Join Hub by Code Modal */}
+        <Modal visible={joinModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Join Hub with Code 🔑</Text>
+              <Text style={[styles.modalSub, { color: colors.secondaryText }]}>
+                Enter the Unique 6-character Hub Code (e.g. 619-FAJR) to request to join.
+              </Text>
+
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>Unique Hub Code *</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.surface, color: colors.primary, borderColor: colors.primary, fontWeight: '800', letterSpacing: 2 }]}
+                placeholder="619-FAJR"
+                autoCapitalize="characters"
+                placeholderTextColor={colors.mutedText}
+                value={joinCode}
+                onChangeText={setJoinCode}
+              />
+
+              <View style={styles.modalButtonRow}>
+                <Button
+                  title="Cancel"
+                  variant="secondary"
+                  onPress={() => setJoinModalVisible(false)}
+                  style={{ flex: 1, marginRight: 8 }}
+                />
+                <Button
+                  title="Request to Join"
+                  variant="primary"
+                  loading={joining}
+                  disabled={!joinCode.trim()}
+                  onPress={handleJoinByCode}
+                  style={{ flex: 2, marginLeft: 8 }}
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -263,6 +346,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  headerButtonRow: {
+    flexDirection: 'row',
   },
   bannerTitle: {
     fontSize: 24,

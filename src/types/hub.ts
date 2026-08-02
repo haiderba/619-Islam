@@ -5,9 +5,10 @@ export interface HabitHub {
   id: string;
   name: string;
   description?: string;
+  hubCode?: string; // 6-character Unique Hub Code e.g. HUB-619A
   ownerId: string;
   ownerUsername: string;
-  memberUserIds: string[]; // List of accepted member UIDs for fast Firestore query
+  memberUserIds: string[]; // List of accepted member UIDs
   pendingUserIds?: string[]; // List of pending member UIDs
   createdAt: string;
   memberCount?: number;

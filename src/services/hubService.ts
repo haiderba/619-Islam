@@ -17,13 +17,22 @@ import { AuthService } from './authService';
 import { HabitHub, HubMember, HubGoal, HubGoalCompletion } from '@/types/hub';
 import { getTodayDateString } from '@/utils/dateUtils';
 
-// Local Persistent Store for Hubs when offline
 const mockHubsStore: Record<string, HabitHub> = {};
 const mockMembersStore: Record<string, HubMember[]> = {};
 const mockGoalsStore: Record<string, HubGoal[]> = {};
 const mockCompletionsStore: Record<string, HubGoalCompletion[]> = {};
 
 export class HubService {
+  // Helper to generate a 6-character Unique Hub Code (e.g. 619-A8F)
+  static generateHubCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '619-';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
+
   // Create a new Habit Hub
   static async createHub(name: string, description: string = ''): Promise<HabitHub> {
     const user = auth.currentUser;
@@ -34,10 +43,13 @@ export class HubService {
     const ownerDisplayName = userProfile?.displayName || user?.displayName || 'Owner';
 
     const hubId = `hub_${Date.now()}`;
+    const hubCode = this.generateHubCode();
+
     const hubData: HabitHub = {
       id: hubId,
       name: name.trim(),
       description: description.trim(),
+      hubCode,
       ownerId: uid,
       ownerUsername,
       memberUserIds: [uid],
@@ -57,7 +69,6 @@ export class HubService {
       joinedAt: new Date().toISOString(),
     };
 
-    // Store in local store immediately
     mockHubsStore[hubId] = hubData;
     mockMembersStore[hubId] = [ownerMember];
 
@@ -72,6 +83,122 @@ export class HubService {
     }
 
     return hubData;
+  }
+
+  // Request to Join Hub by Unique Hub Code
+  static async requestJoinHubByCode(rawCode: string): Promise<HabitHub> {
+    const user = auth.currentUser;
+    const uid = user ? user.uid : 'demo_user';
+    const code = rawCode.trim().toUpperCase();
+
+    const userProfile = await AuthService.getUserProfile(uid);
+    const username = userProfile?.username || user?.email?.split('@')[0] || 'user';
+    const displayName = userProfile?.displayName || user?.displayName || 'User';
+
+    let targetHub: HabitHub | null = null;
+
+    try {
+      const hubsRef = collection(db, 'hubs');
+      const q = query(hubsRef, where('hubCode', '==', code));
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        targetHub = snap.docs[0].data() as HabitHub;
+      }
+    } catch {
+      targetHub = Object.values(mockHubsStore).find((h) => h.hubCode?.toUpperCase() === code) || null;
+    }
+
+    if (!targetHub) {
+      // Check if code matches hub ID or fallback
+      const foundInMock = Object.values(mockHubsStore).find(
+        (h) => h.hubCode?.toUpperCase() === code || h.id.toUpperCase() === code
+      );
+      if (foundInMock) targetHub = foundInMock;
+    }
+
+    if (!targetHub) {
+      throw new Error(`No Habit Hub found with Code "${code}". Please verify the Hub Code.`);
+    }
+
+    if (targetHub.memberUserIds?.includes(uid)) {
+      throw new Error(`You are already an active member of "${targetHub.name}"!`);
+    }
+
+    if (targetHub.pendingUserIds?.includes(uid)) {
+      throw new Error(`Your join request for "${targetHub.name}" is already pending approval from @${targetHub.ownerUsername}.`);
+    }
+
+    const memberData: HubMember = {
+      id: `${targetHub.id}_${uid}`,
+      hubId: targetHub.id,
+      userId: uid,
+      username,
+      displayName,
+      role: 'member',
+      status: 'pending',
+      invitedAt: new Date().toISOString(),
+      joinedAt: null,
+    };
+
+    try {
+      const memberRef = doc(db, 'hubs', targetHub.id, 'members', uid);
+      await setDoc(memberRef, memberData);
+
+      const hubRef = doc(db, 'hubs', targetHub.id);
+      await updateDoc(hubRef, {
+        pendingUserIds: arrayUnion(uid),
+      });
+    } catch {
+      if (!mockMembersStore[targetHub.id]) mockMembersStore[targetHub.id] = [];
+      mockMembersStore[targetHub.id].push(memberData);
+      if (!mockHubsStore[targetHub.id].pendingUserIds) mockHubsStore[targetHub.id].pendingUserIds = [];
+      mockHubsStore[targetHub.id].pendingUserIds?.push(uid);
+    }
+
+    return targetHub;
+  }
+
+  // Hub Owner Approve or Reject Join Request
+  static async respondToJoinRequest(hubId: string, memberUserId: string, approve: boolean): Promise<void> {
+    try {
+      const memberRef = doc(db, 'hubs', hubId, 'members', memberUserId);
+      const hubRef = doc(db, 'hubs', hubId);
+
+      if (approve) {
+        await updateDoc(memberRef, { status: 'accepted', joinedAt: new Date().toISOString() });
+        await updateDoc(hubRef, {
+          memberUserIds: arrayUnion(memberUserId),
+          pendingUserIds: arrayRemove(memberUserId),
+        });
+      } else {
+        await deleteDoc(memberRef);
+        await updateDoc(hubRef, {
+          pendingUserIds: arrayRemove(memberUserId),
+        });
+      }
+    } catch {
+      if (mockMembersStore[hubId]) {
+        if (approve) {
+          const idx = mockMembersStore[hubId].findIndex((m) => m.userId === memberUserId);
+          if (idx >= 0) {
+            mockMembersStore[hubId][idx].status = 'accepted';
+            mockMembersStore[hubId][idx].joinedAt = new Date().toISOString();
+          }
+          if (mockHubsStore[hubId]) {
+            if (!mockHubsStore[hubId].memberUserIds.includes(memberUserId)) {
+              mockHubsStore[hubId].memberUserIds.push(memberUserId);
+            }
+            mockHubsStore[hubId].pendingUserIds = mockHubsStore[hubId].pendingUserIds?.filter((u) => u !== memberUserId);
+          }
+        } else {
+          mockMembersStore[hubId] = mockMembersStore[hubId].filter((m) => m.userId !== memberUserId);
+          if (mockHubsStore[hubId]) {
+            mockHubsStore[hubId].pendingUserIds = mockHubsStore[hubId].pendingUserIds?.filter((u) => u !== memberUserId);
+          }
+        }
+      }
+    }
   }
 
   // Invite member by @username
@@ -113,36 +240,7 @@ export class HubService {
   static async respondToInvite(hubId: string, accept: boolean): Promise<void> {
     const user = auth.currentUser;
     const uid = user ? user.uid : 'demo_user';
-
-    try {
-      const memberRef = doc(db, 'hubs', hubId, 'members', uid);
-      const hubRef = doc(db, 'hubs', hubId);
-
-      if (accept) {
-        await updateDoc(memberRef, { status: 'accepted', joinedAt: new Date().toISOString() });
-        await updateDoc(hubRef, {
-          memberUserIds: arrayUnion(uid),
-          pendingUserIds: arrayRemove(uid),
-        });
-      } else {
-        await deleteDoc(memberRef);
-        await updateDoc(hubRef, {
-          pendingUserIds: arrayRemove(uid),
-        });
-      }
-    } catch {
-      if (mockMembersStore[hubId]) {
-        if (accept) {
-          const idx = mockMembersStore[hubId].findIndex((m) => m.userId === uid);
-          if (idx >= 0) {
-            mockMembersStore[hubId][idx].status = 'accepted';
-            mockMembersStore[hubId][idx].joinedAt = new Date().toISOString();
-          }
-        } else {
-          mockMembersStore[hubId] = mockMembersStore[hubId].filter((m) => m.userId !== uid);
-        }
-      }
-    }
+    await this.respondToJoinRequest(hubId, uid, accept);
   }
 
   // Create a Group Habit/Goal in Hub
@@ -234,7 +332,7 @@ export class HubService {
     return isCompletedNow;
   }
 
-  // Real-time listener for user's hubs and pending invites (backward-compatible)
+  // Real-time listener for user's hubs and pending invites
   static listenToUserHubs(
     userId: string,
     onData: (hubs: HabitHub[], invites: { hub: HabitHub; member: HubMember }[]) => void
@@ -273,7 +371,6 @@ export class HubService {
             }
           }
 
-          // Combine with local mock hubs
           const mockList = Object.values(mockHubsStore).filter(
             (h) => h.ownerId === userId || (h.memberUserIds && h.memberUserIds.includes(userId))
           );

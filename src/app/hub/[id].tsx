@@ -113,6 +113,22 @@ export default function HubDetailScreen() {
     }
   };
 
+  // Hub Owner Approve / Reject Request
+  const handleOwnerRespondRequest = async (memberUserId: string, username: string, approve: boolean) => {
+    if (!id) return;
+    try {
+      await HubService.respondToJoinRequest(id, memberUserId, approve);
+      Alert.alert(
+        approve ? 'Request Approved 🎉' : 'Request Declined ✕',
+        approve
+          ? `@${username} is now an active member of "${hub?.name}"!`
+          : `Declined join request from @${username}.`
+      );
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not update request.');
+    }
+  };
+
   // Nudge Member Engine
   const handleNudgeMember = (username: string) => {
     Alert.alert(
@@ -158,7 +174,7 @@ export default function HubDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hub Title Banner */}
+        {/* Hub Title Banner with Unique Hub Code */}
         <Card variant="goldGlow" style={styles.hubHeaderCard}>
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
@@ -167,7 +183,9 @@ export default function HubDetailScreen() {
                 Created by @{hub.ownerUsername}
               </Text>
             </View>
-            <Text style={styles.hubIcon}>🏆</Text>
+            <View style={[styles.codeBadge, { backgroundColor: colors.primary }]}>
+              <Text style={styles.codeBadgeText}>Code: {hub.hubCode || '619-HUB'}</Text>
+            </View>
           </View>
           {hub.description ? (
             <Text style={[styles.hubDesc, { color: colors.secondaryText }]}>{hub.description}</Text>
@@ -193,6 +211,41 @@ export default function HubDetailScreen() {
             />
           ) : null}
         </View>
+
+        {/* Pending Join Requests Card for Hub Owner */}
+        {isOwner && pendingMembers.length > 0 ? (
+          <View style={{ marginBottom: 16 }}>
+            <Text style={[styles.sectionTitle, { color: colors.warning }]}>
+              Pending Join Requests ({pendingMembers.length})
+            </Text>
+            <Card style={styles.card}>
+              {pendingMembers.map((m) => (
+                <View key={m.userId} style={styles.requestRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.requestUser, { color: colors.text }]}>@{m.username}</Text>
+                    <Text style={[styles.requestSub, { color: colors.secondaryText }]}>Requested to join circle</Text>
+                  </View>
+                  <View style={styles.requestBtnRow}>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => handleOwnerRespondRequest(m.userId, m.username, false)}
+                      style={[styles.rejectBtn, { borderColor: colors.danger }]}
+                    >
+                      <Text style={{ color: colors.danger, fontWeight: '800', fontSize: 12 }}>Reject ✕</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => handleOwnerRespondRequest(m.userId, m.username, true)}
+                      style={[styles.approveBtn, { backgroundColor: colors.primary }]}
+                    >
+                      <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>Approve ✓</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </Card>
+          </View>
+        ) : null}
 
         {/* Hub Leaderboard Section */}
         <Text style={[styles.sectionTitle, { color: colors.accentGold }]}>
@@ -423,8 +476,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 4,
   },
-  hubIcon: {
-    fontSize: 32,
+  codeBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  codeBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   hubDesc: {
     fontSize: 13,
@@ -439,6 +500,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     marginBottom: 8,
+  },
+  requestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  requestUser: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  requestSub: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  requestBtnRow: {
+    flexDirection: 'row',
+  },
+  rejectBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginRight: 6,
+  },
+  approveBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
   },
   leaderboardRow: {
     flexDirection: 'row',
