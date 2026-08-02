@@ -1,23 +1,39 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
-import { Text } from 'react-native';
+import { Text, Platform } from 'react-native';
 
 export default function TabLayout() {
   const { colors } = useTheme();
+  const isDark = colors.isDark;
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.secondaryText,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '700',
+          marginBottom: 4,
+        },
         tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.cardBorder,
-          borderTopWidth: 1,
-          height: 62,
-          paddingBottom: 8,
-          paddingTop: 8,
+          position: 'absolute',
+          bottom: Platform.OS === 'ios' ? 24 : 16,
+          left: 12,
+          right: 12,
+          height: 68,
+          borderRadius: 34,
+          backgroundColor: isDark ? 'rgba(11, 28, 22, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+          borderWidth: 1.5,
+          borderColor: isDark ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.25)',
+          paddingBottom: 6,
+          paddingTop: 6,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.22,
+          shadowRadius: 16,
+          elevation: 10,
         },
         headerStyle: {
           backgroundColor: colors.background,
@@ -35,7 +51,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           headerShown: false,
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>🏠</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>🏠</Text>,
         }}
       />
       <Tabs.Screen
@@ -43,7 +59,7 @@ export default function TabLayout() {
         options={{
           title: 'Deen Hub',
           headerTitle: 'Deen Companion',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>🕌</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>🕌</Text>,
         }}
       />
       <Tabs.Screen
@@ -51,7 +67,7 @@ export default function TabLayout() {
         options={{
           title: 'Hubs',
           headerTitle: 'Habit Hubs & Circles',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>👥</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>👥</Text>,
         }}
       />
       <Tabs.Screen
@@ -59,7 +75,7 @@ export default function TabLayout() {
         options={{
           title: 'Goals',
           headerTitle: 'Goal Management',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>🎯</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>🎯</Text>,
         }}
       />
       <Tabs.Screen
@@ -67,7 +83,7 @@ export default function TabLayout() {
         options={{
           title: 'Progress',
           headerTitle: 'Analytics & Streaks',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>📈</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>📈</Text>,
         }}
       />
       <Tabs.Screen
@@ -75,7 +91,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           headerTitle: 'App Settings',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>⚙️</Text>,
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>⚙️</Text>,
         }}
       />
     </Tabs>
