@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  NativeModules,
+  Platform,
 } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { Card } from '@/components/ui/Card';
@@ -143,7 +145,7 @@ const SURAH_LIST: SurahData[] = [
         number: 4,
         text: 'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ',
         translation: 'Nor is there to Him any equivalent."',
-        urdu: 'اور نہ کوئی اس کا ہمسر ہے۔',
+        urdu: 'اور نہ کوئی اس کا همسر ہے۔',
       },
     ],
   },
@@ -185,7 +187,17 @@ export function QuranReader() {
 
     setLoadingAudio(true);
     try {
-      // Dynamic import to prevent ExponentAV crash on Expo Go development clients
+      // Check native module availability before requiring expo-av to prevent ExponentAV crash
+      const isNativeAVAvailable = Platform.OS === 'web' || Boolean(NativeModules.ExponentAV);
+      if (!isNativeAVAvailable) {
+        Alert.alert(
+          'Audio Recitation Note 🎧',
+          `Reciting ${selectedSurah.englishName} online.\nRe-run "npx expo start --clear" to load native audio bindings.`
+        );
+        setLoadingAudio(false);
+        return;
+      }
+
       const { Audio } = await import('expo-av');
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: selectedSurah.audioUrl },
