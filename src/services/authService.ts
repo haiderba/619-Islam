@@ -70,7 +70,7 @@ export class AuthService {
     return suggestions;
   }
 
-  // Sign up user with instant non-blocking email trigger
+  // Sign up user with real Firebase Email Verification
   static async signUpUser(
     email: string,
     pass: string,
@@ -91,13 +91,16 @@ export class AuthService {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
       const firebaseUser = cred.user;
 
-      // Send verification email in non-blocking background task with fast 1s timeout
-      Promise.race([
-        sendEmailVerification(firebaseUser),
-        new Promise((res) => setTimeout(res, 1000)),
-      ]).catch((e) => console.log('Email trigger background note:', e));
-
+      // Update Auth Profile
       await updateProfile(firebaseUser, { displayName });
+
+      // Send real verification link to user's email inbox
+      try {
+        await sendEmailVerification(firebaseUser);
+        console.log('Real Firebase verification email link sent to:', email);
+      } catch (e) {
+        console.warn('Firebase Email Verification note:', e);
+      }
 
       const userProfile: UserProfileData = {
         uid: firebaseUser.uid,
@@ -118,7 +121,7 @@ export class AuthService {
           username,
           email: email.trim(),
           displayName,
-          emailVerified: true, // Auto-verify in mock/test mode
+          emailVerified: true,
           createdAt: new Date().toISOString(),
         };
         mockUsersStore[mockUid] = mockProfile;
@@ -138,14 +141,16 @@ export class AuthService {
         return userDoc.data() as UserProfileData;
       }
 
-      return {
+      const newProfile: UserProfileData = {
         uid: firebaseUser.uid,
-        username: firebaseUser.email?.split('@')[0] || 'user',
+        username: firebaseUser.email?.split('@')[0].replace(/[^a-z0-9_]/g, '') || 'user',
         email: firebaseUser.email || '',
         displayName: firebaseUser.displayName || 'User',
         emailVerified: firebaseUser.emailVerified,
         createdAt: new Date().toISOString(),
       };
+      await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
+      return newProfile;
     } catch (err: any) {
       if (err?.code === 'auth/api-key-not-valid' || err?.message?.includes('api-key')) {
         const found = Object.values(mockUsersStore).find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
@@ -202,15 +207,8 @@ export class AuthService {
   }
 
   static async resendVerificationEmail(): Promise<void> {
-    try {
-      if (auth.currentUser) {
-        await Promise.race([
-          sendEmailVerification(auth.currentUser),
-          new Promise((res) => setTimeout(res, 1000)),
-        ]);
-      }
-    } catch (e) {
-      console.warn('Verification resend bypassed');
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
     }
   }
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -11,30 +11,33 @@ export default function VerifyEmailScreen() {
   const { colors } = useTheme();
   const { firebaseUser, resendVerification, refreshProfile } = useAuth();
   const [resending, setResending] = useState(false);
-  const [code, setCode] = useState('');
+  const [checking, setChecking] = useState(false);
 
   const handleCheckVerified = async () => {
-    await refreshProfile();
-    Alert.alert('Email Verified! 🎉', 'Your account is verified and ready.');
-    router.replace('/(tabs)');
-  };
-
-  const handleVerifyWithCode = async () => {
-    if (code.trim().length < 4) {
-      Alert.alert('Code Error', 'Please enter a 6-digit code or tap Instant Test Verify.');
-      return;
+    setChecking(true);
+    try {
+      await refreshProfile();
+      if (firebaseUser?.emailVerified) {
+        Alert.alert('Email Verified! 🎉', 'Your account is verified and ready.');
+        router.replace('/(tabs)');
+      } else {
+        Alert.alert(
+          'Not Verified Yet 📬',
+          'Please open your Gmail/email app, click the link sent by Firebase, then tap check again.'
+        );
+      }
+    } finally {
+      setChecking(false);
     }
-    Alert.alert('Verification Successful! 🎉', 'Your email address has been verified.');
-    router.replace('/(tabs)');
   };
 
   const handleResend = async () => {
     setResending(true);
     try {
       await resendVerification();
-      Alert.alert('Email Triggered 📧', 'Verification email requested in background.');
+      Alert.alert('Verification Link Resent 📧', `A fresh link was sent to ${firebaseUser?.email || 'your email'}. Check your Spam/Junk folder if needed.`);
     } catch (e: any) {
-      Alert.alert('Sent', 'Verification code requested.');
+      Alert.alert('Resend Note', e.message || 'Verification link requested.');
     } finally {
       setResending(false);
     }
@@ -44,38 +47,21 @@ export default function VerifyEmailScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         <Text style={styles.emoji}>📧</Text>
-        <Text style={[styles.title, { color: colors.text }]}>Verify Your Email</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Check Your Email</Text>
         <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
-          Verification link sent to{' '}
+          We sent a real verification link to{' '}
           <Text style={{ color: colors.primary, fontWeight: '800' }}>
             {firebaseUser?.email || 'your email'}
           </Text>
+          . Open your email inbox and click the link!
         </Text>
 
         <Card style={styles.card}>
-          <Text style={[styles.label, { color: colors.text }]}>Enter 6-Digit Code (e.g. 619619)</Text>
-          <TextInput
-            style={[styles.codeInput, { backgroundColor: colors.surface, color: colors.primary, borderColor: colors.primary }]}
-            placeholder="619619"
-            keyboardType="number-pad"
-            maxLength={6}
-            placeholderTextColor={colors.mutedText}
-            value={code}
-            onChangeText={setCode}
-          />
-
           <Button
-            title="Verify Code ✓"
+            title="Check Verification Status ✓"
             variant="primary"
             size="large"
-            onPress={handleVerifyWithCode}
-            style={{ marginBottom: 12 }}
-          />
-
-          <Button
-            title="Instant Test Verify (Demo Mode)"
-            variant="cyan"
-            size="medium"
+            loading={checking}
             onPress={handleCheckVerified}
             style={{ marginBottom: 12 }}
           />
@@ -123,27 +109,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 6,
     lineHeight: 20,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   card: {
     width: '100%',
     padding: 20,
     borderRadius: 24,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  codeInput: {
-    borderRadius: 16,
-    padding: 14,
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 8,
-    textAlign: 'center',
-    borderWidth: 2,
-    marginBottom: 16,
   },
 });

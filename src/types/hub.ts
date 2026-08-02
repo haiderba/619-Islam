@@ -7,6 +7,8 @@ export interface HabitHub {
   description?: string;
   ownerId: string;
   ownerUsername: string;
+  memberUserIds: string[]; // List of accepted member UIDs for fast Firestore query
+  pendingUserIds?: string[]; // List of pending member UIDs
   createdAt: string;
   memberCount?: number;
 }
