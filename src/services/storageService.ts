@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { Goal, TaskCompletionRecord } from '../types/goal';
 import { UserProfile, AppSettings } from '../types/user';
 import { StreakData } from '../types/progress';
@@ -11,6 +12,46 @@ const KEYS = {
   STREAK_DATA: '@619_streak_data',
   APP_SETTINGS: '@619_app_settings',
 };
+
+// In-Memory fallback store for environments where Native Storage is null or restricted
+const inMemoryStore: Record<string, string> = {};
+
+async function safeGetItem(key: string): Promise<string | null> {
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const val = window.localStorage.getItem(key);
+      if (val !== null) return val;
+    }
+    const val = await AsyncStorage.getItem(key);
+    return val;
+  } catch (e) {
+    return inMemoryStore[key] || null;
+  }
+}
+
+async function safeSetItem(key: string, value: string): Promise<void> {
+  inMemoryStore[key] = value;
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+    await AsyncStorage.setItem(key, value);
+  } catch (e) {
+    // In-memory store already updated
+  }
+}
+
+async function safeClear(): Promise<void> {
+  Object.keys(inMemoryStore).forEach((k) => delete inMemoryStore[k]);
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.clear();
+    }
+    await AsyncStorage.clear();
+  } catch (e) {
+    // Ignore clear error
+  }
+}
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'Dark',
@@ -30,22 +71,22 @@ export const DEFAULT_STREAK: StreakData = {
 export class StorageService {
   // Profile
   static async getUserProfile(): Promise<UserProfile | null> {
-    const data = await AsyncStorage.getItem(KEYS.USER_PROFILE);
+    const data = await safeGetItem(KEYS.USER_PROFILE);
     return data ? JSON.parse(data) : null;
   }
 
   static async saveUserProfile(profile: UserProfile): Promise<void> {
-    await AsyncStorage.setItem(KEYS.USER_PROFILE, JSON.stringify(profile));
+    await safeSetItem(KEYS.USER_PROFILE, JSON.stringify(profile));
   }
 
   // Goals
   static async getGoals(): Promise<Goal[]> {
-    const data = await AsyncStorage.getItem(KEYS.GOALS);
+    const data = await safeGetItem(KEYS.GOALS);
     return data ? JSON.parse(data) : [];
   }
 
   static async saveGoals(goals: Goal[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.GOALS, JSON.stringify(goals));
+    await safeSetItem(KEYS.GOALS, JSON.stringify(goals));
   }
 
   static async addGoal(goal: Goal): Promise<Goal[]> {
@@ -64,7 +105,7 @@ export class StorageService {
 
   // Task Completions
   static async getCompletions(date?: string): Promise<TaskCompletionRecord[]> {
-    const data = await AsyncStorage.getItem(KEYS.TASK_COMPLETIONS);
+    const data = await safeGetItem(KEYS.TASK_COMPLETIONS);
     const list: TaskCompletionRecord[] = data ? JSON.parse(data) : [];
     if (date) {
       return list.filter((item) => item.date === date);
@@ -72,7 +113,10 @@ export class StorageService {
     return list;
   }
 
-  static async toggleTaskCompletion(goalId: string, date: string = getTodayDateString()): Promise<TaskCompletionRecord[]> {
+  static async toggleTaskCompletion(
+    goalId: string,
+    date: string = getTodayDateString()
+  ): Promise<TaskCompletionRecord[]> {
     const all = await this.getCompletions();
     const existingIndex = all.findIndex((c) => c.goalId === goalId && c.date === date);
 
@@ -90,28 +134,28 @@ export class StorageService {
       });
     }
 
-    await AsyncStorage.setItem(KEYS.TASK_COMPLETIONS, JSON.stringify(all));
+    await safeSetItem(KEYS.TASK_COMPLETIONS, JSON.stringify(all));
     return all;
   }
 
   // Streak
   static async getStreakData(): Promise<StreakData> {
-    const data = await AsyncStorage.getItem(KEYS.STREAK_DATA);
+    const data = await safeGetItem(KEYS.STREAK_DATA);
     return data ? JSON.parse(data) : DEFAULT_STREAK;
   }
 
   static async saveStreakData(streak: StreakData): Promise<void> {
-    await AsyncStorage.setItem(KEYS.STREAK_DATA, JSON.stringify(streak));
+    await safeSetItem(KEYS.STREAK_DATA, JSON.stringify(streak));
   }
 
   // Settings
   static async getSettings(): Promise<AppSettings> {
-    const data = await AsyncStorage.getItem(KEYS.APP_SETTINGS);
+    const data = await safeGetItem(KEYS.APP_SETTINGS);
     return data ? JSON.parse(data) : DEFAULT_SETTINGS;
   }
 
   static async saveSettings(settings: AppSettings): Promise<void> {
-    await AsyncStorage.setItem(KEYS.APP_SETTINGS, JSON.stringify(settings));
+    await safeSetItem(KEYS.APP_SETTINGS, JSON.stringify(settings));
   }
 
   // Backup & Restore
@@ -138,7 +182,7 @@ export class StorageService {
       const data = JSON.parse(jsonStr);
       if (data.profile) await this.saveUserProfile(data.profile);
       if (data.goals) await this.saveGoals(data.goals);
-      if (data.completions) await AsyncStorage.setItem(KEYS.TASK_COMPLETIONS, JSON.stringify(data.completions));
+      if (data.completions) await safeSetItem(KEYS.TASK_COMPLETIONS, JSON.stringify(data.completions));
       if (data.streak) await this.saveStreakData(data.streak);
       if (data.settings) await this.saveSettings(data.settings);
       return true;
@@ -148,6 +192,6 @@ export class StorageService {
   }
 
   static async clearAllData(): Promise<void> {
-    await AsyncStorage.clear();
+    await safeClear();
   }
 }
