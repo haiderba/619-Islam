@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
@@ -26,6 +27,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
 
   const [usernameCheck, setUsernameCheck] = useState<{
     available: boolean | null;
@@ -37,10 +39,10 @@ export default function SignupScreen() {
     suggestions: [],
   });
 
-  const handleUsernameChange = async (val: string) => {
-    setUsername(val);
-    const formatted = AuthService.formatUsername(val);
+  const debounceTimer = useRef<any>(null);
 
+  const performUsernameCheck = async (val: string) => {
+    const formatted = AuthService.formatUsername(val);
     if (!formatted || formatted.length < 2) {
       setUsernameCheck({
         available: false,
@@ -50,6 +52,7 @@ export default function SignupScreen() {
       return;
     }
 
+    setCheckingUsername(true);
     try {
       const isAvailable = await AuthService.checkUsernameAvailable(formatted);
       if (isAvailable) {
@@ -68,11 +71,31 @@ export default function SignupScreen() {
       }
     } catch {
       setUsernameCheck({ available: null, msg: '', suggestions: [] });
+    } finally {
+      setCheckingUsername(false);
     }
   };
 
+  const handleUsernameChange = (val: string) => {
+    setUsername(val);
+    setUsernameCheck({ available: null, msg: '', suggestions: [] });
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      if (val.trim().length >= 2) {
+        performUsernameCheck(val);
+      }
+    }, 400);
+  };
+
+  const handleManualCheck = () => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    performUsernameCheck(username);
+  };
+
   const selectSuggestion = (sug: string) => {
-    handleUsernameChange(sug);
+    setUsername(sug);
+    performUsernameCheck(sug);
   };
 
   const handleSignUp = async () => {
@@ -128,19 +151,38 @@ export default function SignupScreen() {
           />
 
           <Text style={[styles.label, { color: colors.text }]}>Unique Username *</Text>
-          <TextInput
-            style={[
-              styles.input,
-              { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-              usernameCheck.available === true && { borderColor: colors.primary, borderWidth: 2 },
-              usernameCheck.available === false && { borderColor: colors.danger, borderWidth: 2 },
-            ]}
-            placeholder="e.g. usman_haider or usman619"
-            autoCapitalize="none"
-            placeholderTextColor={colors.mutedText}
-            value={username}
-            onChangeText={handleUsernameChange}
-          />
+          <View style={styles.usernameRow}>
+            <TextInput
+              style={[
+                styles.input,
+                { flex: 1, backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
+                usernameCheck.available === true && { borderColor: colors.primary, borderWidth: 2 },
+                usernameCheck.available === false && { borderColor: colors.danger, borderWidth: 2 },
+              ]}
+              placeholder="e.g. usman_haider or usman619"
+              autoCapitalize="none"
+              placeholderTextColor={colors.mutedText}
+              value={username}
+              onChangeText={handleUsernameChange}
+            />
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleManualCheck}
+              disabled={checkingUsername || !username.trim()}
+              style={[
+                styles.checkBtn,
+                { backgroundColor: colors.primary },
+                (!username.trim() || checkingUsername) && { opacity: 0.6 },
+              ]}
+            >
+              {checkingUsername ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.checkBtnText}>Check</Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
           {usernameCheck.msg ? (
             <Text
@@ -247,11 +289,28 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   input: {
     borderRadius: 14,
     padding: 14,
     fontSize: 15,
     borderWidth: 1,
+  },
+  checkBtn: {
+    marginLeft: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
   },
   checkMsg: {
     fontSize: 12,
