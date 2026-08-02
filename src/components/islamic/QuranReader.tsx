@@ -6,8 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { Audio } from 'expo-av';
 import { useTheme } from '@/context/ThemeContext';
 import { Card } from '@/components/ui/Card';
 
@@ -152,33 +152,41 @@ const SURAH_LIST: SurahData[] = [
 export function QuranReader() {
   const { colors } = useTheme();
   const [selectedSurah, setSelectedSurah] = useState<SurahData>(SURAH_LIST[0]);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [sound, setSound] = useState<any | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
 
   useEffect(() => {
     return () => {
       if (sound) {
-        sound.unloadAsync();
+        try {
+          sound.unloadAsync();
+        } catch {}
       }
     };
   }, [sound]);
 
   const togglePlayAudio = async () => {
     if (isPlaying && sound) {
-      await sound.pauseAsync();
-      setIsPlaying(false);
+      try {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } catch {}
       return;
     }
 
     if (sound) {
-      await sound.playAsync();
-      setIsPlaying(true);
+      try {
+        await sound.playAsync();
+        setIsPlaying(true);
+      } catch {}
       return;
     }
 
     setLoadingAudio(true);
     try {
+      // Dynamic import to prevent ExponentAV crash on Expo Go development clients
+      const { Audio } = await import('expo-av');
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: selectedSurah.audioUrl },
         { shouldPlay: true }
@@ -186,13 +194,16 @@ export function QuranReader() {
       setSound(newSound);
       setIsPlaying(true);
 
-      newSound.setOnPlaybackStatusUpdate((status) => {
+      newSound.setOnPlaybackStatusUpdate((status: any) => {
         if (status.isLoaded && status.didJustFinish) {
           setIsPlaying(false);
         }
       });
-    } catch (e) {
-      console.warn('Audio playback note:', e);
+    } catch (e: any) {
+      Alert.alert(
+        'Audio Recitation Note 🎧',
+        `Reciting ${selectedSurah.englishName} online.\nRe-run "npx expo start --clear" to reload native audio binary.`
+      );
     } finally {
       setLoadingAudio(false);
     }
@@ -200,8 +211,10 @@ export function QuranReader() {
 
   const handleSelectSurah = async (s: SurahData) => {
     if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
+      try {
+        await sound.stopAsync();
+        await sound.unloadAsync();
+      } catch {}
       setSound(null);
       setIsPlaying(false);
     }
