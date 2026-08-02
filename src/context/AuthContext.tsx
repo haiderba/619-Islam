@@ -62,6 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const profile = await AuthService.signInUser(email, pass);
       setUser(profile);
+      if (auth.currentUser) {
+        setFirebaseUser(auth.currentUser);
+      }
       return profile;
     } finally {
       setLoading(false);
@@ -73,6 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const profile = await AuthService.signUpUser(email, pass, username, displayName);
       setUser(profile);
+      if (auth.currentUser) {
+        setFirebaseUser(auth.currentUser);
+      }
       return profile;
     } finally {
       setLoading(false);

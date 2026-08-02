@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
@@ -22,7 +23,7 @@ import { HabitHub, HubMember } from '@/types/hub';
 export default function HubsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { user, firebaseUser } = useAuth();
+  const { user, firebaseUser, loading } = useAuth();
 
   const [activeHubs, setActiveHubs] = useState<HabitHub[]>([]);
   const [pendingInvites, setPendingInvites] = useState<{ hub: HabitHub; member: HubMember }[]>([]);
@@ -33,16 +34,18 @@ export default function HubsScreen() {
   const [hubDesc, setHubDesc] = useState('');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    if (!firebaseUser) return;
+  const activeUserId = user?.uid || firebaseUser?.uid;
 
-    const unsubscribe = HubService.listenToUserHubs(firebaseUser.uid, (hubs, invites) => {
+  useEffect(() => {
+    if (!activeUserId) return;
+
+    const unsubscribe = HubService.listenToUserHubs(activeUserId, (hubs, invites) => {
       setActiveHubs(hubs);
       setPendingInvites(invites);
     });
 
     return () => unsubscribe();
-  }, [firebaseUser]);
+  }, [activeUserId]);
 
   const handleCreateHub = async () => {
     if (!hubName.trim()) return;
@@ -61,7 +64,18 @@ export default function HubsScreen() {
     }
   };
 
-  if (!firebaseUser) {
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingBox}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text style={{ color: colors.secondaryText, marginTop: 12 }}>Syncing Habit Hubs...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!activeUserId) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.authPrompt}>
@@ -211,6 +225,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+  },
+  loadingBox: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   authPrompt: {
     flex: 1,
