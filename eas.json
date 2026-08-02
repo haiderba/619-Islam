@@ -5,7 +5,10 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_USE_PRECOMPILED_MODULES": "0"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -14,11 +17,17 @@
       },
       "ios": {
         "simulator": true
+      },
+      "env": {
+        "EXPO_USE_PRECOMPILED_MODULES": "0"
       }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_USE_PRECOMPILED_MODULES": "0"
       }
     }
   },
