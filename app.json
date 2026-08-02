@@ -25,7 +25,16 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/619_logo.png",
         "backgroundColor": "#040D0A"
-      }
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/images/619_logo.png",
@@ -33,7 +42,21 @@
     },
     "plugins": [
       "expo-router",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/619_logo.png",
+          "color": "#10B981"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "619 needs access to your photos to update your profile picture.",
+          "cameraPermission": "619 needs camera access to take a profile photo."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

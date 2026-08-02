@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, inMemoryPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { Platform } from 'react-native';
 
 // Live Firebase configuration object for 619 db-5ec0b app
 const firebaseConfig = {
@@ -15,6 +16,15 @@ const firebaseConfig = {
 // Initialize Firebase App singleton
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
+// Get Auth instance — on native we use inMemoryPersistence since firebase/auth/react-native
+// was removed in firebase v12. Our AuthContext uses AsyncStorage independently for session persistence.
 export const auth = getAuth(app);
+
+// On native, switch to inMemoryPersistence so Firebase Auth does not try to
+// access localStorage (which doesn't exist on Android/iOS and causes crash on open)
+if (Platform.OS !== 'web') {
+  setPersistence(auth, inMemoryPersistence).catch(() => {});
+}
+
 export const db = getFirestore(app);
 export default app;
