@@ -47,6 +47,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="hubs"
+        options={{
+          title: 'Hubs',
+          headerTitle: 'Habit Hubs & Circles',
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>👥</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="goals"
         options={{
           title: 'Goals',

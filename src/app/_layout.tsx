@@ -2,9 +2,10 @@ import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { AuthProvider } from '@/context/AuthContext';
 
 function NavigationStack() {
-  const { colors, themeMode } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <>
@@ -26,7 +27,17 @@ function NavigationStack() {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="(auth)/login" options={{ title: 'Sign In', headerStyle: { backgroundColor: colors.card } }} />
+        <Stack.Screen name="(auth)/signup" options={{ title: 'Create Account', headerStyle: { backgroundColor: colors.card } }} />
+        <Stack.Screen name="(auth)/verify-email" options={{ title: 'Verify Email', headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="hub/[id]"
+          options={{
+            title: 'Habit Hub Circle',
+            headerStyle: { backgroundColor: colors.card },
+          }}
+        />
         <Stack.Screen
           name="goal/create"
           options={{
@@ -42,8 +53,10 @@ function NavigationStack() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <NavigationStack />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <NavigationStack />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
