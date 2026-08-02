@@ -4,10 +4,12 @@ import { Goal, TaskCompletionRecord } from '../types/goal';
 import { UserProfile, AppSettings } from '../types/user';
 import { StreakData } from '../types/progress';
 import { TasbeehItem } from '../types/tasbeeh';
+import { UserProfileData } from '../types/auth';
 import { getTodayDateString } from '../utils/dateUtils';
 
 const KEYS = {
   USER_PROFILE: '@619_user_profile',
+  AUTH_USER: '@619_auth_user',
   GOALS: '@619_goals',
   TASK_COMPLETIONS: '@619_task_completions',
   STREAK_DATA: '@619_streak_data',
@@ -15,7 +17,6 @@ const KEYS = {
   CUSTOM_TASBEEHS: '@619_custom_tasbeehs',
 };
 
-// In-Memory fallback store for environments where Native Storage is null or restricted
 const inMemoryStore: Record<string, string> = {};
 
 async function safeGetItem(key: string): Promise<string | null> {
@@ -41,6 +42,16 @@ async function safeSetItem(key: string, value: string): Promise<void> {
   } catch (e) {
     // In-memory store updated
   }
+}
+
+async function safeRemoveItem(key: string): Promise<void> {
+  delete inMemoryStore[key];
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(key);
+    }
+    await AsyncStorage.removeItem(key);
+  } catch (e) {}
 }
 
 async function safeClear(): Promise<void> {
@@ -71,6 +82,20 @@ export const DEFAULT_STREAK: StreakData = {
 };
 
 export class StorageService {
+  // Auth Session Persistence
+  static async saveAuthSession(user: UserProfileData): Promise<void> {
+    await safeSetItem(KEYS.AUTH_USER, JSON.stringify(user));
+  }
+
+  static async getAuthSession(): Promise<UserProfileData | null> {
+    const data = await safeGetItem(KEYS.AUTH_USER);
+    return data ? JSON.parse(data) : null;
+  }
+
+  static async clearAuthSession(): Promise<void> {
+    await safeRemoveItem(KEYS.AUTH_USER);
+  }
+
   // Profile
   static async getUserProfile(): Promise<UserProfile | null> {
     const data = await safeGetItem(KEYS.USER_PROFILE);

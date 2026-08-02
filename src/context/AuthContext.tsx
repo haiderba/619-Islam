@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/services/firebaseConfig';
 import { AuthService } from '@/services/authService';
+import { StorageService } from '@/services/storageService';
 import { UserProfileData } from '@/types/auth';
 
 interface AuthContextType {
@@ -33,11 +34,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Restore persistent login session on app start
+  useEffect(() => {
+    async function restoreSession() {
+      try {
+        const cachedUser = await StorageService.getAuthSession();
+        if (cachedUser) {
+          setUser(cachedUser);
+        }
+      } catch (e) {
+        console.warn('Session restore note:', e);
+      }
+    }
+    restoreSession();
+  }, []);
+
   const refreshProfile = async () => {
     if (auth.currentUser) {
       await auth.currentUser.reload();
       const profile = await AuthService.getUserProfile(auth.currentUser.uid);
-      setUser(profile);
+      if (profile) {
+        setUser(profile);
+        await StorageService.saveAuthSession(profile);
+      }
       setFirebaseUser(auth.currentUser);
     }
   };
@@ -47,9 +66,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setFirebaseUser(fbUser);
       if (fbUser) {
         const profile = await AuthService.getUserProfile(fbUser.uid);
-        setUser(profile);
-      } else {
-        setUser(null);
+        if (profile) {
+          setUser(profile);
+          await StorageService.saveAuthSession(profile);
+        }
       }
       setLoading(false);
     });
@@ -62,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const profile = await AuthService.signInUser(email, pass);
       setUser(profile);
+      await StorageService.saveAuthSession(profile);
       if (auth.currentUser) {
         setFirebaseUser(auth.currentUser);
       }
@@ -76,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const profile = await AuthService.signUpUser(email, pass, username, displayName);
       setUser(profile);
+      await StorageService.saveAuthSession(profile);
       if (auth.currentUser) {
         setFirebaseUser(auth.currentUser);
       }
@@ -87,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOutUser = async () => {
     await AuthService.signOutUser();
+    await StorageService.clearAuthSession();
     setUser(null);
     setFirebaseUser(null);
   };
