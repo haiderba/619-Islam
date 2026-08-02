@@ -1,23 +1,25 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Colors } from '@/constants/colors';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 
-export default function RootLayout() {
+function NavigationStack() {
+  const { colors, themeMode } = useTheme();
+
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={colors.isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: Colors.background,
+            backgroundColor: colors.background,
           },
-          headerTintColor: Colors.text,
+          headerTintColor: colors.text,
           headerTitleStyle: {
             fontWeight: 'bold',
           },
           contentStyle: {
-            backgroundColor: Colors.background,
+            backgroundColor: colors.background,
           },
           headerShadowVisible: false,
         }}
@@ -30,10 +32,18 @@ export default function RootLayout() {
           options={{
             presentation: 'modal',
             title: 'Create Goal',
-            headerStyle: { backgroundColor: Colors.card },
+            headerStyle: { backgroundColor: colors.card },
           }}
         />
       </Stack>
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <NavigationStack />
+    </ThemeProvider>
   );
 }

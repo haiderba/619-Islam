@@ -167,7 +167,7 @@ export const TasbeehCounter: React.FC = () => {
         {active.translation ? <Text style={styles.translationText}>{active.translation}</Text> : null}
       </View>
 
-      {/* Interactive Tap Button */}
+      {/* Interactive Tap Button with Clean Center Content */}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={handleTap}
@@ -175,14 +175,17 @@ export const TasbeehCounter: React.FC = () => {
       >
         <ProgressRing
           percentage={percentage}
-          size={160}
+          size={170}
           strokeWidth={14}
-          subLabel={`TARGET: ${active.targetCount}`}
+          progressColor={Colors.primary}
+          centerContent={
+            <View style={styles.countContainer}>
+              <Text style={styles.countText}>{active.currentCount}</Text>
+              <Text style={styles.targetLabel}>TARGET: {active.targetCount}</Text>
+              <Text style={styles.tapHint}>TAP TO COUNT</Text>
+            </View>
+          }
         />
-        <View style={styles.countContainer}>
-          <Text style={styles.countText}>{active.currentCount}</Text>
-          <Text style={styles.tapHint}>TAP TO COUNT</Text>
-        </View>
       </TouchableOpacity>
 
       {/* Reset Action */}
@@ -284,7 +287,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   presetChipSelected: {
-    backgroundColor: 'rgba(124, 58, 237, 0.25)',
+    backgroundColor: 'rgba(16, 185, 129, 0.25)',
     borderColor: Colors.primary,
   },
   presetChipText: {
@@ -323,17 +326,24 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   countContainer: {
-    position: 'absolute',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   countText: {
-    color: Colors.accentCyan,
+    color: Colors.primaryLight,
     fontSize: 44,
     fontWeight: '900',
+    lineHeight: 48,
+  },
+  targetLabel: {
+    color: Colors.accentCyan,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
   },
   tapHint: {
-    color: Colors.secondaryText,
-    fontSize: 10,
+    color: Colors.mutedText,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1.5,
     marginTop: 4,

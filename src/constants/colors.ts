@@ -1,26 +1,27 @@
 export const Colors = {
-  background: '#0D1117', // Deep Abyss
-  primary: '#7C3AED', // Vibrant Violet
-  primaryDark: '#5B21B6',
-  primaryLight: '#A78BFA',
-  accentCyan: '#06B6D4', // Electric Cyan
+  background: '#000000', // Black Background for Dark Mode
+  primary: '#10B981', // Light Green / Emerald
+  primaryDark: '#059669',
+  primaryLight: '#34D399',
   accentGold: '#D4AF37', // Gold Accent
-  card: 'rgba(22, 27, 34, 0.85)', // Liquid Glass Card
-  cardBorder: 'rgba(124, 58, 237, 0.3)', // Specular Glass Border
-  surface: 'rgba(28, 33, 40, 0.9)', // Surface background
-  surfaceHighlight: 'rgba(45, 51, 59, 0.95)',
-  text: '#FFFFFF', // Liquid Specular
-  secondaryText: '#94A3B8', // Slate secondary text
-  mutedText: '#64748B',
-  border: 'rgba(255, 255, 255, 0.1)',
-  success: '#10B981', // Emerald
-  warning: '#F59E0B', // Amber
-  danger: '#EF4444', // Red
+  accentCyan: '#06B6D4',
+  card: '#121212', // Dark Card
+  cardBorder: 'rgba(16, 185, 129, 0.3)',
+  surface: '#1A1A1A',
+  surfaceHighlight: '#262626',
+  text: '#FFFFFF', // Pure White Text
+  secondaryText: '#A1A1AA',
+  mutedText: '#71717A',
+  border: '#27272A',
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
   goldGlow: 'rgba(212, 175, 55, 0.12)',
   goldGlowBorder: 'rgba(212, 175, 55, 0.3)',
-  glassGlowViolet: 'rgba(124, 58, 237, 0.18)',
-  glassGlowCyan: 'rgba(6, 182, 212, 0.18)',
-  glassGlowBorder: 'rgba(255, 255, 255, 0.2)',
+  greenGlow: 'rgba(16, 185, 129, 0.15)',
+  glassGlowViolet: 'rgba(16, 185, 129, 0.18)',
+  glassGlowCyan: 'rgba(212, 175, 55, 0.18)',
+  glassGlowBorder: 'rgba(16, 185, 129, 0.25)',
 };
 
 export type ThemeColors = typeof Colors;
