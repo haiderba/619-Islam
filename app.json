@@ -1,20 +1,31 @@
 {
   "expo": {
-    "name": "619 — Discipline Daily",
+    "name": "619 - Discipline Daily",
     "slug": "619",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/619_logo.png",
     "scheme": "sixnineteen",
     "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/images/619_logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#040D0A"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sixnineteen.app",
+      "icon": "./assets/images/619_logo.png"
     },
     "android": {
+      "package": "com.sixnineteen.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0D0D0D"
+        "foregroundImage": "./assets/images/619_logo.png",
+        "backgroundColor": "#040D0A"
       }
     },
     "web": {
+      "favicon": "./assets/images/619_logo.png",
       "output": "static"
     },
     "plugins": [
