@@ -17,7 +17,7 @@ import { AuthService } from './authService';
 import { HabitHub, HubMember, HubGoal, HubGoalCompletion } from '@/types/hub';
 import { getTodayDateString } from '@/utils/dateUtils';
 
-// Local Mock Store for Hubs when offline
+// Local Persistent Store for Hubs when offline
 const mockHubsStore: Record<string, HabitHub> = {};
 const mockMembersStore: Record<string, HubMember[]> = {};
 const mockGoalsStore: Record<string, HubGoal[]> = {};
@@ -40,7 +40,7 @@ export class HubService {
       description: description.trim(),
       ownerId: uid,
       ownerUsername,
-      memberUserIds: [uid], // Include creator UID directly for instant querying
+      memberUserIds: [uid],
       pendingUserIds: [],
       createdAt: new Date().toISOString(),
     };
@@ -57,6 +57,10 @@ export class HubService {
       joinedAt: new Date().toISOString(),
     };
 
+    // Store in local store immediately
+    mockHubsStore[hubId] = hubData;
+    mockMembersStore[hubId] = [ownerMember];
+
     try {
       const hubRef = doc(db, 'hubs', hubId);
       await setDoc(hubRef, hubData);
@@ -65,10 +69,6 @@ export class HubService {
       await setDoc(memberRef, ownerMember);
     } catch (e) {
       console.warn('Firestore setDoc note:', e);
-      mockHubsStore[hubId] = hubData;
-      mockMembersStore[hubId] = [ownerMember];
-      mockGoalsStore[hubId] = [];
-      mockCompletionsStore[hubId] = [];
     }
 
     return hubData;
@@ -234,39 +234,56 @@ export class HubService {
     return isCompletedNow;
   }
 
-  // Real-time listener for user's hubs and pending invites using direct member queries
+  // Real-time listener for user's hubs and pending invites (backward-compatible)
   static listenToUserHubs(
     userId: string,
     onData: (hubs: HabitHub[], invites: { hub: HabitHub; member: HubMember }[]) => void
   ) {
     try {
       const hubsRef = collection(db, 'hubs');
-      const q = query(hubsRef, where('memberUserIds', 'array-contains', userId));
 
       return onSnapshot(
-        q,
+        hubsRef,
         (hubsSnap) => {
-          const activeHubs: HabitHub[] = hubsSnap.docs.map((d) => d.data() as HabitHub);
+          const allRemoteHubs: HabitHub[] = hubsSnap.docs.map((d) => d.data() as HabitHub);
+          const activeHubs: HabitHub[] = [];
+          const pendingInvites: { hub: HabitHub; member: HubMember }[] = [];
 
-          // Also query pending invites
-          const qPending = query(hubsRef, where('pendingUserIds', 'array-contains', userId));
-          getDocs(qPending).then((pSnap) => {
-            const pendingInvites = pSnap.docs.map((d) => {
-              const hub = d.data() as HabitHub;
-              const member: HubMember = {
-                id: `${hub.id}_${userId}`,
-                hubId: hub.id,
-                userId,
-                username: '',
-                displayName: '',
-                role: 'member',
-                status: 'pending',
-                invitedAt: hub.createdAt,
-              };
-              return { hub, member };
-            });
-            onData(activeHubs, pendingInvites);
-          });
+          for (const hub of allRemoteHubs) {
+            const isOwner = hub.ownerId === userId;
+            const isMember = hub.memberUserIds && hub.memberUserIds.includes(userId);
+            const isPending = hub.pendingUserIds && hub.pendingUserIds.includes(userId);
+
+            if (isOwner || isMember) {
+              activeHubs.push(hub);
+            } else if (isPending) {
+              pendingInvites.push({
+                hub,
+                member: {
+                  id: `${hub.id}_${userId}`,
+                  hubId: hub.id,
+                  userId,
+                  username: '',
+                  displayName: '',
+                  role: 'member',
+                  status: 'pending',
+                  invitedAt: hub.createdAt,
+                },
+              });
+            }
+          }
+
+          // Combine with local mock hubs
+          const mockList = Object.values(mockHubsStore).filter(
+            (h) => h.ownerId === userId || (h.memberUserIds && h.memberUserIds.includes(userId))
+          );
+          for (const mHub of mockList) {
+            if (!activeHubs.some((h) => h.id === mHub.id)) {
+              activeHubs.push(mHub);
+            }
+          }
+
+          onData(activeHubs, pendingInvites);
         },
         (err) => {
           console.warn('Firestore snapshot warning:', err);
