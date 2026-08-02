@@ -2,14 +2,14 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Default Firebase configuration object for 619 app
+// Live Firebase configuration object for 619 db-5ec0b app
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'AIzaSy619_Default_Key_Placeholder',
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'discipline-619.firebaseapp.com',
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'discipline-619',
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'discipline-619.appspot.com',
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '619000000000',
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '1:619000000000:web:abc619def',
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'AIzaSyC8zuPvM5L84n2dQ8o0KyEN04qNRANSIZc',
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'db-5ec0b.firebaseapp.com',
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'db-5ec0b',
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'db-5ec0b.firebasestorage.app',
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '345834042555',
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '1:345834042555:web:fde7fd051a6e6ea040659e',
 };
 
 // Initialize Firebase App singleton
