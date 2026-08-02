@@ -4,7 +4,6 @@ import {
   signOut,
   sendEmailVerification,
   updateProfile,
-  User as FirebaseUser,
 } from 'firebase/auth';
 import {
   doc,
@@ -19,20 +18,53 @@ import { auth, db } from './firebaseConfig';
 import { UserProfileData } from '@/types/auth';
 
 export class AuthService {
-  // Format username (e.g. remove spaces, lower-case, strip leading @)
+  // Format username (lower-case, allow letters, numbers, underscores)
   static formatUsername(input: string): string {
     return input.trim().replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, '');
   }
 
-  // Check if username is already taken in Firestore
-  static async checkUsernameAvailable(username: string): Promise<boolean> {
-    const formatted = this.formatUsername(username);
-    if (!formatted || formatted.length < 3) return false;
+  // Check if username is valid and available in Firestore
+  static async checkUsernameAvailable(rawUsername: string): Promise<boolean> {
+    const formatted = this.formatUsername(rawUsername);
+    if (!formatted || formatted.length < 2) return false;
 
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('username', '==', formatted));
     const snap = await getDocs(q);
     return snap.empty;
+  }
+
+  // Generate 3 available username suggestions (like TikTok & Instagram)
+  static async getUsernameSuggestions(rawUsername: string): Promise<string[]> {
+    const base = this.formatUsername(rawUsername) || 'user';
+    const suggestions: string[] = [];
+
+    const candidates = [
+      `${base}_619`,
+      `${base}_`,
+      `${base}_official`,
+      `the_${base}`,
+      `${base}_${Math.floor(10 + Math.random() * 90)}`,
+      `real_${base}`,
+    ];
+
+    for (const cand of candidates) {
+      if (suggestions.length >= 3) break;
+      const isFree = await this.checkUsernameAvailable(cand);
+      if (isFree && !suggestions.includes(cand)) {
+        suggestions.push(cand);
+      }
+    }
+
+    // Fallback if needed
+    while (suggestions.length < 3) {
+      const fallback = `${base}_${Math.floor(100 + Math.random() * 900)}`;
+      if (!suggestions.includes(fallback)) {
+        suggestions.push(fallback);
+      }
+    }
+
+    return suggestions;
   }
 
   // Sign up user with email, password, username & displayName
@@ -43,8 +75,8 @@ export class AuthService {
     displayName: string
   ): Promise<UserProfileData> {
     const username = this.formatUsername(rawUsername);
-    if (!username || username.length < 3) {
-      throw new Error('Username must be at least 3 characters (letters, numbers, underscores).');
+    if (!username || username.length < 2) {
+      throw new Error('Username must be at least 2 characters (letters, numbers, underscores allowed).');
     }
 
     const available = await this.checkUsernameAvailable(username);

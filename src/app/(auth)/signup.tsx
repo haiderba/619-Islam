@@ -26,30 +26,53 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [usernameCheck, setUsernameCheck] = useState<{ available: boolean | null; msg: string }>({
+
+  const [usernameCheck, setUsernameCheck] = useState<{
+    available: boolean | null;
+    msg: string;
+    suggestions: string[];
+  }>({
     available: null,
     msg: '',
+    suggestions: [],
   });
 
   const handleUsernameChange = async (val: string) => {
     setUsername(val);
     const formatted = AuthService.formatUsername(val);
 
-    if (!formatted || formatted.length < 3) {
-      setUsernameCheck({ available: false, msg: 'Min 3 letters/numbers' });
+    if (!formatted || formatted.length < 2) {
+      setUsernameCheck({
+        available: false,
+        msg: 'Min 2 characters (letters, numbers, underscores allowed)',
+        suggestions: [],
+      });
       return;
     }
 
     try {
       const isAvailable = await AuthService.checkUsernameAvailable(formatted);
       if (isAvailable) {
-        setUsernameCheck({ available: true, msg: `@${formatted} is available! ✓` });
+        setUsernameCheck({
+          available: true,
+          msg: `✓ @${formatted} is available!`,
+          suggestions: [],
+        });
       } else {
-        setUsernameCheck({ available: false, msg: `@${formatted} is taken` });
+        const sugs = await AuthService.getUsernameSuggestions(formatted);
+        setUsernameCheck({
+          available: false,
+          msg: `✕ @${formatted} is taken. Try one of these:`,
+          suggestions: sugs,
+        });
       }
     } catch {
-      setUsernameCheck({ available: null, msg: '' });
+      setUsernameCheck({ available: null, msg: '', suggestions: [] });
     }
+  };
+
+  const selectSuggestion = (sug: string) => {
+    handleUsernameChange(sug);
   };
 
   const handleSignUp = async () => {
@@ -59,7 +82,7 @@ export default function SignupScreen() {
     }
 
     if (usernameCheck.available === false) {
-      Alert.alert('Invalid Username', usernameCheck.msg);
+      Alert.alert('Invalid Username', 'Please choose an available username.');
       return;
     }
 
@@ -106,13 +129,19 @@ export default function SignupScreen() {
 
           <Text style={[styles.label, { color: colors.text }]}>Unique Username *</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-            placeholder="e.g. usman619"
+            style={[
+              styles.input,
+              { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
+              usernameCheck.available === true && { borderColor: colors.primary, borderWidth: 2 },
+              usernameCheck.available === false && { borderColor: colors.danger, borderWidth: 2 },
+            ]}
+            placeholder="e.g. usman_haider or usman619"
             autoCapitalize="none"
             placeholderTextColor={colors.mutedText}
             value={username}
             onChangeText={handleUsernameChange}
           />
+
           {usernameCheck.msg ? (
             <Text
               style={[
@@ -124,7 +153,23 @@ export default function SignupScreen() {
             </Text>
           ) : null}
 
-          <Text style={[styles.label, { color: colors.text }]}>Email Address *</Text>
+          {/* Username Suggestion Chips */}
+          {usernameCheck.suggestions.length > 0 ? (
+            <View style={styles.suggestionRow}>
+              {usernameCheck.suggestions.map((sug) => (
+                <TouchableOpacity
+                  key={sug}
+                  activeOpacity={0.8}
+                  style={[styles.sugChip, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+                  onPress={() => selectSuggestion(sug)}
+                >
+                  <Text style={[styles.sugText, { color: colors.primary }]}>@{sug}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+
+          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Email Address *</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
             placeholder="usman@example.com"
@@ -211,8 +256,25 @@ const styles = StyleSheet.create({
   checkMsg: {
     fontSize: 12,
     fontWeight: '700',
-    marginTop: 4,
+    marginTop: 6,
     marginLeft: 4,
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  sugChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  sugText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   footerRow: {
     flexDirection: 'row',
