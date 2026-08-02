@@ -17,17 +17,13 @@ import {
 import { auth, db } from './firebaseConfig';
 import { UserProfileData } from '@/types/auth';
 
-// Local Mock Users Store for fallback when Firebase API key is unconfigured/placeholder
 const mockUsersStore: Record<string, UserProfileData> = {};
-let mockCurrentUserId: string | null = null;
 
 export class AuthService {
-  // Format username (lower-case, allow letters, numbers, underscores)
   static formatUsername(input: string): string {
     return input.trim().replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, '');
   }
 
-  // Check if username is valid and available
   static async checkUsernameAvailable(rawUsername: string): Promise<boolean> {
     const formatted = this.formatUsername(rawUsername);
     if (!formatted || formatted.length < 2) return false;
@@ -38,13 +34,11 @@ export class AuthService {
       const snap = await getDocs(q);
       return snap.empty;
     } catch {
-      // Mock Fallback
       const taken = Object.values(mockUsersStore).some((u) => u.username === formatted);
       return !taken;
     }
   }
 
-  // Generate 3 available username suggestions (like TikTok & Instagram)
   static async getUsernameSuggestions(rawUsername: string): Promise<string[]> {
     const base = this.formatUsername(rawUsername) || 'user';
     const suggestions: string[] = [];
@@ -76,7 +70,7 @@ export class AuthService {
     return suggestions;
   }
 
-  // Sign up user
+  // Sign up user with instant non-blocking email trigger
   static async signUpUser(
     email: string,
     pass: string,
@@ -97,11 +91,11 @@ export class AuthService {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
       const firebaseUser = cred.user;
 
-      try {
-        await sendEmailVerification(firebaseUser);
-      } catch (e) {
-        console.warn('Could not send email verification link:', e);
-      }
+      // Send verification email in non-blocking background task with fast 1s timeout
+      Promise.race([
+        sendEmailVerification(firebaseUser),
+        new Promise((res) => setTimeout(res, 1000)),
+      ]).catch((e) => console.log('Email trigger background note:', e));
 
       await updateProfile(firebaseUser, { displayName });
 
@@ -117,7 +111,6 @@ export class AuthService {
       await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
       return userProfile;
     } catch (err: any) {
-      // If Firebase API Key is invalid or unconfigured, use resilient Mock Local Auth
       if (err?.code === 'auth/api-key-not-valid' || err?.message?.includes('api-key')) {
         const mockUid = `user_${Date.now()}`;
         const mockProfile: UserProfileData = {
@@ -125,18 +118,16 @@ export class AuthService {
           username,
           email: email.trim(),
           displayName,
-          emailVerified: true, // Auto-verify in mock mode
+          emailVerified: true, // Auto-verify in mock/test mode
           createdAt: new Date().toISOString(),
         };
         mockUsersStore[mockUid] = mockProfile;
-        mockCurrentUserId = mockUid;
         return mockProfile;
       }
       throw err;
     }
   }
 
-  // Sign in with Email & Password
   static async signInUser(email: string, pass: string): Promise<UserProfileData> {
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
@@ -159,7 +150,6 @@ export class AuthService {
       if (err?.code === 'auth/api-key-not-valid' || err?.message?.includes('api-key')) {
         const found = Object.values(mockUsersStore).find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
         if (found) {
-          mockCurrentUserId = found.uid;
           return found;
         }
         const mockUid = `user_${Date.now()}`;
@@ -172,14 +162,12 @@ export class AuthService {
           createdAt: new Date().toISOString(),
         };
         mockUsersStore[mockUid] = mockProfile;
-        mockCurrentUserId = mockUid;
         return mockProfile;
       }
       throw err;
     }
   }
 
-  // Fetch Profile by UID
   static async getUserProfile(uid: string): Promise<UserProfileData | null> {
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
@@ -189,7 +177,6 @@ export class AuthService {
     }
   }
 
-  // Fetch Profile by Username
   static async getUserByUsername(rawUsername: string): Promise<UserProfileData | null> {
     const username = this.formatUsername(rawUsername);
     try {
@@ -204,7 +191,6 @@ export class AuthService {
       if (found) return found;
     }
 
-    // Mock fallback user generator so inviting works seamlessly in offline mode
     return {
       uid: `mock_${username}`,
       username,
@@ -215,20 +201,20 @@ export class AuthService {
     };
   }
 
-  // Resend Email Verification
   static async resendVerificationEmail(): Promise<void> {
     try {
       if (auth.currentUser) {
-        await sendEmailVerification(auth.currentUser);
+        await Promise.race([
+          sendEmailVerification(auth.currentUser),
+          new Promise((res) => setTimeout(res, 1000)),
+        ]);
       }
     } catch (e) {
-      console.warn('Verification resend ignored in mock mode');
+      console.warn('Verification resend bypassed');
     }
   }
 
-  // Sign Out
   static async signOutUser(): Promise<void> {
-    mockCurrentUserId = null;
     try {
       await signOut(auth);
     } catch {}
