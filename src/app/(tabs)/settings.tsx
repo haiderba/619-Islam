@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTheme } from '@/context/ThemeContext';
 import { StorageService } from '@/services/storageService';
+import { NotificationService } from '@/services/notificationService';
 import { AppLanguage, AppTheme } from '@/types/user';
 
 export default function SettingsScreen() {
@@ -25,6 +26,25 @@ export default function SettingsScreen() {
 
   const [sound, setSound] = useState(settings.soundEnabled);
   const [vibration, setVibration] = useState(settings.vibrationEnabled);
+  const [notifications, setNotifications] = useState(settings.notificationsEnabled);
+
+  const toggleNotifications = async (val: boolean) => {
+    setNotifications(val);
+    saveSettings({ ...settings, notificationsEnabled: val });
+
+    if (val) {
+      const granted = await NotificationService.requestPermissions();
+      if (granted) {
+        await NotificationService.schedulePrayerReminders();
+        await NotificationService.scheduleDailyHabitReminder(20, 0);
+        Alert.alert('Notifications Active 🔔', 'Prayer and daily goal reminders have been scheduled.');
+      } else {
+        Alert.alert('Permission Required', 'Please allow notification permissions in your device settings.');
+      }
+    } else {
+      await NotificationService.cancelAll();
+    }
+  };
 
   const toggleSound = (val: boolean) => {
     setSound(val);
@@ -69,6 +89,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await StorageService.clearAllData();
+            await NotificationService.cancelAll();
             await refreshProfile();
             router.replace('/onboarding');
           },
@@ -142,10 +163,22 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        {/* Notifications Settings */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Notification Alerts</Text>
+        {/* Push Notifications & Alerts Settings */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Notification Alerts & Reminders</Text>
         <Card style={styles.card}>
           <View style={styles.switchRow}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text style={[styles.rowLabel, { color: colors.text }]}>Prayer & Daily Habit Alerts</Text>
+              <Text style={[styles.rowSub, { color: colors.secondaryText }]}>5-min pre-prayer alerts & 8 PM goal check-in</Text>
+            </View>
+            <Switch
+              value={notifications}
+              onValueChange={toggleNotifications}
+              trackColor={{ false: colors.border, true: colors.primary }}
+            />
+          </View>
+
+          <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 12 }]}>
             <Text style={[styles.rowLabel, { color: colors.text }]}>Sound Alerts</Text>
             <Switch
               value={sound}
@@ -153,6 +186,7 @@ export default function SettingsScreen() {
               trackColor={{ false: colors.border, true: colors.primary }}
             />
           </View>
+
           <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 12 }]}>
             <Text style={[styles.rowLabel, { color: colors.text }]}>Vibration</Text>
             <Switch
@@ -182,8 +216,8 @@ export default function SettingsScreen() {
         {/* App Info */}
         <View style={styles.footerInfo}>
           <Text style={[styles.appName, { color: colors.primary }]}>619 — Discipline Daily</Text>
-          <Text style={[styles.appVersion, { color: colors.secondaryText }]}>Version 1.1.0</Text>
-          <Text style={[styles.appTagline, { color: colors.mutedText }]}>Light Green • Gold • White & Black Theme</Text>
+          <Text style={[styles.appVersion, { color: colors.secondaryText }]}>Version 1.2.0 (Notifications Enabled)</Text>
+          <Text style={[styles.appTagline, { color: colors.mutedText }]}>Royal Emerald & Gold Theme • Firebase Auth & Hubs</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -243,6 +277,10 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  rowSub: {
+    fontSize: 12,
+    marginTop: 2,
   },
   footerInfo: {
     alignItems: 'center',
