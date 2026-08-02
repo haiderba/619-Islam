@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  NativeModules,
   Platform,
 } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
@@ -154,80 +153,72 @@ const SURAH_LIST: SurahData[] = [
 export function QuranReader() {
   const { colors } = useTheme();
   const [selectedSurah, setSelectedSurah] = useState<SurahData>(SURAH_LIST[0]);
-  const [sound, setSound] = useState<any | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
+  // Use a ref to hold the expo-audio player instance so we can dynamically import
+  const playerRef = useRef<any>(null);
 
   useEffect(() => {
     return () => {
-      if (sound) {
+      if (playerRef.current) {
         try {
-          sound.unloadAsync();
+          playerRef.current.remove();
         } catch {}
+        playerRef.current = null;
       }
     };
-  }, [sound]);
+  }, []);
 
   const togglePlayAudio = async () => {
-    if (isPlaying && sound) {
+    // Pause if already playing
+    if (isPlaying && playerRef.current) {
       try {
-        await sound.pauseAsync();
+        playerRef.current.pause();
         setIsPlaying(false);
       } catch {}
       return;
     }
 
-    if (sound) {
+    // Resume if paused
+    if (playerRef.current && !isPlaying) {
       try {
-        await sound.playAsync();
+        playerRef.current.play();
         setIsPlaying(true);
       } catch {}
       return;
     }
 
+    // Create a new player via expo-audio (SDK 57 native module, compiles clean on iOS)
     setLoadingAudio(true);
     try {
-      // Check native module availability before requiring expo-av to prevent ExponentAV crash
-      const isNativeAVAvailable = Platform.OS === 'web' || Boolean(NativeModules.ExponentAV);
-      if (!isNativeAVAvailable) {
-        Alert.alert(
-          'Audio Recitation Note 🎧',
-          `Reciting ${selectedSurah.englishName} online.\nRe-run "npx expo start --clear" to load native audio bindings.`
-        );
-        setLoadingAudio(false);
-        return;
-      }
-
-      const { Audio } = await import('expo-av');
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: selectedSurah.audioUrl },
-        { shouldPlay: true }
-      );
-      setSound(newSound);
+      const { useAudioPlayer, createAudioPlayer } = await import('expo-audio');
+      const newPlayer = createAudioPlayer({ uri: selectedSurah.audioUrl });
+      playerRef.current = newPlayer;
+      newPlayer.play();
       setIsPlaying(true);
 
-      newSound.setOnPlaybackStatusUpdate((status: any) => {
-        if (status.isLoaded && status.didJustFinish) {
+      // Listen for playback end
+      newPlayer.addListener('playbackStatusUpdate', (status: any) => {
+        if (status.didJustFinish) {
           setIsPlaying(false);
         }
       });
     } catch (e: any) {
       Alert.alert(
-        'Audio Recitation Note 🎧',
-        `Reciting ${selectedSurah.englishName} online.\nRe-run "npx expo start --clear" to reload native audio binary.`
+        'Audio Recitation 🎧',
+        `Could not load recitation for ${selectedSurah.englishName}. Please check your internet connection.`
       );
     } finally {
       setLoadingAudio(false);
     }
   };
 
-  const handleSelectSurah = async (s: SurahData) => {
-    if (sound) {
+  const handleSelectSurah = (s: SurahData) => {
+    if (playerRef.current) {
       try {
-        await sound.stopAsync();
-        await sound.unloadAsync();
+        playerRef.current.remove();
       } catch {}
-      setSound(null);
+      playerRef.current = null;
       setIsPlaying(false);
     }
     setSelectedSurah(s);
