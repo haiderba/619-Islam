@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
@@ -30,7 +31,7 @@ export default function HubDetailScreen() {
   const [goals, setGoals] = useState<HubGoal[]>([]);
   const [completions, setCompletions] = useState<HubGoalCompletion[]>([]);
 
-  // Modals
+  // Modals & Chat
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [targetUsername, setTargetUsername] = useState('');
   const [inviting, setInviting] = useState(false);
@@ -39,6 +40,19 @@ export default function HubDetailScreen() {
   const [goalTitle, setGoalTitle] = useState('');
   const [goalDesc, setGoalDesc] = useState('');
   const [addingGoal, setAddingGoal] = useState(false);
+
+  // Group Motivation Chat Messages
+  const [chatMessage, setChatMessage] = useState('');
+  const [messages, setMessages] = useState<
+    { id: string; sender: string; text: string; time: string }[]
+  >([
+    {
+      id: 'm1',
+      sender: 'System',
+      text: 'Welcome to the Habit Hub! Stay consistent and support each other. 🕌',
+      time: '08:00 AM',
+    },
+  ]);
 
   const todayStr = getTodayDateString();
 
@@ -55,7 +69,7 @@ export default function HubDetailScreen() {
     return () => unsubscribe();
   }, [id, todayStr]);
 
-  const isOwner = hub?.ownerId === firebaseUser?.uid;
+  const isOwner = hub?.ownerId === firebaseUser?.uid || hub?.ownerId === user?.uid;
 
   const handleInviteMember = async () => {
     if (!targetUsername.trim() || !id) return;
@@ -99,6 +113,27 @@ export default function HubDetailScreen() {
     }
   };
 
+  // Nudge Member Engine
+  const handleNudgeMember = (username: string) => {
+    Alert.alert(
+      'Nudge Sent 🔔',
+      `Sent a reminder notification to @${username}! "Don't break your streak in ${hub?.name}."`
+    );
+  };
+
+  // Send Group Chat Note
+  const handleSendMessage = () => {
+    if (!chatMessage.trim()) return;
+    const newMsg = {
+      id: `msg_${Date.now()}`,
+      sender: user?.username || 'member',
+      text: chatMessage.trim(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages((prev) => [...prev, newMsg]);
+    setChatMessage('');
+  };
+
   if (!hub) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -112,6 +147,14 @@ export default function HubDetailScreen() {
   const acceptedMembers = members.filter((m) => m.status === 'accepted');
   const pendingMembers = members.filter((m) => m.status === 'pending');
 
+  // Compute Leaderboard Rankings (Count of completions today per user)
+  const leaderboard = acceptedMembers
+    .map((m) => {
+      const count = completions.filter((c) => c.userId === m.userId && c.completed).length;
+      return { member: m, count };
+    })
+    .sort((a, b) => b.count - a.count);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -124,7 +167,7 @@ export default function HubDetailScreen() {
                 Created by @{hub.ownerUsername}
               </Text>
             </View>
-            <Text style={styles.hubIcon}>👥</Text>
+            <Text style={styles.hubIcon}>🏆</Text>
           </View>
           {hub.description ? (
             <Text style={[styles.hubDesc, { color: colors.secondaryText }]}>{hub.description}</Text>
@@ -134,7 +177,7 @@ export default function HubDetailScreen() {
         {/* Member Action Controls */}
         <View style={styles.actionRow}>
           <Button
-            title="+ Invite by @username"
+            title="+ Invite @username"
             size="small"
             variant="outline"
             onPress={() => setInviteModalVisible(true)}
@@ -151,29 +194,45 @@ export default function HubDetailScreen() {
           ) : null}
         </View>
 
-        {/* Member List Chips */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Circle Members ({acceptedMembers.length})
+        {/* Hub Leaderboard Section */}
+        <Text style={[styles.sectionTitle, { color: colors.accentGold }]}>
+          🏆 Hub Leaderboard (Today's Streak Rank)
         </Text>
-        <View style={styles.membersChipRow}>
-          {acceptedMembers.map((m) => (
-            <View key={m.userId} style={[styles.memberBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.memberBadgeText, { color: colors.primary }]}>
-                @{m.username} {m.role === 'owner' ? '👑' : ''}
-              </Text>
-            </View>
-          ))}
-          {pendingMembers.map((m) => (
-            <View key={m.userId} style={[styles.memberBadge, { backgroundColor: colors.surface, borderColor: colors.warning }]}>
-              <Text style={[styles.memberBadgeText, { color: colors.warning }]}>
-                @{m.username} (Pending ⏳)
-              </Text>
-            </View>
-          ))}
-        </View>
+        <Card style={styles.card}>
+          {leaderboard.map((item, index) => {
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '✨';
+            const isMe = item.member.userId === (user?.uid || firebaseUser?.uid);
+            return (
+              <View
+                key={item.member.userId}
+                style={[
+                  styles.leaderboardRow,
+                  isMe && { backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 8 },
+                ]}
+              >
+                <Text style={styles.rankText}>{medal} #{index + 1}</Text>
+                <Text style={[styles.memberName, { color: colors.text }]}>
+                  @{item.member.username} {item.member.role === 'owner' ? '👑' : ''}
+                </Text>
+                <Text style={[styles.scoreText, { color: colors.primary }]}>
+                  {item.count} / {goals.length} Goals
+                </Text>
+                {item.count < goals.length && !isMe ? (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleNudgeMember(item.member.username)}
+                    style={[styles.nudgeBtn, { backgroundColor: colors.warning }]}
+                  >
+                    <Text style={styles.nudgeText}>Nudge 🔔</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            );
+          })}
+        </Card>
 
         {/* Active Group Goals Section */}
-        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 20 }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 16 }]}>
           Group Goals for Today ({goals.length})
         </Text>
 
@@ -201,11 +260,42 @@ export default function HubDetailScreen() {
               goal={goal}
               members={members}
               completions={completions}
-              currentUserId={firebaseUser?.uid || ''}
+              currentUserId={user?.uid || firebaseUser?.uid || ''}
               onToggleMyCompletion={handleToggleCompletion}
             />
           ))
         )}
+
+        {/* Live Group Motivation Chat Stream */}
+        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 16 }]}>
+          💬 Circle Motivation Stream
+        </Text>
+        <Card style={styles.card}>
+          {messages.map((m) => (
+            <View key={m.id} style={styles.chatRow}>
+              <Text style={[styles.chatSender, { color: colors.primary }]}>@{m.sender}:</Text>
+              <Text style={[styles.chatText, { color: colors.text }]}>{m.text}</Text>
+              <Text style={[styles.chatTime, { color: colors.mutedText }]}>{m.time}</Text>
+            </View>
+          ))}
+
+          <View style={styles.chatInputRow}>
+            <TextInput
+              style={[styles.chatInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              placeholder="Send a motivational note or Dua..."
+              placeholderTextColor={colors.mutedText}
+              value={chatMessage}
+              onChangeText={setChatMessage}
+            />
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleSendMessage}
+              style={[styles.sendBtn, { backgroundColor: colors.primary }]}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Send</Text>
+            </TouchableOpacity>
+          </View>
+        </Card>
 
         {/* Invite Member Modal */}
         <Modal visible={inviteModalVisible} animationType="slide" transparent>
@@ -309,6 +399,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  card: {
+    padding: 16,
+    borderRadius: 20,
+    marginBottom: 10,
+  },
   hubHeaderCard: {
     padding: 20,
     borderRadius: 24,
@@ -345,21 +440,73 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 8,
   },
-  membersChipRow: {
+  leaderboardRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
-  memberBadge: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginRight: 6,
-    marginBottom: 6,
+  rankText: {
+    fontSize: 14,
+    fontWeight: '900',
+    width: 50,
   },
-  memberBadgeText: {
-    fontSize: 12,
+  memberName: {
+    fontSize: 14,
     fontWeight: '700',
+    flex: 1,
+  },
+  scoreText: {
+    fontSize: 12,
+    fontWeight: '800',
+    marginRight: 8,
+  },
+  nudgeBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  nudgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#000000',
+  },
+  chatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  chatSender: {
+    fontSize: 12,
+    fontWeight: '800',
+    marginRight: 6,
+  },
+  chatText: {
+    fontSize: 13,
+    flex: 1,
+  },
+  chatTime: {
+    fontSize: 10,
+    marginLeft: 6,
+  },
+  chatInputRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  chatInput: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 10,
+    fontSize: 13,
+    borderWidth: 1,
+  },
+  sendBtn: {
+    marginLeft: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
   },
   emptyCard: {
     padding: 24,

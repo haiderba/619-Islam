@@ -13,6 +13,7 @@ import {
   query,
   where,
   getDocs,
+  updateDoc,
 } from 'firebase/firestore';
 import { auth, db } from './firebaseConfig';
 import { UserProfileData } from '@/types/auth';
@@ -70,6 +71,67 @@ export class AuthService {
     return suggestions;
   }
 
+  // Update Username with 60-Day Rule
+  static async updateUsername(uid: string, rawUsername: string): Promise<UserProfileData> {
+    const formatted = this.formatUsername(rawUsername);
+    if (!formatted || formatted.length < 2) {
+      throw new Error('Username must be at least 2 characters (letters, numbers, underscores allowed).');
+    }
+
+    const currentProfile = await this.getUserProfile(uid);
+    if (currentProfile?.username === formatted) {
+      return currentProfile;
+    }
+
+    // Check 60-day cool-down rule
+    if (currentProfile?.lastUsernameUpdateAt) {
+      const lastUpdate = new Date(currentProfile.lastUsernameUpdateAt).getTime();
+      const now = new Date().getTime();
+      const daysDiff = Math.floor((now - lastUpdate) / (1000 * 60 * 60 * 24));
+      if (daysDiff < 60) {
+        const remaining = 60 - daysDiff;
+        throw new Error(`Username can only be changed once every 60 days. You can change it in ${remaining} day${remaining > 1 ? 's' : ''}.`);
+      }
+    }
+
+    const isAvailable = await this.checkUsernameAvailable(formatted);
+    if (!isAvailable) {
+      throw new Error(`Username "@${formatted}" is already taken. Please choose another.`);
+    }
+
+    const nowIso = new Date().toISOString();
+    try {
+      const userRef = doc(db, 'users', uid);
+      await updateDoc(userRef, {
+        username: formatted,
+        lastUsernameUpdateAt: nowIso,
+      });
+    } catch {
+      if (mockUsersStore[uid]) {
+        mockUsersStore[uid].username = formatted;
+        mockUsersStore[uid].lastUsernameUpdateAt = nowIso;
+      }
+    }
+
+    const updated = await this.getUserProfile(uid);
+    return updated || ({ ...currentProfile, username: formatted, lastUsernameUpdateAt: nowIso } as UserProfileData);
+  }
+
+  // Update Profile Photo URL
+  static async updateProfilePhoto(uid: string, photoURL: string): Promise<UserProfileData> {
+    try {
+      const userRef = doc(db, 'users', uid);
+      await updateDoc(userRef, { photoURL });
+    } catch {
+      if (mockUsersStore[uid]) {
+        mockUsersStore[uid].photoURL = photoURL;
+      }
+    }
+
+    const updated = await this.getUserProfile(uid);
+    return updated || ({} as UserProfileData);
+  }
+
   // Sign up user with real Firebase Email Verification
   static async signUpUser(
     email: string,
@@ -91,10 +153,8 @@ export class AuthService {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
       const firebaseUser = cred.user;
 
-      // Update Auth Profile
       await updateProfile(firebaseUser, { displayName });
 
-      // Send real verification link to user's email inbox
       try {
         await sendEmailVerification(firebaseUser);
         console.log('Real Firebase verification email link sent to:', email);

@@ -5,6 +5,7 @@ export interface UserProfileData {
   displayName: string;
   emailVerified: boolean;
   photoURL?: string;
+  lastUsernameUpdateAt?: string;
   createdAt: string;
 }
 

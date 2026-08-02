@@ -8,25 +8,85 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Image,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/colors';
+import * as ImagePicker from 'expo-image-picker';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
 import { StorageService } from '@/services/storageService';
 import { NotificationService } from '@/services/notificationService';
+import { AuthService } from '@/services/authService';
 import { AppLanguage, AppTheme } from '@/types/user';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { profile, settings, saveSettings, saveProfile, refreshProfile } = useUserProfile();
   const { themeMode, setThemeMode, colors } = useTheme();
+  const { user, signOut, refreshProfile: refreshAuthProfile } = useAuth();
 
   const [sound, setSound] = useState(settings.soundEnabled);
   const [vibration, setVibration] = useState(settings.vibrationEnabled);
   const [notifications, setNotifications] = useState(settings.notificationsEnabled);
+
+  // Username Update Modal
+  const [usernameModalVisible, setUsernameModalVisible] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [updatingUsername, setUpdatingUsername] = useState(false);
+
+  // Pick Profile Photo
+  const handlePickPhoto = async () => {
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in to update your profile photo.');
+      return;
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Camera roll permissions are required to upload a profile photo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0].uri) {
+      const photoUri = result.assets[0].uri;
+      try {
+        await AuthService.updateProfilePhoto(user.uid, photoUri);
+        await refreshAuthProfile();
+        Alert.alert('Photo Updated 🎉', 'Your profile picture has been updated!');
+      } catch (e: any) {
+        Alert.alert('Error', e.message || 'Could not update photo.');
+      }
+    }
+  };
+
+  // Update Username (60-day rule)
+  const handleSaveUsername = async () => {
+    if (!user || !newUsername.trim()) return;
+
+    setUpdatingUsername(true);
+    try {
+      await AuthService.updateUsername(user.uid, newUsername);
+      await refreshAuthProfile();
+      setUsernameModalVisible(false);
+      Alert.alert('Username Updated 🎉', `Your new username is @${newUsername.trim().toLowerCase()}`);
+    } catch (e: any) {
+      Alert.alert('Username Change Note', e.message || 'Could not update username.');
+    } finally {
+      setUpdatingUsername(false);
+    }
+  };
 
   const toggleNotifications = async (val: boolean) => {
     setNotifications(val);
@@ -66,6 +126,20 @@ export default function SettingsScreen() {
     setThemeMode(mode);
   };
 
+  const handleSignOut = async () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await signOut();
+          router.replace('/(auth)/login');
+        },
+      },
+    ]);
+  };
+
   const handleBackup = async () => {
     try {
       const dataStr = await StorageService.exportAllData();
@@ -101,10 +175,45 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* User Card */}
+        {/* User Profile Card with Photo Upload & Edit Username */}
         <Card variant="goldGlow" style={styles.userCard}>
-          <Text style={[styles.userName, { color: colors.text }]}>{profile?.name || 'User'}</Text>
-          <Text style={[styles.userSub, { color: colors.primary }]}>619 Discipline Member</Text>
+          <View style={styles.profileHeaderRow}>
+            <TouchableOpacity activeOpacity={0.8} onPress={handlePickPhoto} style={styles.avatarContainer}>
+              {user?.photoURL ? (
+                <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+              ) : (
+                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.avatarText}>
+                    {user?.displayName ? user.displayName.charAt(0).toUpperCase() : '6'}
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.cameraBadge, { backgroundColor: colors.accentGold }]}>
+                <Text style={{ fontSize: 10 }}>📷</Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={[styles.userName, { color: colors.text }]}>
+                {user?.displayName || profile?.name || 'Discipline Member'}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setNewUsername(user?.username || '');
+                  setUsernameModalVisible(true);
+                }}
+                style={styles.handleChip}
+              >
+                <Text style={[styles.userHandle, { color: colors.primary }]}>
+                  @{user?.username || 'set_username'} ✏️
+                </Text>
+              </TouchableOpacity>
+              <Text style={[styles.userSub, { color: colors.secondaryText }]}>
+                {user?.email || 'Logged in'}
+              </Text>
+            </View>
+          </View>
         </Card>
 
         {/* Theme Selection */}
@@ -163,7 +272,7 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        {/* Push Notifications & Alerts Settings */}
+        {/* Notifications Settings */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Notification Alerts & Reminders</Text>
         <Card style={styles.card}>
           <View style={styles.switchRow}>
@@ -197,18 +306,35 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        {/* Backup & Data */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Data & Security</Text>
+        {/* Account & Data Management */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Account & Data Management</Text>
         <Card style={styles.card}>
+          {user ? (
+            <Button
+              title="Log Out of Account"
+              variant="danger"
+              onPress={handleSignOut}
+              style={{ marginBottom: 12 }}
+            />
+          ) : (
+            <Button
+              title="Sign In / Register Account"
+              variant="primary"
+              onPress={() => router.push('/(auth)/login')}
+              style={{ marginBottom: 12 }}
+            />
+          )}
+
           <Button
             title="Backup Data"
             variant="outline"
             onPress={handleBackup}
-            style={{ marginBottom: 10 }}
+            style={{ marginBottom: 12 }}
           />
+
           <Button
-            title="Reset All Data"
-            variant="danger"
+            title="Reset All Local Data"
+            variant="secondary"
             onPress={handleResetApp}
           />
         </Card>
@@ -216,9 +342,47 @@ export default function SettingsScreen() {
         {/* App Info */}
         <View style={styles.footerInfo}>
           <Text style={[styles.appName, { color: colors.primary }]}>619 — Discipline Daily</Text>
-          <Text style={[styles.appVersion, { color: colors.secondaryText }]}>Version 1.2.0 (Notifications Enabled)</Text>
-          <Text style={[styles.appTagline, { color: colors.mutedText }]}>Royal Emerald & Gold Theme • Firebase Auth & Hubs</Text>
+          <Text style={[styles.appVersion, { color: colors.secondaryText }]}>Version 1.3.0</Text>
+          <Text style={[styles.appTagline, { color: colors.mutedText }]}>Royal Emerald & Gold Theme • Habit Hub Social Suite</Text>
         </View>
+
+        {/* Edit Username Modal */}
+        <Modal visible={usernameModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Update Username</Text>
+              <Text style={[styles.modalSub, { color: colors.secondaryText }]}>
+                Usernames can only be changed once every 60 days.
+              </Text>
+
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>New Username *</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                placeholder="e.g. usman_haider"
+                autoCapitalize="none"
+                placeholderTextColor={colors.mutedText}
+                value={newUsername}
+                onChangeText={setNewUsername}
+              />
+
+              <View style={styles.modalButtonRow}>
+                <Button
+                  title="Cancel"
+                  variant="secondary"
+                  onPress={() => setUsernameModalVisible(false)}
+                  style={{ flex: 1, marginRight: 8 }}
+                />
+                <Button
+                  title="Update Username"
+                  variant="primary"
+                  loading={updatingUsername}
+                  onPress={handleSaveUsername}
+                  style={{ flex: 2, marginLeft: 8 }}
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -232,17 +396,58 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   userCard: {
-    padding: 20,
+    padding: 18,
     marginBottom: 16,
   },
+  profileHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    position: 'relative',
+  },
+  avatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  avatarPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   userName: {
-    fontSize: 22,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  handleChip: {
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  userHandle: {
+    fontSize: 13,
     fontWeight: '800',
   },
   userSub: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 4,
+    fontSize: 12,
+    marginTop: 2,
   },
   sectionTitle: {
     fontSize: 16,
@@ -297,5 +502,41 @@ const styles = StyleSheet.create({
   appTagline: {
     fontSize: 11,
     marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  modalSub: {
+    fontSize: 13,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  modalInput: {
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    borderWidth: 1,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    marginTop: 24,
   },
 });

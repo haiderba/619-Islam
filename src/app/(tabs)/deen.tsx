@@ -12,8 +12,9 @@ import { PrayerTimesCard } from '@/components/islamic/PrayerTimesCard';
 import { QiblaCompass } from '@/components/islamic/QiblaCompass';
 import { TasbeehCounter } from '@/components/islamic/TasbeehCounter';
 import { AdhkarReader } from '@/components/islamic/AdhkarReader';
+import { QuranReader } from '@/components/islamic/QuranReader';
 
-type DeenSection = 'Prayer' | 'Qibla' | 'Tasbeeh' | 'Adhkar';
+type DeenSection = 'Prayer' | 'Qibla' | 'Tasbeeh' | 'Adhkar' | 'Quran';
 
 export default function DeenScreen() {
   const { colors } = useTheme();
@@ -24,7 +25,7 @@ export default function DeenScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* iOS Native Segmented Control */}
         <View style={[styles.segmentedContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {(['Prayer', 'Qibla', 'Tasbeeh', 'Adhkar'] as DeenSection[]).map((sec) => {
+          {(['Prayer', 'Qibla', 'Tasbeeh', 'Adhkar', 'Quran'] as DeenSection[]).map((sec) => {
             const isSelected = activeSection === sec;
             return (
               <TouchableOpacity
@@ -57,7 +58,9 @@ export default function DeenScreen() {
                     ? '🧭 Qibla'
                     : sec === 'Tasbeeh'
                     ? '📿 Tasbeeh'
-                    : '📜 Adhkar'}
+                    : sec === 'Adhkar'
+                    ? '📜 Adhkar'
+                    : '📖 Quran'}
                 </Text>
               </TouchableOpacity>
             );
@@ -69,6 +72,7 @@ export default function DeenScreen() {
         {activeSection === 'Qibla' && <QiblaCompass />}
         {activeSection === 'Tasbeeh' && <TasbeehCounter />}
         {activeSection === 'Adhkar' && <AdhkarReader />}
+        {activeSection === 'Quran' && <QuranReader />}
       </ScrollView>
     </SafeAreaView>
   );
@@ -98,7 +102,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   segmentText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
 });
