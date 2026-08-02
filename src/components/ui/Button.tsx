@@ -1,11 +1,11 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { Colors } from '@/constants/colors';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  variant?: 'primary' | 'cyan' | 'secondary' | 'outline' | 'danger';
   size?: 'small' | 'medium' | 'large';
   loading?: boolean;
   disabled?: boolean;
@@ -28,13 +28,14 @@ export const Button: React.FC<ButtonProps> = ({
   const getContainerStyle = (): ViewStyle => {
     let base: ViewStyle = {};
     if (variant === 'primary') base = { backgroundColor: Colors.primary };
-    if (variant === 'secondary') base = { backgroundColor: Colors.surface };
+    if (variant === 'cyan') base = { backgroundColor: Colors.accentCyan };
+    if (variant === 'secondary') base = { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border };
     if (variant === 'outline') base = { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.primary };
     if (variant === 'danger') base = { backgroundColor: Colors.danger };
 
     if (size === 'small') base = { ...base, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10 };
     if (size === 'medium') base = { ...base, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 };
-    if (size === 'large') base = { ...base, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 14 };
+    if (size === 'large') base = { ...base, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16 };
 
     if (disabled) base.opacity = 0.5;
 
@@ -42,10 +43,11 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const getTextStyle = (): TextStyle => {
-    let base: TextStyle = { fontWeight: '600', fontSize: 15, textAlign: 'center' };
-    if (variant === 'primary') base.color = '#000000';
+    let base: TextStyle = { fontWeight: '700', fontSize: 15, textAlign: 'center' };
+    if (variant === 'primary') base.color = '#FFFFFF';
+    if (variant === 'cyan') base.color = '#0D1117';
     if (variant === 'secondary') base.color = Colors.text;
-    if (variant === 'outline') base.color = Colors.primary;
+    if (variant === 'outline') base.color = Colors.primaryLight;
     if (variant === 'danger') base.color = '#FFFFFF';
 
     if (size === 'small') base.fontSize = 13;
@@ -62,7 +64,7 @@ export const Button: React.FC<ButtonProps> = ({
       style={[styles.button, getContainerStyle(), style]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#000' : Colors.primary} />
+        <ActivityIndicator color={variant === 'cyan' ? '#0D1117' : '#FFFFFF'} />
       ) : (
         <>
           {icon}

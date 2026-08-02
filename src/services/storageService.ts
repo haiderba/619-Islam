@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { Goal, TaskCompletionRecord } from '../types/goal';
 import { UserProfile, AppSettings } from '../types/user';
 import { StreakData } from '../types/progress';
+import { TasbeehItem } from '../types/tasbeeh';
 import { getTodayDateString } from '../utils/dateUtils';
 
 const KEYS = {
@@ -11,6 +12,7 @@ const KEYS = {
   TASK_COMPLETIONS: '@619_task_completions',
   STREAK_DATA: '@619_streak_data',
   APP_SETTINGS: '@619_app_settings',
+  CUSTOM_TASBEEHS: '@619_custom_tasbeehs',
 };
 
 // In-Memory fallback store for environments where Native Storage is null or restricted
@@ -37,7 +39,7 @@ async function safeSetItem(key: string, value: string): Promise<void> {
     }
     await AsyncStorage.setItem(key, value);
   } catch (e) {
-    // In-memory store already updated
+    // In-memory store updated
   }
 }
 
@@ -138,6 +140,26 @@ export class StorageService {
     return all;
   }
 
+  // Custom Tasbeehs
+  static async getCustomTasbeehs(): Promise<TasbeehItem[]> {
+    const data = await safeGetItem(KEYS.CUSTOM_TASBEEHS);
+    return data ? JSON.parse(data) : [];
+  }
+
+  static async addCustomTasbeeh(tasbeeh: TasbeehItem): Promise<TasbeehItem[]> {
+    const list = await this.getCustomTasbeehs();
+    const updated = [tasbeeh, ...list];
+    await safeSetItem(KEYS.CUSTOM_TASBEEHS, JSON.stringify(updated));
+    return updated;
+  }
+
+  static async deleteCustomTasbeeh(id: string): Promise<TasbeehItem[]> {
+    const list = await this.getCustomTasbeehs();
+    const updated = list.filter((t) => t.id !== id);
+    await safeSetItem(KEYS.CUSTOM_TASBEEHS, JSON.stringify(updated));
+    return updated;
+  }
+
   // Streak
   static async getStreakData(): Promise<StreakData> {
     const data = await safeGetItem(KEYS.STREAK_DATA);
@@ -165,6 +187,7 @@ export class StorageService {
     const completions = await this.getCompletions();
     const streak = await this.getStreakData();
     const settings = await this.getSettings();
+    const tasbeehs = await this.getCustomTasbeehs();
 
     return JSON.stringify({
       version: '1.0',
@@ -174,6 +197,7 @@ export class StorageService {
       completions,
       streak,
       settings,
+      tasbeehs,
     });
   }
 
@@ -185,6 +209,7 @@ export class StorageService {
       if (data.completions) await safeSetItem(KEYS.TASK_COMPLETIONS, JSON.stringify(data.completions));
       if (data.streak) await this.saveStreakData(data.streak);
       if (data.settings) await this.saveSettings(data.settings);
+      if (data.tasbeehs) await safeSetItem(KEYS.CUSTOM_TASBEEHS, JSON.stringify(data.tasbeehs));
       return true;
     } catch {
       return false;

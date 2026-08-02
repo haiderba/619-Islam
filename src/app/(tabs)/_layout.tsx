@@ -7,13 +7,13 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.primary,
+        tabBarActiveTintColor: Colors.primaryLight,
         tabBarInactiveTintColor: Colors.secondaryText,
         tabBarStyle: {
           backgroundColor: Colors.card,
-          borderTopColor: Colors.border,
+          borderTopColor: Colors.cardBorder,
           borderTopWidth: 1,
-          height: 60,
+          height: 62,
           paddingBottom: 8,
           paddingTop: 8,
         },
@@ -34,6 +34,14 @@ export default function TabLayout() {
           title: 'Home',
           headerShown: false,
           tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>🏠</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="deen"
+        options={{
+          title: 'Deen Hub',
+          headerTitle: 'Deen Companion',
+          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 20, color }}>🕌</Text>,
         }}
       />
       <Tabs.Screen
