@@ -7,7 +7,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { PrayerTimesCard } from '@/components/islamic/PrayerTimesCard';
 import { QiblaCompass } from '@/components/islamic/QiblaCompass';
 import { TasbeehCounter } from '@/components/islamic/TasbeehCounter';
@@ -16,13 +16,14 @@ import { AdhkarReader } from '@/components/islamic/AdhkarReader';
 type DeenSection = 'Prayer' | 'Qibla' | 'Tasbeeh' | 'Adhkar';
 
 export default function DeenScreen() {
+  const { colors } = useTheme();
   const [activeSection, setActiveSection] = useState<DeenSection>('Prayer');
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Top Segment Controls */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.segmentScroll}>
+        {/* iOS Native Segmented Control */}
+        <View style={[styles.segmentedContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {(['Prayer', 'Qibla', 'Tasbeeh', 'Adhkar'] as DeenSection[]).map((sec) => {
             const isSelected = activeSection === sec;
             return (
@@ -30,19 +31,28 @@ export default function DeenScreen() {
                 key={sec}
                 activeOpacity={0.8}
                 style={[
-                  styles.segmentChip,
-                  isSelected && styles.segmentChipSelected,
+                  styles.segmentItem,
+                  isSelected && {
+                    backgroundColor: colors.card,
+                    borderColor: colors.cardBorder,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  },
                 ]}
                 onPress={() => setActiveSection(sec)}
               >
                 <Text
                   style={[
                     styles.segmentText,
-                    isSelected && styles.segmentTextSelected,
+                    { color: colors.secondaryText },
+                    isSelected && { color: colors.primary, fontWeight: '800' },
                   ]}
                 >
                   {sec === 'Prayer'
-                    ? '🕌 Prayer Times'
+                    ? '🕌 Prayer'
                     : sec === 'Qibla'
                     ? '🧭 Qibla'
                     : sec === 'Tasbeeh'
@@ -52,7 +62,7 @@ export default function DeenScreen() {
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
 
         {/* Dynamic Section Render */}
         {activeSection === 'Prayer' && <PrayerTimesCard />}
@@ -67,34 +77,28 @@ export default function DeenScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   scrollContent: {
     padding: 16,
   },
-  segmentScroll: {
-    marginBottom: 12,
-  },
-  segmentChip: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: Colors.card,
-    marginRight: 8,
+  segmentedContainer: {
+    flexDirection: 'row',
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
-  segmentChipSelected: {
-    backgroundColor: 'rgba(124, 58, 237, 0.25)',
-    borderColor: Colors.primary,
+  segmentItem: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   segmentText: {
-    color: Colors.secondaryText,
+    fontSize: 12,
     fontWeight: '600',
-    fontSize: 13,
-  },
-  segmentTextSelected: {
-    color: Colors.primaryLight,
-    fontWeight: '800',
   },
 });

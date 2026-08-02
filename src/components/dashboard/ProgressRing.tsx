@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface ProgressRingProps {
   percentage: number; // 0 to 100
@@ -24,6 +24,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
   centerContent,
   progressColor,
 }) => {
+  const { colors } = useTheme();
   const center = size / 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -38,7 +39,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           cx={center}
           cy={center}
           r={radius}
-          stroke={Colors.surface}
+          stroke={colors.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -47,7 +48,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           cx={center}
           cy={center}
           r={radius}
-          stroke={progressColor || Colors.primary}
+          stroke={progressColor || colors.primary}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -63,9 +64,11 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
         ) : (
           <>
             {!hidePercentage && (
-              <Text style={styles.percentageText}>{Math.round(validPercentage)}%</Text>
+              <Text style={[styles.percentageText, { color: colors.text }]}>
+                {Math.round(validPercentage)}%
+              </Text>
             )}
-            {subLabel && <Text style={styles.subText}>{subLabel}</Text>}
+            {subLabel && <Text style={[styles.subText, { color: colors.secondaryText }]}>{subLabel}</Text>}
           </>
         )}
       </View>
@@ -82,16 +85,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   percentageText: {
-    color: Colors.text,
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   subText: {
-    color: Colors.secondaryText,
     fontSize: 11,
     marginTop: 2,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

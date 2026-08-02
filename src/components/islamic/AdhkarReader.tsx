@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card } from '@/components/ui/Card';
-import { Colors } from '@/constants/colors';
-import { ADHKAR_DATA, AdhkarItem } from '@/constants/adhkarData';
+import { useTheme } from '@/context/ThemeContext';
+import { ADHKAR_DATA } from '@/constants/adhkarData';
 
 type CategoryFilter = 'Morning' | 'Evening' | 'PostPrayer';
 
 export const AdhkarReader: React.FC = () => {
+  const { colors } = useTheme();
   const [selectedCat, setSelectedCat] = useState<CategoryFilter>('Morning');
   const [completedCounts, setCompletedCounts] = useState<Record<string, number>>({});
 
@@ -23,33 +24,38 @@ export const AdhkarReader: React.FC = () => {
   };
 
   return (
-    <Card variant="glass" style={styles.container}>
-      {/* Category Tabs */}
+    <Card style={styles.container}>
+      {/* Category Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>📜 Daily Adhkar</Text>
+        <Text style={[styles.title, { color: colors.text }]}>📜 Daily Adhkar</Text>
       </View>
 
       <View style={styles.tabRow}>
-        {(['Morning', 'Evening', 'PostPrayer'] as CategoryFilter[]).map((cat) => (
-          <TouchableOpacity
-            key={cat}
-            activeOpacity={0.8}
-            style={[
-              styles.tab,
-              selectedCat === cat && styles.tabSelected,
-            ]}
-            onPress={() => setSelectedCat(cat)}
-          >
-            <Text
+        {(['Morning', 'Evening', 'PostPrayer'] as CategoryFilter[]).map((cat) => {
+          const isSelected = selectedCat === cat;
+          return (
+            <TouchableOpacity
+              key={cat}
+              activeOpacity={0.8}
               style={[
-                styles.tabText,
-                selectedCat === cat && styles.tabTextSelected,
+                styles.tab,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                isSelected && { backgroundColor: colors.greenGlow, borderColor: colors.primary },
               ]}
+              onPress={() => setSelectedCat(cat)}
             >
-              {cat === 'Morning' ? '🌅 Morning' : cat === 'Evening' ? '🌆 Evening' : '🕌 Post-Prayer'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: colors.secondaryText },
+                  isSelected && { color: colors.primaryLight, fontWeight: '800' },
+                ]}
+              >
+                {cat === 'Morning' ? '🌅 Morning' : cat === 'Evening' ? '🌆 Evening' : '🕌 Post-Prayer'}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Adhkar Cards List */}
@@ -58,33 +64,50 @@ export const AdhkarReader: React.FC = () => {
         const isDone = remaining === 0;
 
         return (
-          <Card key={item.id} style={[styles.adhkarCard, isDone && styles.doneCard]}>
+          <View
+            key={item.id}
+            style={[
+              styles.adhkarCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              isDone && { opacity: 0.6, borderColor: colors.success },
+            ]}
+          >
             {/* Arabic Text */}
-            <Text style={styles.arabicText}>{item.arabic}</Text>
+            <Text style={[styles.arabicText, { color: colors.accentGold }]}>{item.arabic}</Text>
 
             {/* Transliteration */}
             {item.transliteration ? (
-              <Text style={styles.transliterationText}>{item.transliteration}</Text>
+              <Text style={[styles.transliterationText, { color: colors.primaryLight }]}>{item.transliteration}</Text>
             ) : null}
 
             {/* Urdu Translation */}
-            <Text style={styles.urduText}>{item.urdu}</Text>
+            <Text style={[styles.urduText, { color: colors.text }]}>{item.urdu}</Text>
 
             {/* English Translation */}
-            <Text style={styles.englishText}>{item.english}</Text>
+            <Text style={[styles.englishText, { color: colors.secondaryText }]}>{item.english}</Text>
 
             {/* Counter Action Button */}
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => handleDecrement(item.id, item.count)}
               disabled={isDone}
-              style={[styles.countBtn, isDone && styles.doneBtn]}
+              style={[
+                styles.countBtn,
+                { backgroundColor: colors.greenGlow, borderColor: colors.primary },
+                isDone && { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderColor: colors.success },
+              ]}
             >
-              <Text style={[styles.countBtnText, isDone && styles.doneBtnText]}>
+              <Text
+                style={[
+                  styles.countBtnText,
+                  { color: colors.primaryLight },
+                  isDone && { color: colors.success, fontWeight: '800' },
+                ]}
+              >
                 {isDone ? 'Completed ✓' : `${remaining}x Remaining — Tap to Recite`}
               </Text>
             </TouchableOpacity>
-          </Card>
+          </View>
         );
       })}
     </Card>
@@ -93,16 +116,17 @@ export const AdhkarReader: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 12,
-    padding: 16,
+    marginVertical: 10,
+    padding: 20,
+    borderRadius: 24,
   },
   header: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   title: {
-    color: Colors.text,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
+    letterSpacing: -0.3,
   },
   tabRow: {
     flexDirection: 'row',
@@ -110,85 +134,56 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
     alignItems: 'center',
     marginRight: 6,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tabSelected: {
-    backgroundColor: 'rgba(6, 182, 212, 0.2)',
-    borderColor: Colors.accentCyan,
   },
   tabText: {
-    color: Colors.secondaryText,
     fontSize: 12,
     fontWeight: '600',
-  },
-  tabTextSelected: {
-    color: Colors.accentCyan,
-    fontWeight: '800',
   },
   adhkarCard: {
     marginVertical: 6,
     padding: 16,
-    backgroundColor: Colors.surface,
-  },
-  doneCard: {
-    opacity: 0.6,
-    borderColor: Colors.success,
+    borderRadius: 18,
+    borderWidth: 1,
   },
   arabicText: {
-    color: Colors.accentGold,
-    fontSize: 20,
-    lineHeight: 36,
+    fontSize: 22,
+    lineHeight: 38,
     textAlign: 'center',
     fontWeight: '700',
     marginBottom: 8,
   },
   transliterationText: {
-    color: Colors.primaryLight,
     fontSize: 13,
     fontStyle: 'italic',
     textAlign: 'center',
     marginBottom: 6,
   },
   urduText: {
-    color: '#E2E8F0',
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 24,
     textAlign: 'center',
     fontWeight: '600',
     marginBottom: 4,
   },
   englishText: {
-    color: Colors.secondaryText,
     fontSize: 13,
     lineHeight: 20,
     textAlign: 'center',
     marginBottom: 12,
   },
   countBtn: {
-    backgroundColor: 'rgba(124, 58, 237, 0.2)',
-    borderColor: Colors.primary,
     borderWidth: 1,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
   },
-  doneBtn: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-    borderColor: Colors.success,
-  },
   countBtnText: {
-    color: Colors.primaryLight,
     fontWeight: '700',
     fontSize: 13,
-  },
-  doneBtnText: {
-    color: Colors.success,
-    fontWeight: '800',
   },
 });

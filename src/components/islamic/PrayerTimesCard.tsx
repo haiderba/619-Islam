@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card } from '@/components/ui/Card';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { calculatePrayerTimes, PrayerTime } from '@/utils/prayerTimesUtils';
 import { getHijriDate } from '@/utils/hijriCalendarUtils';
 
 export const PrayerTimesCard: React.FC = () => {
+  const { colors } = useTheme();
   const [schedule, setSchedule] = useState<PrayerTime[]>([]);
   const [hijriDateStr, setHijriDateStr] = useState<string>('');
   const [nextPrayerName, setNextPrayerName] = useState<string>('Fajr');
@@ -20,32 +21,49 @@ export const PrayerTimesCard: React.FC = () => {
   }, []);
 
   return (
-    <Card variant="glass" style={styles.card}>
+    <Card style={styles.card}>
       {/* Header Row with Hijri Date */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.sectionHeaderTitle}>🕌 Prayer Times</Text>
-          <Text style={styles.hijriText}>{hijriDateStr}</Text>
+          <Text style={[styles.sectionHeaderTitle, { color: colors.text }]}>🕌 Prayer Timings</Text>
+          <Text style={[styles.hijriText, { color: colors.accentGold }]}>{hijriDateStr}</Text>
         </View>
-        <View style={styles.nextBadge}>
-          <Text style={styles.nextBadgeText}>Next: {nextPrayerName}</Text>
+        <View style={[styles.nextBadge, { backgroundColor: colors.greenGlow, borderColor: colors.primary }]}>
+          <Text style={[styles.nextBadgeText, { color: colors.primary }]}>NEXT: {nextPrayerName.toUpperCase()}</Text>
         </View>
       </View>
 
-      {/* 5 Daily Prayers Grid */}
+      {/* 6 Prayer Times Grid */}
       <View style={styles.grid}>
         {schedule.map((item) => (
           <View
             key={item.name}
             style={[
               styles.prayerBox,
-              item.isNext && styles.nextPrayerBox,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              item.isNext && {
+                backgroundColor: colors.greenGlow,
+                borderColor: colors.primary,
+                borderWidth: 2,
+              },
             ]}
           >
-            <Text style={[styles.prayerName, item.isNext && styles.nextPrayerText]}>
+            <Text
+              style={[
+                styles.prayerName,
+                { color: colors.secondaryText },
+                item.isNext && { color: colors.primaryLight, fontWeight: '800' },
+              ]}
+            >
               {item.name}
             </Text>
-            <Text style={[styles.prayerTime, item.isNext && styles.nextPrayerTime]}>
+            <Text
+              style={[
+                styles.prayerTime,
+                { color: colors.text },
+                item.isNext && { color: colors.primary, fontWeight: '900', fontSize: 16 },
+              ]}
+            >
               {item.time}
             </Text>
           </View>
@@ -57,39 +75,36 @@ export const PrayerTimesCard: React.FC = () => {
 
 const styles = StyleSheet.create({
   card: {
-    marginVertical: 12,
-    padding: 18,
+    marginVertical: 10,
+    padding: 20,
+    borderRadius: 24,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 18,
   },
   sectionHeaderTitle: {
-    color: Colors.text,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
+    letterSpacing: -0.3,
   },
   hijriText: {
-    color: Colors.accentCyan,
     fontSize: 13,
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: 3,
   },
   nextBadge: {
-    backgroundColor: 'rgba(6, 182, 212, 0.2)',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: Colors.accentCyan,
   },
   nextBadgeText: {
-    color: Colors.accentCyan,
     fontSize: 11,
     fontWeight: '800',
-    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   grid: {
     flexDirection: 'row',
@@ -98,36 +113,20 @@ const styles = StyleSheet.create({
   },
   prayerBox: {
     width: '31%',
-    backgroundColor: Colors.surface,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 8,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  nextPrayerBox: {
-    backgroundColor: 'rgba(124, 58, 237, 0.25)',
-    borderColor: Colors.primary,
   },
   prayerName: {
-    color: Colors.secondaryText,
     fontSize: 12,
     fontWeight: '600',
   },
-  nextPrayerText: {
-    color: Colors.primaryLight,
-    fontWeight: '800',
-  },
   prayerTime: {
-    color: Colors.text,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     marginTop: 4,
-  },
-  nextPrayerTime: {
-    color: '#FFFFFF',
-    fontWeight: '900',
   },
 });

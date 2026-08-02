@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { QuranQuote } from '@/constants/versesAndHadiths';
 
 interface DailyVerseCardProps {
@@ -18,6 +18,7 @@ interface DailyVerseCardProps {
 }
 
 export const DailyVerseCard: React.FC<DailyVerseCardProps> = ({ quote }) => {
+  const { colors } = useTheme();
   const cardRef = useRef<View>(null);
   const [exporting, setExporting] = useState(false);
 
@@ -65,36 +66,44 @@ export const DailyVerseCard: React.FC<DailyVerseCardProps> = ({ quote }) => {
       <View
         ref={cardRef}
         collapsable={false}
-        style={styles.cardContainer}
+        style={[
+          styles.cardContainer,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.cardBorder,
+          },
+        ]}
       >
         {/* Decorative Header */}
         <View style={styles.cardHeader}>
           <View style={styles.brandBadge}>
-            <Text style={styles.brandTitle}>619</Text>
-            <Text style={styles.brandSub}>DISCIPLINE DAILY</Text>
+            <Text style={[styles.brandTitle, { color: colors.primary }]}>619</Text>
+            <Text style={[styles.brandSub, { color: colors.secondaryText }]}>DISCIPLINE DAILY</Text>
           </View>
-          <Text style={styles.headerTag}>📖 DAILY QURAN QUOTE</Text>
+          <Text style={[styles.headerTag, { color: colors.accentGold, backgroundColor: colors.goldGlow }]}>
+            📖 DAILY QURAN QUOTE
+          </Text>
         </View>
 
         {/* Arabic Text */}
         <View style={styles.arabicContainer}>
-          <Text style={styles.arabicText}>{quote.arabic}</Text>
+          <Text style={[styles.arabicText, { color: colors.accentGold }]}>{quote.arabic}</Text>
         </View>
 
         {/* Urdu Translation */}
         <View style={styles.translationContainer}>
-          <Text style={styles.urduText}>{quote.urdu}</Text>
+          <Text style={[styles.urduText, { color: colors.text }]}>{quote.urdu}</Text>
         </View>
 
         {/* English Translation */}
         <View style={styles.translationContainer}>
-          <Text style={styles.englishText}>"{quote.english}"</Text>
+          <Text style={[styles.englishText, { color: colors.secondaryText }]}>"{quote.english}"</Text>
         </View>
 
         {/* Footer Surah Reference */}
         <View style={styles.cardFooter}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.surahText}>— {quote.surah}</Text>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <Text style={[styles.surahText, { color: colors.primary }]}>— {quote.surah}</Text>
         </View>
       </View>
 
@@ -103,10 +112,10 @@ export const DailyVerseCard: React.FC<DailyVerseCardProps> = ({ quote }) => {
         activeOpacity={0.8}
         onPress={handleExportPng}
         disabled={exporting}
-        style={styles.exportBtn}
+        style={[styles.exportBtn, { backgroundColor: colors.primary }]}
       >
         {exporting ? (
-          <ActivityIndicator color="#000000" size="small" />
+          <ActivityIndicator color="#FFFFFF" size="small" />
         ) : (
           <>
             <Text style={styles.exportIcon}>📸</Text>
@@ -123,16 +132,14 @@ const styles = StyleSheet.create({
     marginVertical: 14,
   },
   cardContainer: {
-    backgroundColor: '#141414',
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
-    borderWidth: 1.5,
-    borderColor: Colors.goldGlowBorder,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 6,
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 4,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -145,34 +152,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brandTitle: {
-    color: Colors.primary,
     fontWeight: '900',
     fontSize: 18,
     letterSpacing: 1.5,
     marginRight: 6,
   },
   brandSub: {
-    color: Colors.secondaryText,
     fontWeight: '700',
     fontSize: 9,
     letterSpacing: 1.5,
   },
   headerTag: {
-    color: Colors.primary,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
     paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
   },
   arabicContainer: {
     marginVertical: 12,
     alignItems: 'center',
   },
   arabicText: {
-    color: Colors.primaryLight,
     fontSize: 24,
     lineHeight: 44,
     fontWeight: '700',
@@ -183,14 +185,12 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
   urduText: {
-    color: '#E0E0E0',
     fontSize: 16,
     lineHeight: 26,
     textAlign: 'center',
     fontWeight: '600',
   },
   englishText: {
-    color: Colors.secondaryText,
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'center',
@@ -204,11 +204,9 @@ const styles = StyleSheet.create({
   dividerLine: {
     height: 1,
     width: 60,
-    backgroundColor: Colors.goldGlowBorder,
     marginBottom: 10,
   },
   surahText: {
-    color: Colors.primary,
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -217,23 +215,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 14,
+    borderRadius: 16,
     marginTop: 12,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   exportIcon: {
     fontSize: 16,
     marginRight: 8,
   },
   exportText: {
-    color: '#000000',
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontWeight: '800',
     fontSize: 14,
   },
 });

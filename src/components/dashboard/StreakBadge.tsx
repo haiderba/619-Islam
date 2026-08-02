@@ -1,16 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface StreakBadgeProps {
   streak: number;
 }
 
 export const StreakBadge: React.FC<StreakBadgeProps> = ({ streak }) => {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.badge}>
+    <View style={[styles.badge, { backgroundColor: colors.goldGlow, borderColor: colors.goldGlowBorder }]}>
       <Text style={styles.flameIcon}>🔥</Text>
-      <Text style={styles.streakText}>{streak} Day Streak</Text>
+      <Text style={[styles.streakText, { color: colors.accentGold }]}>{streak} Day Streak</Text>
     </View>
   );
 };
@@ -19,8 +21,6 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(212, 175, 55, 0.12)',
-    borderColor: Colors.goldGlowBorder,
     borderWidth: 1,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -31,8 +31,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   streakText: {
-    color: Colors.primary,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 13,
   },
 });

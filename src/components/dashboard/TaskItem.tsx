@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card } from '../ui/Card';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { Goal } from '../../types/goal';
 
 interface TaskItemProps {
@@ -11,18 +11,20 @@ interface TaskItemProps {
 }
 
 export const TaskItem: React.FC<TaskItemProps> = ({ goal, completed, onToggle }) => {
+  const { colors } = useTheme();
+
   const getCategoryColor = (cat: string) => {
     switch (cat) {
       case 'Islamic':
-        return Colors.primary;
+        return colors.accentGold;
       case 'Health':
-        return Colors.success;
+        return colors.primary;
       case 'Fitness':
-        return Colors.warning;
+        return colors.warning;
       case 'Learning':
-        return '#3B82F6';
+        return colors.accentCyan;
       default:
-        return Colors.secondaryText;
+        return colors.secondaryText;
     }
   };
 
@@ -36,18 +38,25 @@ export const TaskItem: React.FC<TaskItemProps> = ({ goal, completed, onToggle })
         <View
           style={[
             styles.checkbox,
-            completed && styles.checkedBox,
+            { borderColor: colors.secondaryText },
+            completed && { backgroundColor: colors.primary, borderColor: colors.primary },
           ]}
         >
           {completed && <Text style={styles.checkmark}>✓</Text>}
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={[styles.title, completed && styles.completedText]}>
+          <Text
+            style={[
+              styles.title,
+              { color: colors.text },
+              completed && { textDecorationLine: 'line-through', color: colors.secondaryText },
+            ]}
+          >
             {goal.title}
           </Text>
           {goal.description ? (
-            <Text style={styles.description} numberOfLines={1}>
+            <Text style={[styles.description, { color: colors.secondaryText }]} numberOfLines={1}>
               {goal.description}
             </Text>
           ) : null}
@@ -76,11 +85,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ goal, completed, onToggle })
 const styles = StyleSheet.create({
   card: {
     marginVertical: 6,
-    padding: 12,
+    padding: 14,
   },
   completedCard: {
     opacity: 0.6,
-    backgroundColor: Colors.surface,
   },
   container: {
     flexDirection: 'row',
@@ -89,36 +97,25 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 2,
-    borderColor: Colors.secondaryText,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  checkedBox: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
   checkmark: {
-    color: '#000000',
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontWeight: '900',
     fontSize: 14,
   },
   infoContainer: {
     flex: 1,
   },
   title: {
-    color: Colors.text,
     fontSize: 15,
-    fontWeight: '600',
-  },
-  completedText: {
-    textDecorationLine: 'line-through',
-    color: Colors.secondaryText,
+    fontWeight: '700',
   },
   description: {
-    color: Colors.secondaryText,
     fontSize: 12,
     marginTop: 2,
   },
@@ -131,7 +128,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
   },
 });

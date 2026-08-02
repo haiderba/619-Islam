@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { ProgressRing } from '@/components/dashboard/ProgressRing';
 import { TasbeehItem } from '@/types/tasbeeh';
 import { StorageService } from '@/services/storageService';
@@ -52,6 +52,7 @@ const DEFAULT_PRESETS: TasbeehItem[] = [
 ];
 
 export const TasbeehCounter: React.FC = () => {
+  const { colors } = useTheme();
   const [tasbeehs, setTasbeehs] = useState<TasbeehItem[]>(DEFAULT_PRESETS);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -124,65 +125,71 @@ export const TasbeehCounter: React.FC = () => {
   const percentage = (active.currentCount / active.targetCount) * 100;
 
   return (
-    <Card variant="glass" style={styles.card}>
+    <Card style={styles.card}>
       {/* Header & Custom Creator Trigger */}
       <View style={styles.headerRow}>
-        <Text style={styles.title}>📿 Digital Tasbeeh</Text>
+        <Text style={[styles.title, { color: colors.text }]}>📿 Digital Tasbeeh</Text>
         <Button
           title="+ Custom Tasbeeh"
           size="small"
-          variant="cyan"
+          variant="primary"
           onPress={() => setModalVisible(true)}
         />
       </View>
 
-      {/* Preset Selector */}
+      {/* Preset Chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
-        {tasbeehs.map((item, idx) => (
-          <TouchableOpacity
-            key={item.id}
-            activeOpacity={0.8}
-            style={[
-              styles.presetChip,
-              selectedIndex === idx && styles.presetChipSelected,
-            ]}
-            onPress={() => setSelectedIndex(idx)}
-          >
-            <Text
+        {tasbeehs.map((item, idx) => {
+          const isSelected = selectedIndex === idx;
+          return (
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.8}
               style={[
-                styles.presetChipText,
-                selectedIndex === idx && styles.presetChipTextSelected,
+                styles.presetChip,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                isSelected && { backgroundColor: colors.greenGlow, borderColor: colors.primary },
               ]}
+              onPress={() => setSelectedIndex(idx)}
             >
-              {item.title} {item.isCustom ? '⭐' : ''}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.presetChipText,
+                  { color: colors.secondaryText },
+                  isSelected && { color: colors.primaryLight, fontWeight: '800' },
+                ]}
+              >
+                {item.title} {item.isCustom ? '⭐' : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
-      {/* Active Dhikr Display */}
+      {/* Dhikr Phrase Display */}
       <View style={styles.dhikrDisplay}>
-        {active.arabic ? <Text style={styles.arabicText}>{active.arabic}</Text> : null}
-        <Text style={styles.titleText}>{active.title}</Text>
-        {active.translation ? <Text style={styles.translationText}>{active.translation}</Text> : null}
+        {active.arabic ? <Text style={[styles.arabicText, { color: colors.accentGold }]}>{active.arabic}</Text> : null}
+        <Text style={[styles.titleText, { color: colors.text }]}>{active.title}</Text>
+        {active.translation ? <Text style={[styles.translationText, { color: colors.secondaryText }]}>{active.translation}</Text> : null}
       </View>
 
-      {/* Interactive Tap Button with Clean Center Content */}
+      {/* Large Interactive iOS Counter Ring */}
       <TouchableOpacity
-        activeOpacity={0.7}
+        activeOpacity={0.75}
         onPress={handleTap}
         style={styles.tapArea}
       >
         <ProgressRing
           percentage={percentage}
-          size={170}
-          strokeWidth={14}
-          progressColor={Colors.primary}
+          size={180}
+          strokeWidth={16}
+          hidePercentage={true}
+          progressColor={colors.primary}
           centerContent={
-            <View style={styles.countContainer}>
-              <Text style={styles.countText}>{active.currentCount}</Text>
-              <Text style={styles.targetLabel}>TARGET: {active.targetCount}</Text>
-              <Text style={styles.tapHint}>TAP TO COUNT</Text>
+            <View style={styles.countBox}>
+              <Text style={[styles.countNumber, { color: colors.text }]}>{active.currentCount}</Text>
+              <Text style={[styles.targetText, { color: colors.primary }]}>TARGET: {active.targetCount}</Text>
+              <Text style={[styles.tapText, { color: colors.mutedText }]}>TAP TO COUNT</Text>
             </View>
           }
         />
@@ -190,48 +197,48 @@ export const TasbeehCounter: React.FC = () => {
 
       {/* Reset Action */}
       <TouchableOpacity onPress={handleReset} style={styles.resetBtn}>
-        <Text style={styles.resetText}>🔄 Reset Counter</Text>
+        <Text style={[styles.resetText, { color: colors.secondaryText }]}>🔄 Reset Counter</Text>
       </TouchableOpacity>
 
       {/* Custom Tasbeeh Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Custom Tasbeeh</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Create Custom Tasbeeh</Text>
 
-            <Text style={styles.fieldLabel}>Tasbeeh Name *</Text>
+            <Text style={[styles.fieldLabel, { color: colors.text }]}>Tasbeeh Name *</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
               placeholder="e.g. Salawat on Prophet"
-              placeholderTextColor={Colors.secondaryText}
+              placeholderTextColor={colors.mutedText}
               value={newTitle}
               onChangeText={setNewTitle}
             />
 
-            <Text style={styles.fieldLabel}>Arabic Text (Optional)</Text>
+            <Text style={[styles.fieldLabel, { color: colors.text }]}>Arabic Text (Optional)</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
               placeholder="e.g. اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ"
-              placeholderTextColor={Colors.secondaryText}
+              placeholderTextColor={colors.mutedText}
               value={newArabic}
               onChangeText={setNewArabic}
             />
 
-            <Text style={styles.fieldLabel}>Translation (Optional)</Text>
+            <Text style={[styles.fieldLabel, { color: colors.text }]}>Translation (Optional)</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
               placeholder="e.g. O Allah send peace upon Muhammad"
-              placeholderTextColor={Colors.secondaryText}
+              placeholderTextColor={colors.mutedText}
               value={newTranslation}
               onChangeText={setNewTranslation}
             />
 
-            <Text style={styles.fieldLabel}>Target Count (e.g. 33, 100, 1000)</Text>
+            <Text style={[styles.fieldLabel, { color: colors.text }]}>Target Count (e.g. 33, 100, 1000)</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
               placeholder="33"
               keyboardType="number-pad"
-              placeholderTextColor={Colors.secondaryText}
+              placeholderTextColor={colors.mutedText}
               value={newTarget}
               onChangeText={setNewTarget}
             />
@@ -245,7 +252,7 @@ export const TasbeehCounter: React.FC = () => {
               />
               <Button
                 title="Save Tasbeeh"
-                variant="cyan"
+                variant="primary"
                 onPress={handleCreateCustom}
                 disabled={!newTitle.trim()}
                 style={{ flex: 2, marginLeft: 8 }}
@@ -260,19 +267,20 @@ export const TasbeehCounter: React.FC = () => {
 
 const styles = StyleSheet.create({
   card: {
-    marginVertical: 12,
-    padding: 18,
+    marginVertical: 10,
+    padding: 20,
+    borderRadius: 24,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   title: {
-    color: Colors.text,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
+    letterSpacing: -0.3,
   },
   presetScroll: {
     marginBottom: 16,
@@ -281,41 +289,27 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 16,
-    backgroundColor: Colors.surface,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  presetChipSelected: {
-    backgroundColor: 'rgba(16, 185, 129, 0.25)',
-    borderColor: Colors.primary,
   },
   presetChipText: {
-    color: Colors.secondaryText,
     fontWeight: '600',
     fontSize: 13,
   },
-  presetChipTextSelected: {
-    color: Colors.primaryLight,
-    fontWeight: '700',
-  },
   dhikrDisplay: {
     alignItems: 'center',
-    marginVertical: 10,
+    marginVertical: 8,
   },
   arabicText: {
-    color: Colors.accentGold,
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   titleText: {
-    color: Colors.text,
     fontSize: 18,
     fontWeight: '800',
   },
   translationText: {
-    color: Colors.secondaryText,
     fontSize: 13,
     fontStyle: 'italic',
     marginTop: 2,
@@ -323,26 +317,24 @@ const styles = StyleSheet.create({
   tapArea: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 16,
+    marginVertical: 20,
   },
-  countContainer: {
+  countBox: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  countText: {
-    color: Colors.primaryLight,
-    fontSize: 44,
+  countNumber: {
+    fontSize: 52,
     fontWeight: '900',
-    lineHeight: 48,
+    lineHeight: 56,
   },
-  targetLabel: {
-    color: Colors.accentCyan,
-    fontSize: 11,
-    fontWeight: '700',
+  targetText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
     marginTop: 2,
   },
-  tapHint: {
-    color: Colors.mutedText,
+  tapText: {
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1.5,
@@ -354,44 +346,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   resetText: {
-    color: Colors.secondaryText,
     fontSize: 13,
     fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
   },
   modalTitle: {
-    color: Colors.text,
     fontSize: 20,
     fontWeight: '800',
     marginBottom: 16,
   },
   fieldLabel: {
-    color: Colors.text,
     fontSize: 13,
     fontWeight: '700',
     marginTop: 12,
     marginBottom: 6,
   },
   modalInput: {
-    backgroundColor: Colors.card,
     borderRadius: 12,
     padding: 12,
-    color: Colors.text,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   modalButtonRow: {
     flexDirection: 'row',
