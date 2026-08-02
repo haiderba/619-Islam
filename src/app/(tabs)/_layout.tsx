@@ -1,26 +1,28 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { Text } from 'react-native';
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.primaryLight,
-        tabBarInactiveTintColor: Colors.secondaryText,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.secondaryText,
         tabBarStyle: {
-          backgroundColor: Colors.card,
-          borderTopColor: Colors.cardBorder,
+          backgroundColor: colors.card,
+          borderTopColor: colors.cardBorder,
           borderTopWidth: 1,
           height: 62,
           paddingBottom: 8,
           paddingTop: 8,
         },
         headerStyle: {
-          backgroundColor: Colors.background,
+          backgroundColor: colors.background,
         },
-        headerTintColor: Colors.text,
+        headerTintColor: colors.text,
         headerTitleStyle: {
           fontWeight: 'bold',
           fontSize: 18,

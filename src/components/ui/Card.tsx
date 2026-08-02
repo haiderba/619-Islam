@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewProps } from 'react-native';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface CardProps extends ViewProps {
   variant?: 'default' | 'surface' | 'highlight' | 'goldGlow' | 'cyanGlow' | 'glass';
@@ -8,33 +8,35 @@ interface CardProps extends ViewProps {
 }
 
 export const Card: React.FC<CardProps> = ({ variant = 'default', style, children, ...props }) => {
+  const { colors } = useTheme();
+
   const getBackgroundColor = () => {
     switch (variant) {
       case 'surface':
-        return Colors.surface;
+        return colors.surface;
       case 'highlight':
-        return Colors.surfaceHighlight;
+        return colors.surfaceHighlight;
       case 'goldGlow':
-        return 'rgba(212, 175, 55, 0.12)';
+        return colors.goldGlow;
       case 'cyanGlow':
-        return Colors.glassGlowCyan;
+        return 'rgba(6, 182, 212, 0.15)';
       case 'glass':
-        return Colors.glassGlowViolet;
+        return colors.greenGlow;
       default:
-        return Colors.card;
+        return colors.card;
     }
   };
 
   const getBorderColor = () => {
     switch (variant) {
       case 'goldGlow':
-        return 'rgba(212, 175, 55, 0.35)';
+        return colors.goldGlowBorder;
       case 'cyanGlow':
         return 'rgba(6, 182, 212, 0.35)';
       case 'glass':
-        return 'rgba(124, 58, 237, 0.4)';
+        return colors.primary;
       default:
-        return Colors.cardBorder;
+        return colors.cardBorder;
     }
   };
 
@@ -57,10 +59,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    shadowColor: Colors.primary,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
 });

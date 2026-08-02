@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface ButtonProps {
   title: string;
@@ -25,13 +25,15 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { colors } = useTheme();
+
   const getContainerStyle = (): ViewStyle => {
     let base: ViewStyle = {};
-    if (variant === 'primary') base = { backgroundColor: Colors.primary };
-    if (variant === 'cyan') base = { backgroundColor: Colors.accentCyan };
-    if (variant === 'secondary') base = { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border };
-    if (variant === 'outline') base = { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.primary };
-    if (variant === 'danger') base = { backgroundColor: Colors.danger };
+    if (variant === 'primary') base = { backgroundColor: colors.primary };
+    if (variant === 'cyan') base = { backgroundColor: colors.accentCyan };
+    if (variant === 'secondary') base = { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border };
+    if (variant === 'outline') base = { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary };
+    if (variant === 'danger') base = { backgroundColor: colors.danger };
 
     if (size === 'small') base = { ...base, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10 };
     if (size === 'medium') base = { ...base, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 };
@@ -45,9 +47,9 @@ export const Button: React.FC<ButtonProps> = ({
   const getTextStyle = (): TextStyle => {
     let base: TextStyle = { fontWeight: '700', fontSize: 15, textAlign: 'center' };
     if (variant === 'primary') base.color = '#FFFFFF';
-    if (variant === 'cyan') base.color = '#0D1117';
-    if (variant === 'secondary') base.color = Colors.text;
-    if (variant === 'outline') base.color = Colors.primaryLight;
+    if (variant === 'cyan') base.color = '#FFFFFF';
+    if (variant === 'secondary') base.color = colors.text;
+    if (variant === 'outline') base.color = colors.primary;
     if (variant === 'danger') base.color = '#FFFFFF';
 
     if (size === 'small') base.fontSize = 13;
@@ -64,7 +66,7 @@ export const Button: React.FC<ButtonProps> = ({
       style={[styles.button, getContainerStyle(), style]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'cyan' ? '#0D1117' : '#FFFFFF'} />
+        <ActivityIndicator color={variant === 'outline' ? colors.primary : '#FFFFFF'} />
       ) : (
         <>
           {icon}

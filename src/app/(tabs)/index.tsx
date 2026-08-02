@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useGoals } from '@/hooks/useGoals';
 import { useStreak } from '@/hooks/useStreak';
@@ -23,6 +23,7 @@ import { Card } from '@/components/ui/Card';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { profile } = useUserProfile();
   const { goals, completions, toggleTask, refreshGoals } = useGoals();
   const { streakData, refreshStreak } = useStreak();
@@ -45,7 +46,7 @@ export default function HomeScreen() {
   const percentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -55,15 +56,15 @@ export default function HomeScreen() {
               refreshGoals();
               refreshStreak();
             }}
-            tintColor={Colors.primary}
+            tintColor={colors.primary}
           />
         }
       >
         {/* Top Header & Greeting */}
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.greetingSub}>Assalamu Alaikum,</Text>
-            <Text style={styles.userName}>{profile?.name || 'Friend'}</Text>
+            <Text style={[styles.greetingSub, { color: colors.secondaryText }]}>Assalamu Alaikum,</Text>
+            <Text style={[styles.userName, { color: colors.text }]}>{profile?.name || 'Friend'}</Text>
           </View>
           <StreakBadge streak={streakData.currentStreak} />
         </View>
@@ -78,30 +79,31 @@ export default function HomeScreen() {
               percentage={percentage}
               size={120}
               subLabel="COMPLETED"
+              progressColor={colors.primary}
             />
             <View style={styles.overviewStats}>
-              <Text style={styles.statNumber}>
+              <Text style={[styles.statNumber, { color: colors.primary }]}>
                 {completedTasks} / {totalTasks}
               </Text>
-              <Text style={styles.statLabel}>Tasks Done Today</Text>
-              <View style={styles.divider} />
-              <Text style={styles.challengeText}>Day 7 / 40 Challenge</Text>
+              <Text style={[styles.statLabel, { color: colors.secondaryText }]}>Tasks Done Today</Text>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.challengeText, { color: colors.text }]}>Day 7 / 40 Challenge</Text>
             </View>
           </View>
         </Card>
 
         {/* Today's Tasks Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's Tasks</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Tasks</Text>
           <TouchableOpacity onPress={() => router.push('/goal/create')}>
-            <Text style={styles.addGoalLink}>+ Add Goal</Text>
+            <Text style={[styles.addGoalLink, { color: colors.primary }]}>+ Add Goal</Text>
           </TouchableOpacity>
         </View>
 
         {goals.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No goals set for today</Text>
-            <Text style={styles.emptySubtitle}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No goals set for today</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.secondaryText }]}>
               Start building discipline in Deen & Dunya by creating your first goal or choosing a template.
             </Text>
             <Button
@@ -128,7 +130,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   scrollContent: {
     padding: 20,
@@ -141,12 +142,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   greetingSub: {
-    color: Colors.secondaryText,
     fontSize: 14,
     fontWeight: '500',
   },
   userName: {
-    color: Colors.text,
     fontSize: 24,
     fontWeight: '800',
     marginTop: 2,
@@ -164,24 +163,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    color: Colors.primary,
     fontSize: 28,
     fontWeight: '800',
   },
   statLabel: {
-    color: Colors.secondaryText,
     fontSize: 12,
     marginTop: 4,
     fontWeight: '600',
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.border,
     width: 100,
     marginVertical: 10,
   },
   challengeText: {
-    color: Colors.text,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -193,12 +188,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    color: Colors.text,
     fontSize: 18,
     fontWeight: '700',
   },
   addGoalLink: {
-    color: Colors.primary,
     fontWeight: '700',
     fontSize: 14,
   },
@@ -208,13 +201,11 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   emptyTitle: {
-    color: Colors.text,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 6,
   },
   emptySubtitle: {
-    color: Colors.secondaryText,
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,

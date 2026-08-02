@@ -14,6 +14,7 @@ export interface ColorPalette {
   primaryLight: string;
   primaryDark: string;
   accentGold: string;
+  accentGoldLight: string;
   accentCyan: string;
   text: string;
   secondaryText: string;
@@ -27,52 +28,56 @@ export interface ColorPalette {
   goldGlowBorder: string;
 }
 
+// Royal Obsidian Emerald & Antique Gold (Dark Mode)
 export const DarkPalette: ColorPalette = {
   isDark: true,
-  background: '#000000', // Pure Black Background
-  card: '#121212', // Deep Dark Card
-  cardBorder: 'rgba(16, 185, 129, 0.3)', // Emerald Light Green Specular Border
-  surface: '#1A1A1A',
-  surfaceHighlight: '#262626',
-  primary: '#10B981', // Vibrant Emerald / Light Green
-  primaryLight: '#34D399', // Mint Light Green
+  background: '#040D0A', // Deep Obsidian Emerald
+  card: '#0B1C16', // Rich Emerald Surface
+  cardBorder: 'rgba(212, 175, 55, 0.25)', // Filigree Antique Gold Border
+  surface: '#122720',
+  surfaceHighlight: '#1A332B',
+  primary: '#10B981', // Vibrant Royal Emerald
+  primaryLight: '#34D399', // Bright Mint
   primaryDark: '#059669',
-  accentGold: '#D4AF37', // Gold Accent
+  accentGold: '#EAB308', // Warm Antique Gold
+  accentGoldLight: '#FDE047',
   accentCyan: '#06B6D4',
-  text: '#FFFFFF', // Pure White Text
-  secondaryText: '#A1A1AA',
-  mutedText: '#71717A',
-  border: '#27272A',
+  text: '#F8FAFC', // Pure Crisp White
+  secondaryText: '#94A3B8', // Muted Slate
+  mutedText: '#64748B',
+  border: 'rgba(255, 255, 255, 0.12)',
   success: '#10B981',
   warning: '#F59E0B',
   danger: '#EF4444',
-  greenGlow: 'rgba(16, 185, 129, 0.15)',
-  goldGlow: 'rgba(212, 175, 55, 0.15)',
-  goldGlowBorder: 'rgba(212, 175, 55, 0.35)',
+  greenGlow: 'rgba(16, 185, 129, 0.18)',
+  goldGlow: 'rgba(234, 179, 8, 0.16)',
+  goldGlowBorder: 'rgba(234, 179, 8, 0.35)',
 };
 
+// Porcelain Emerald & Warm Gold (Light Mode)
 export const LightPalette: ColorPalette = {
   isDark: false,
-  background: '#F8FAFC', // Clean Soft White Background
-  card: '#FFFFFF', // Crisp White Card
-  cardBorder: 'rgba(16, 185, 129, 0.25)', // Light Green Border
-  surface: '#F1F5F9',
-  surfaceHighlight: '#E2E8F0',
-  primary: '#059669', // Emerald Green
-  primaryLight: '#10B981', // Light Green Accent
-  primaryDark: '#047857',
-  accentGold: '#D4AF37', // Gold Accent
+  background: '#F6F9F7', // Soft Porcelain Mint
+  card: '#FFFFFF', // Pure White Card
+  cardBorder: '#E2E8F0', // Soft Subtle Border
+  surface: '#EDF4F0',
+  surfaceHighlight: '#E2ECE6',
+  primary: '#047857', // Deep Royal Emerald Green
+  primaryLight: '#10B981', // Bright Emerald
+  primaryDark: '#065F46',
+  accentGold: '#B45309', // Warm Rich Gold
+  accentGoldLight: '#D97706',
   accentCyan: '#0891B2',
-  text: '#0F172A', // Dark Text for high contrast
-  secondaryText: '#475569',
+  text: '#0F172A', // Deep Slate Charcoal (High Legibility)
+  secondaryText: '#475569', // Slate Gray
   mutedText: '#94A3B8',
   border: '#E2E8F0',
-  success: '#059669',
+  success: '#047857',
   warning: '#D97706',
   danger: '#DC2626',
-  greenGlow: 'rgba(16, 185, 129, 0.12)',
-  goldGlow: 'rgba(212, 175, 55, 0.12)',
-  goldGlowBorder: 'rgba(212, 175, 55, 0.3)',
+  greenGlow: 'rgba(4, 120, 87, 0.1)',
+  goldGlow: 'rgba(180, 83, 9, 0.1)',
+  goldGlowBorder: 'rgba(180, 83, 9, 0.25)',
 };
 
 interface ThemeContextType {
