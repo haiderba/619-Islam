@@ -1,7 +1,6 @@
 import React from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
 
@@ -37,7 +36,11 @@ function NavigationStack() {
 
   return (
     <>
-      <StatusBar style={colors.isDark ? 'light' : 'dark'} />
+      <StatusBar
+        barStyle={colors.isDark ? 'light-content' : 'dark-content'}
+        translucent={true}
+        backgroundColor="transparent"
+      />
       <Stack
         screenOptions={{
           headerStyle: {

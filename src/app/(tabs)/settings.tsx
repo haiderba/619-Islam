@@ -11,8 +11,10 @@ import {
   Image,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as Updates from 'expo-updates';
 import { Card } from '@/components/ui/Card';
@@ -208,9 +210,18 @@ export default function SettingsScreen() {
     );
   };
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? 24 : 0);
+  const bottomInset = Math.max(insets.bottom + 105, 120);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topInset + 8, paddingBottom: bottomInset },
+        ]}
+      >
         {/* User Profile Card with Photo Upload & Edit Username */}
         <Card variant="goldGlow" style={styles.userCard}>
           <View style={styles.profileHeaderRow}>

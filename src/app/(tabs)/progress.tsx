@@ -6,8 +6,10 @@ import {
   ScrollView,
   SafeAreaView,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
 import { Card } from '@/components/ui/Card';
 import { useStreak } from '@/hooks/useStreak';
@@ -51,10 +53,17 @@ export default function ProgressScreen() {
 
   const maxDailyCount = Math.max(1, ...past7DaysStats.map((s) => s.count));
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? 24 : 0);
+  const bottomInset = Math.max(insets.bottom + 105, 120);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topInset + 8, paddingBottom: bottomInset },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={false}

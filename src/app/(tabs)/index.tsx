@@ -7,8 +7,10 @@ import {
   SafeAreaView,
   TouchableOpacity,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useGoals } from '@/hooks/useGoals';
@@ -45,10 +47,17 @@ export default function HomeScreen() {
   const completedTasks = goals.filter((g) => completedGoalIds.has(g.id)).length;
   const percentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? 24 : 0);
+  const bottomInset = Math.max(insets.bottom + 105, 120);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topInset + 8, paddingBottom: bottomInset },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={false}
@@ -62,9 +71,11 @@ export default function HomeScreen() {
       >
         {/* Top Header & Greeting */}
         <View style={styles.headerRow}>
-          <View>
+          <View style={{ flex: 1, marginRight: 12 }}>
             <Text style={[styles.greetingSub, { color: colors.secondaryText }]}>Assalamu Alaikum,</Text>
-            <Text style={[styles.userName, { color: colors.text }]}>{profile?.name || 'Friend'}</Text>
+            <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
+              {profile?.name || 'Friend'}
+            </Text>
           </View>
           <StreakBadge streak={streakData.currentStreak} />
         </View>
@@ -158,9 +169,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
+    flexWrap: 'wrap',
   },
   overviewStats: {
     alignItems: 'center',
+    flexShrink: 1,
+    paddingHorizontal: 8,
   },
   statNumber: {
     fontSize: 28,

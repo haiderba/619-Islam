@@ -1,11 +1,24 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
-import { Text, Platform } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Home,
+  BookOpen,
+  Users,
+  Target,
+  TrendingUp,
+  Settings,
+} from 'lucide-react-native';
 
 export default function TabLayout() {
   const { colors } = useTheme();
   const isDark = colors.isDark;
+  const insets = useSafeAreaInsets();
+
+  // Dynamically calculate bottom position so it never overlaps Android system gesture bar
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 14 : 16);
 
   return (
     <Tabs
@@ -13,34 +26,34 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.secondaryText,
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: '700',
           marginBottom: 4,
         },
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 24 : 16,
-          left: 12,
-          right: 12,
+          bottom: bottomInset,
+          left: 14,
+          right: 14,
           height: 68,
           borderRadius: 34,
-          backgroundColor: isDark ? 'rgba(11, 28, 22, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+          backgroundColor: isDark ? 'rgba(11, 28, 22, 0.94)' : 'rgba(255, 255, 255, 0.96)',
           borderWidth: 1.5,
-          borderColor: isDark ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.25)',
+          borderColor: isDark ? 'rgba(16, 185, 129, 0.40)' : 'rgba(16, 185, 129, 0.28)',
           paddingBottom: 6,
-          paddingTop: 6,
+          paddingTop: 8,
           shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.22,
+          shadowOpacity: 0.25,
           shadowRadius: 16,
-          elevation: 10,
+          elevation: 8,
         },
         headerStyle: {
           backgroundColor: colors.background,
         },
         headerTintColor: colors.text,
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontWeight: '800',
           fontSize: 18,
         },
         headerShadowVisible: false,
@@ -51,7 +64,9 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           headerShown: false,
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>🏠</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Home color={color} size={22} strokeWidth={2.4} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -59,7 +74,9 @@ export default function TabLayout() {
         options={{
           title: 'Deen Hub',
           headerTitle: 'Deen Companion',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>🕌</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <BookOpen color={color} size={22} strokeWidth={2.4} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -67,7 +84,9 @@ export default function TabLayout() {
         options={{
           title: 'Hubs',
           headerTitle: 'Habit Hubs & Circles',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>👥</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Users color={color} size={22} strokeWidth={2.4} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -75,7 +94,9 @@ export default function TabLayout() {
         options={{
           title: 'Goals',
           headerTitle: 'Goal Management',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>🎯</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Target color={color} size={22} strokeWidth={2.4} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -83,7 +104,9 @@ export default function TabLayout() {
         options={{
           title: 'Progress',
           headerTitle: 'Analytics & Streaks',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>📈</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <TrendingUp color={color} size={22} strokeWidth={2.4} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -91,7 +114,9 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           headerTitle: 'App Settings',
-          tabBarIcon: ({ color }: { color: any }) => <Text style={{ fontSize: 19, color }}>⚙️</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Settings color={color} size={22} strokeWidth={2.4} />
+          ),
         }}
       />
     </Tabs>

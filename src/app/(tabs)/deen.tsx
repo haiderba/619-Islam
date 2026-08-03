@@ -6,7 +6,9 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
 import { PrayerTimesCard } from '@/components/islamic/PrayerTimesCard';
 import { QiblaCompass } from '@/components/islamic/QiblaCompass';
@@ -19,10 +21,18 @@ type DeenSection = 'Prayer' | 'Qibla' | 'Tasbeeh' | 'Adhkar' | 'Quran';
 export default function DeenScreen() {
   const { colors } = useTheme();
   const [activeSection, setActiveSection] = useState<DeenSection>('Prayer');
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? 24 : 0);
+  const bottomInset = Math.max(insets.bottom + 105, 120);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topInset + 8, paddingBottom: bottomInset },
+        ]}
+      >
         {/* iOS Native Segmented Control */}
         <View style={[styles.segmentedContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {(['Prayer', 'Qibla', 'Tasbeeh', 'Adhkar', 'Quran'] as DeenSection[]).map((sec) => {
@@ -96,6 +106,7 @@ const styles = StyleSheet.create({
   segmentItem: {
     flex: 1,
     paddingVertical: 10,
+    paddingHorizontal: 2,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -103,7 +114,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   segmentText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10.5,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

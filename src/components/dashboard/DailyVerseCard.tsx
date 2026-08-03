@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   arabicText: {
     fontSize: 24,
-    lineHeight: 44,
+    lineHeight: Platform.OS === 'android' ? 50 : 44,
     fontWeight: '700',
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'Traditional Arabic' : 'sans-serif',
