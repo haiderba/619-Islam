@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as Updates from 'expo-updates';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -38,6 +39,41 @@ export default function SettingsScreen() {
   const [usernameModalVisible, setUsernameModalVisible] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [updatingUsername, setUpdatingUsername] = useState(false);
+
+  // OTA Updates Check
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const handleCheckForUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        Alert.alert(
+          'New Update Available 🚀',
+          'A new version of 619 is available over-the-air. Would you like to download and restart now?',
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Update & Restart',
+              onPress: async () => {
+                try {
+                  await Updates.fetchUpdateAsync();
+                  await Updates.reloadAsync();
+                } catch (err: any) {
+                  Alert.alert('Update Error', 'Could not apply update: ' + err.message);
+                }
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Up to Date ✅', 'You are running the latest version of 619.');
+      }
+    } catch (error: any) {
+      Alert.alert('Check Note ℹ️', 'OTA update checks work on installed builds (APK/IPA/EAS build). In Expo dev mode, changes reload instantly.');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
 
   // Pick Profile Photo
   const handlePickPhoto = async () => {
@@ -329,6 +365,14 @@ export default function SettingsScreen() {
             title="Backup Data"
             variant="outline"
             onPress={handleBackup}
+            style={{ marginBottom: 12 }}
+          />
+
+          <Button
+            title={checkingUpdate ? 'Checking for Updates...' : 'Check for App Update (OTA)'}
+            variant="outline"
+            onPress={handleCheckForUpdate}
+            disabled={checkingUpdate}
             style={{ marginBottom: 12 }}
           />
 

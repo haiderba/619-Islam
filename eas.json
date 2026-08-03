@@ -9,7 +9,8 @@
       "distribution": "internal",
       "env": {
         "EXPO_USE_PRECOMPILED_MODULES": "0"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -21,7 +22,8 @@
       },
       "env": {
         "EXPO_USE_PRECOMPILED_MODULES": "0"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "android": {
@@ -29,7 +31,8 @@
       },
       "env": {
         "EXPO_USE_PRECOMPILED_MODULES": "0"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {
