@@ -148,7 +148,7 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
 
     # Send verification email via Brevo
-    email_sent = email_service.send_verification_email(
+    email_sent, email_msg = email_service.send_verification_email(
         recipient_email=user.email,
         recipient_name=user.name or user.username,
         otp_code=otp_code
@@ -158,8 +158,9 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
         "status": "pending_verification",
         "email": user.email,
         "username": user.username,
-        "message": "Verification code sent to your email.",
-        "email_sent": email_sent
+        "message": "Verification code sent to your email." if email_sent else f"Failed to send email: {email_msg}",
+        "email_sent": email_sent,
+        "email_msg": email_msg
     }
 
 @app.post("/verify-otp", response_model=schemas.AuthTokenResponse)
@@ -226,16 +227,30 @@ def resend_otp(req: schemas.ResendOtpRequest, db: Session = Depends(get_db)):
     db.add(verification_entry)
     db.commit()
 
-    email_sent = email_service.send_verification_email(
+    email_sent, email_msg = email_service.send_verification_email(
         recipient_email=req.email,
         recipient_name=user.name or user.username,
         otp_code=otp_code
     )
 
     return {
-        "status": "success",
-        "message": "A new verification code has been sent to your email.",
-        "email_sent": email_sent
+        "status": "success" if email_sent else "error",
+        "message": "A new verification code has been sent to your email." if email_sent else f"Failed to send email: {email_msg}",
+        "email_sent": email_sent,
+        "email_msg": email_msg
+    }
+
+@app.get("/debug-email")
+def debug_email(to: str = "uhaider695@gmail.com"):
+    import os
+    success, msg = email_service.send_verification_email(to, "Test User", "123456")
+    api_key = os.getenv("BREVO_API_KEY", "")
+    return {
+        "success": success,
+        "detail": msg,
+        "api_key_configured": bool(api_key),
+        "api_key_snippet": (api_key[:8] + "...") if api_key else "NOT_SET",
+        "sender_email": os.getenv("BREVO_SENDER_EMAIL", "uhaider695@gmail.com")
     }
 
 @app.post("/login", response_model=schemas.Token)

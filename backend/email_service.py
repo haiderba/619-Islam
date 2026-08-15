@@ -12,23 +12,24 @@ env_path = Path(__file__).resolve().parent / '.env'
 load_dotenv(dotenv_path=env_path)
 load_dotenv()
 
-BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
-BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "uhaider695@gmail.com")
-BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "619 Islam")
-
 def generate_otp_code() -> str:
     """Generate a random 6-digit numeric OTP."""
     return f"{random.randint(100000, 999999)}"
 
-def send_verification_email(recipient_email: str, recipient_name: str, otp_code: str) -> bool:
+def send_verification_email(recipient_email: str, recipient_name: str, otp_code: str):
     """Send a transactional verification email containing the 6-digit OTP via Brevo API."""
-    if not BREVO_API_KEY:
-        print("Warning: BREVO_API_KEY environment variable is not set. Email cannot be sent.")
-        return False
+    api_key = os.getenv("BREVO_API_KEY", "").strip()
+    sender_email = os.getenv("BREVO_SENDER_EMAIL", "uhaider695@gmail.com").strip()
+    sender_name = os.getenv("BREVO_SENDER_NAME", "619 Islam").strip()
+
+    if not api_key:
+        err = "BREVO_API_KEY environment variable is not configured."
+        print(f"Warning: {err}")
+        return False, err
 
     url = "https://api.brevo.com/v3/smtp/email"
     headers = {
-        "api-key": BREVO_API_KEY.strip(),
+        "api-key": api_key,
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
@@ -92,7 +93,7 @@ def send_verification_email(recipient_email: str, recipient_name: str, otp_code:
     """
 
     payload = {
-        "sender": {"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
+        "sender": {"name": sender_name, "email": sender_email},
         "to": [{"email": recipient_email, "name": recipient_name}],
         "subject": f"619 Islam - Your Verification Code is {otp_code}",
         "htmlContent": html_content
@@ -104,14 +105,16 @@ def send_verification_email(recipient_email: str, recipient_name: str, otp_code:
         ctx = ssl._create_unverified_context()
 
         with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+            resp_body = resp.read().decode("utf-8", errors="ignore")
             if resp.status in [200, 201, 202]:
                 print(f"Verification email sent to {recipient_email} (Code: {otp_code})")
-                return True
-            return False
+                return True, "Email sent successfully"
+            return False, f"Unexpected response status: {resp.status} - {resp_body}"
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8", errors="ignore")
         print(f"Brevo HTTPError ({e.code}): {err_body}")
-        return False
+        return False, f"Brevo HTTP {e.code}: {err_body}"
     except Exception as e:
-        print(f"Failed to send email via Brevo: {e}")
-        return False
+        err = str(e)
+        print(f"Failed to send email via Brevo: {err}")
+        return False, err
