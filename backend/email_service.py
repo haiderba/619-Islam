@@ -4,11 +4,15 @@ import ssl
 import json
 import random
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-BREVO_API_KEY = os.getenv(
-    "BREVO_API_KEY", 
-    "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"
-)
+# Load local .env if available
+env_path = Path(__file__).resolve().parent / '.env'
+load_dotenv(dotenv_path=env_path)
+load_dotenv()
+
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "uhaider695@gmail.com")
 BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "619 Islam")
 
@@ -18,9 +22,13 @@ def generate_otp_code() -> str:
 
 def send_verification_email(recipient_email: str, recipient_name: str, otp_code: str) -> bool:
     """Send a transactional verification email containing the 6-digit OTP via Brevo API."""
+    if not BREVO_API_KEY:
+        print("Warning: BREVO_API_KEY environment variable is not set. Email cannot be sent.")
+        return False
+
     url = "https://api.brevo.com/v3/smtp/email"
     headers = {
-        "api-key": BREVO_API_KEY,
+        "api-key": BREVO_API_KEY.strip(),
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
