@@ -12,7 +12,7 @@ import datetime
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Backend API")
+app = FastAPI(title="619 Islam API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,6 +21,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+@app.head("/")
+def root():
+    return {"status": "ok", "service": "619 Islam API", "version": "1.0.0"}
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 

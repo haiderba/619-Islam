@@ -1,7 +1,11 @@
 import axios from 'axios';
 
-// Default API URL (proxied via Vite /api to backend on port 8000)
-export const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Default API URL (uses Render production URL on Cloudflare/PWA or localhost in dev)
+export const API_URL = 
+  import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? '/api'
+    : 'https://six19-islam-backend.onrender.com');
 
 export const api = axios.create({
   baseURL: API_URL,
