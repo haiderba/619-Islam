@@ -16,7 +16,15 @@ app = FastAPI(title="619 Islam API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "https://619-islam.bsf1802210.workers.dev",
+        "https://six19-islam-backend.onrender.com",
+    ],
+    allow_origin_regex=r"https://.*\.workers\.dev|https://.*\.pages\.dev|https://.*\.trycloudflare\.com|https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
