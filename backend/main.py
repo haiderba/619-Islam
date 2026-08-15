@@ -12,6 +12,37 @@ import datetime
 
 models.Base.metadata.create_all(bind=engine)
 
+def init_db():
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        admin_user = db.query(models.User).filter(
+            (models.User.username == "admin") | (models.User.email == "admin@619islam.com")
+        ).first()
+        if not admin_user:
+            admin_user = models.User(
+                username="admin",
+                email="admin@619islam.com",
+                hashed_password=auth.get_password_hash("admin123"),
+                is_verified=True,
+                name="Admin",
+                onboarding_completed=True
+            )
+            db.add(admin_user)
+            db.commit()
+            print("Successfully initialized default admin user (admin / admin123)")
+        else:
+            admin_user.hashed_password = auth.get_password_hash("admin123")
+            admin_user.is_verified = True
+            admin_user.onboarding_completed = True
+            db.commit()
+    except Exception as e:
+        print(f"Error during db init: {e}")
+    finally:
+        db.close()
+
+init_db()
+
 app = FastAPI(title="619 Islam API")
 
 app.add_middleware(
