@@ -1,124 +1,199 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
+import React, { useRef, useEffect } from 'react';
+import { Tabs, Redirect } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
-import { Platform, View, StyleSheet } from 'react-native';
+import { useAuth } from '@/context/AuthContext';
+import { Platform, View, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Dimensions, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  Home,
-  BookOpen,
-  Users,
-  Target,
-  TrendingUp,
-  Settings,
-} from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Home, BookOpen, Circle } from 'lucide-react-native';
+
+const { width } = Dimensions.get('window');
+const TAB_BAR_MARGIN = 20;
+const TAB_BAR_WIDTH = width - (TAB_BAR_MARGIN * 2);
+
+function CustomTabBar({ state, descriptors, navigation, insets, colors, isDark }: any) {
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 16 : 16);
+  
+  // Explicitly list the tabs we want to show on the bottom bar
+  const VISIBLE_TABS = ['index', 'quran', 'tasbih'];
+  
+  // Filter out hidden tabs
+  const visibleRoutes = state.routes.filter((route: any) => {
+    return VISIBLE_TABS.includes(route.name);
+  });
+
+  const TAB_WIDTH = TAB_BAR_WIDTH / visibleRoutes.length;
+  
+  // Animation value for the sliding pill
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  // Find the index in visible routes
+  const activeVisibleIndex = visibleRoutes.findIndex((r: any) => r.key === state.routes[state.index].key);
+
+  useEffect(() => {
+    Animated.spring(slideAnim, {
+      toValue: activeVisibleIndex * TAB_WIDTH,
+      useNativeDriver: true,
+      tension: 60,
+      friction: 10,
+    }).start();
+  }, [activeVisibleIndex, TAB_WIDTH]);
+
+  return (
+    <View style={[styles.tabBarContainer, { 
+      bottom: bottomInset,
+      backgroundColor: isDark ? 'rgba(30, 41, 59, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+      borderColor: colors.border,
+      shadowColor: colors.primary,
+    }]}>
+      {/* Sliding Pill Indicator */}
+      <Animated.View 
+        style={[
+          styles.slidingPill, 
+          { 
+            width: TAB_WIDTH,
+            transform: [{ translateX: slideAnim }]
+          }
+        ]}
+      >
+        <View style={[styles.pillInner, { backgroundColor: colors.greenGlow, borderColor: colors.primary }]} />
+      </Animated.View>
+
+      {visibleRoutes.map((route: any, index: number) => {
+        const { options } = descriptors[route.key];
+        const isFocused = state.routes[state.index].key === route.key;
+
+        const onPress = () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        const Icon = options.tabBarIcon;
+        const title = options.title;
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            accessibilityRole="button"
+            accessibilityState={isFocused ? { selected: true } : {}}
+            onPress={onPress}
+            style={styles.tabItem}
+          >
+            {Icon && Icon({ color: isFocused ? colors.primary : colors.mutedText, size: 24, focused: isFocused })}
+            <Text style={[
+              styles.tabLabel, 
+              { color: isFocused ? colors.primary : colors.mutedText }
+            ]}>
+              {title}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const { colors } = useTheme();
+  const { session, loading } = useAuth();
   const isDark = colors.isDark;
   const insets = useSafeAreaInsets();
 
-  // Dynamically calculate bottom position so it never overlaps Android system gesture bar
-  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 14 : 16);
+  if (loading) {
+    return <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator color={colors.primary} size="large" /></View>;
+  }
+
+  if (!session?.user) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
   return (
     <Tabs
+      tabBar={(props) => <CustomTabBar {...props} insets={insets} colors={colors} isDark={isDark} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.secondaryText,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '700',
-          marginBottom: 4,
-        },
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: bottomInset,
-          left: 14,
-          right: 14,
-          height: 68,
-          borderRadius: 34,
-          backgroundColor: isDark ? 'rgba(11, 28, 22, 0.94)' : 'rgba(255, 255, 255, 0.96)',
-          borderWidth: 1.5,
-          borderColor: isDark ? 'rgba(16, 185, 129, 0.40)' : 'rgba(16, 185, 129, 0.28)',
-          paddingBottom: 6,
-          paddingTop: 8,
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.25,
-          shadowRadius: 16,
-          elevation: 8,
-        },
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          fontWeight: '800',
-          fontSize: 18,
-        },
-        headerShadowVisible: false,
+        headerShown: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Home color={color} size={22} strokeWidth={2.4} />
-          ),
+          tabBarIcon: ({ color, focused }) => <Home color={color} size={22} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
       <Tabs.Screen
-        name="deen"
+        name="quran"
         options={{
-          title: 'Deen Hub',
-          headerTitle: 'Deen Companion',
-          tabBarIcon: ({ color, size }) => (
-            <BookOpen color={color} size={22} strokeWidth={2.4} />
-          ),
+          title: 'Quran',
+          tabBarIcon: ({ color, focused }) => <BookOpen color={color} size={22} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
       <Tabs.Screen
-        name="hubs"
+        name="tasbih"
         options={{
-          title: 'Hubs',
-          headerTitle: 'Habit Hubs & Circles',
-          tabBarIcon: ({ color, size }) => (
-            <Users color={color} size={22} strokeWidth={2.4} />
-          ),
+          title: 'Tasbih',
+          tabBarIcon: ({ color, focused }) => <Circle color={color} size={22} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
-      <Tabs.Screen
-        name="goals"
-        options={{
-          title: 'Goals',
-          headerTitle: 'Goal Management',
-          tabBarIcon: ({ color, size }) => (
-            <Target color={color} size={22} strokeWidth={2.4} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="progress"
-        options={{
-          title: 'Progress',
-          headerTitle: 'Analytics & Streaks',
-          tabBarIcon: ({ color, size }) => (
-            <TrendingUp color={color} size={22} strokeWidth={2.4} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          headerTitle: 'App Settings',
-          tabBarIcon: ({ color, size }) => (
-            <Settings color={color} size={22} strokeWidth={2.4} />
-          ),
-        }}
-      />
+      
+      {/* Hide legacy/other tabs from the bottom bar */}
+      <Tabs.Screen name="qibla" options={{ href: null }} />
+      <Tabs.Screen name="deen" options={{ href: null }} />
+      <Tabs.Screen name="habits" options={{ href: null }} />
+      <Tabs.Screen name="goals" options={{ href: null }} />
+      <Tabs.Screen name="progress" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBarContainer: {
+    position: 'absolute',
+    left: TAB_BAR_MARGIN,
+    right: TAB_BAR_MARGIN,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  slidingPill: {
+    position: 'absolute',
+    height: 72,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pillInner: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+  },
+  tabItem: {
+    flex: 1,
+    height: 72,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 4,
+  }
+});

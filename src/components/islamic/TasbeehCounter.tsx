@@ -9,6 +9,8 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useAudioPlayer } from 'expo-audio';
+import * as Haptics from 'expo-haptics';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/context/ThemeContext';
@@ -63,6 +65,9 @@ export const TasbeehCounter: React.FC = () => {
   const [newTranslation, setNewTranslation] = useState('');
   const [newTarget, setNewTarget] = useState('33');
 
+  // Load sound using expo-audio's new hook
+  const player = useAudioPlayer(require('../../../assets/sounds/click.wav'));
+
   useEffect(() => {
     async function loadCustom() {
       const custom = await StorageService.getCustomTasbeehs();
@@ -74,6 +79,13 @@ export const TasbeehCounter: React.FC = () => {
   const active = tasbeehs[selectedIndex] || DEFAULT_PRESETS[0];
 
   const handleTap = () => {
+    // Play sound and haptic
+    if (player) {
+      player.seekTo(0);
+      player.play();
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     const nextCount = active.currentCount + 1;
     const updated = [...tasbeehs];
     updated[selectedIndex] = {
@@ -83,6 +95,7 @@ export const TasbeehCounter: React.FC = () => {
     setTasbeehs(updated);
 
     if (nextCount === active.targetCount) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Tasbeeh Complete! 🎉', `You have completed ${active.targetCount}x ${active.title}. May Allah accept it.`);
     }
   };
@@ -129,12 +142,13 @@ export const TasbeehCounter: React.FC = () => {
       {/* Header & Custom Creator Trigger */}
       <View style={styles.headerRow}>
         <Text style={[styles.title, { color: colors.text }]}>📿 Digital Tasbeeh</Text>
-        <Button
-          title="+ Custom Tasbeeh"
-          size="small"
-          variant="primary"
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.customBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => setModalVisible(true)}
-        />
+        >
+          <Text style={[styles.customBtnText, { color: colors.primary }]}>+ Custom</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Preset Chips */}
@@ -275,7 +289,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
+  },
+  customBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  customBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   title: {
     fontSize: 20,

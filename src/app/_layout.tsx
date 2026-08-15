@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { useNotificationObserver } from '@/hooks/useNotificationObserver';
 
 // Global error boundary to prevent silent Android crashes
 class ErrorBoundary extends React.Component<
@@ -33,6 +34,7 @@ class ErrorBoundary extends React.Component<
 
 function NavigationStack() {
   const { colors } = useTheme();
+  useNotificationObserver();
 
   return (
     <>
@@ -97,19 +99,19 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   errorContainer: {
     flex: 1,
-    backgroundColor: '#040D0A',
+    backgroundColor: '#FDFCFB',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   errorTitle: {
-    color: '#10B981',
+    color: '#F97316',
     fontSize: 20,
     fontWeight: '900',
     marginBottom: 12,
   },
   errorMsg: {
-    color: '#94A3B8',
+    color: '#4B5563',
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 20,

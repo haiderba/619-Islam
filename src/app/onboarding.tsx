@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StorageService } from '@/services/storageService';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { AppLanguage, UserGoalFocus } from '@/types/user';
@@ -25,6 +25,7 @@ const FOCUS_OPTIONS: UserGoalFocus[] = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [step, setStep] = useState<number>(1);
   const [name, setName] = useState<string>('');
   const [language, setLanguage] = useState<AppLanguage>('English');
@@ -55,31 +56,31 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header Branding */}
         <View style={styles.header}>
-          <Text style={styles.brandTitle}>619</Text>
-          <Text style={styles.brandSubtitle}>DISCIPLINE DAILY</Text>
+          <Text style={[styles.brandTitle, { color: colors.primary }]}>619</Text>
+          <Text style={[styles.brandSubtitle, { color: colors.secondaryText }]}>DISCIPLINE DAILY</Text>
         </View>
 
         {step === 1 && (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>What should we call you?</Text>
-            <Text style={styles.stepDescription}>
+            <Text style={[styles.stepTitle, { color: colors.text }]}>What should we call you?</Text>
+            <Text style={[styles.stepDescription, { color: colors.secondaryText }]}>
               Enter your name to personalize your daily experience.
             </Text>
 
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               placeholder="Your Name (e.g. Usman)"
-              placeholderTextColor={Colors.secondaryText}
+              placeholderTextColor={colors.secondaryText}
               value={name}
               onChangeText={setName}
               autoFocus
             />
 
-            <Text style={[styles.stepTitle, { marginTop: 28 }]}>Preferred Language</Text>
+            <Text style={[styles.stepTitle, { marginTop: 28, color: colors.text }]}>Preferred Language</Text>
             <View style={styles.languageRow}>
               {(['English', 'Urdu'] as AppLanguage[]).map((lang) => (
                 <TouchableOpacity
@@ -87,14 +88,16 @@ export default function OnboardingScreen() {
                   activeOpacity={0.8}
                   style={[
                     styles.langChip,
-                    language === lang && styles.langChipSelected,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    language === lang && { backgroundColor: colors.goldGlow, borderColor: colors.primary },
                   ]}
                   onPress={() => setLanguage(lang)}
                 >
                   <Text
                     style={[
                       styles.langText,
-                      language === lang && styles.langTextSelected,
+                      { color: colors.secondaryText },
+                      language === lang && { color: colors.primary, fontWeight: '700' },
                     ]}
                   >
                     {lang}
@@ -114,8 +117,8 @@ export default function OnboardingScreen() {
 
         {step === 2 && (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>What do you want to improve?</Text>
-            <Text style={styles.stepDescription}>
+            <Text style={[styles.stepTitle, { color: colors.text }]}>What do you want to improve?</Text>
+            <Text style={[styles.stepDescription, { color: colors.secondaryText }]}>
               Select the key areas of your life you want to build discipline in.
             </Text>
 
@@ -131,18 +134,19 @@ export default function OnboardingScreen() {
                     <Card
                       style={[
                         styles.focusCard,
-                        isSelected && styles.focusCardSelected,
+                        isSelected && { borderColor: colors.primary, backgroundColor: colors.goldGlow },
                       ]}
                     >
                       <Text
                         style={[
                           styles.focusText,
-                          isSelected && styles.focusTextSelected,
+                          { color: colors.text },
+                          isSelected && { color: colors.primary, fontWeight: '700' },
                         ]}
                       >
                         {item}
                       </Text>
-                      {isSelected && <Text style={styles.checkIcon}>✓</Text>}
+                      {isSelected && <Text style={[styles.checkIcon, { color: colors.primary }]}>✓</Text>}
                     </Card>
                   </TouchableOpacity>
                 );
@@ -172,7 +176,6 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   scrollContent: {
     padding: 24,
@@ -185,12 +188,10 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 42,
     fontWeight: '900',
-    color: Colors.primary,
     letterSpacing: 2,
   },
   brandSubtitle: {
     fontSize: 12,
-    color: Colors.secondaryText,
     letterSpacing: 3,
     fontWeight: '600',
     marginTop: 4,
@@ -199,25 +200,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stepTitle: {
-    color: Colors.text,
     fontSize: 22,
     fontWeight: '700',
     marginBottom: 8,
   },
   stepDescription: {
-    color: Colors.secondaryText,
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 24,
   },
   input: {
-    backgroundColor: Colors.card,
     borderRadius: 12,
     padding: 16,
-    color: Colors.text,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   languageRow: {
     flexDirection: 'row',
@@ -226,24 +222,13 @@ const styles = StyleSheet.create({
   langChip: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: Colors.card,
     borderRadius: 10,
     alignItems: 'center',
     marginRight: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  langChipSelected: {
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
-    borderColor: Colors.primary,
   },
   langText: {
-    color: Colors.secondaryText,
     fontWeight: '600',
-  },
-  langTextSelected: {
-    color: Colors.primary,
-    fontWeight: '700',
   },
   focusList: {
     marginVertical: 12,
@@ -255,21 +240,11 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     paddingVertical: 16,
   },
-  focusCardSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(212, 175, 55, 0.12)',
-  },
   focusText: {
-    color: Colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
-  focusTextSelected: {
-    color: Colors.primary,
-    fontWeight: '700',
-  },
   checkIcon: {
-    color: Colors.primary,
     fontWeight: '800',
     fontSize: 16,
   },

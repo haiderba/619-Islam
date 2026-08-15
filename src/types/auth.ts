@@ -6,6 +6,7 @@ export interface UserProfileData {
   emailVerified: boolean;
   photoURL?: string;
   lastUsernameUpdateAt?: string;
+  role?: 'user' | 'admin';
   createdAt: string;
 }
 

@@ -16,6 +16,7 @@ import { useStreak } from '@/hooks/useStreak';
 import { useGoals } from '@/hooks/useGoals';
 import { getPastNDays, formatDateFormatted } from '@/utils/dateUtils';
 import { StorageService } from '@/services/storageService';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 export default function ProgressScreen() {
   const { colors } = useTheme();
@@ -58,11 +59,16 @@ export default function ProgressScreen() {
   const bottomInset = Math.max(insets.bottom + 105, 120);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader 
+        title="Progress" 
+        subtitle="Track your discipline and consistency" 
+        topInset={topInset}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: topInset + 8, paddingBottom: bottomInset },
+          { paddingBottom: bottomInset },
         ]}
         refreshControl={
           <RefreshControl
@@ -138,7 +144,7 @@ export default function ProgressScreen() {
           </Text>
         </Card>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -147,7 +153,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 20,
   },
   statsGrid: {
     flexDirection: 'row',

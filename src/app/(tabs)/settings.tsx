@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,9 +16,12 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import * as Updates from 'expo-updates';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ChevronLeft, ShieldCheck } from 'lucide-react-native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { LocationPickerModal, LocationOption } from '@/components/ui/LocationPickerModal';
+import { Country, State, City } from 'country-state-city';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -32,10 +35,37 @@ export default function SettingsScreen() {
   const { profile, settings, saveSettings, saveProfile, refreshProfile } = useUserProfile();
   const { themeMode, setThemeMode, colors } = useTheme();
   const { user, signOut, refreshProfile: refreshAuthProfile } = useAuth();
+  
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [sound, setSound] = useState(settings.soundEnabled);
   const [vibration, setVibration] = useState(settings.vibrationEnabled);
   const [notifications, setNotifications] = useState(settings.notificationsEnabled);
+
+  // Location & Time Settings
+  const [locationMode, setLocationMode] = useState(settings.locationMode || 'auto');
+  const [timezone, setTimezone] = useState(settings.timezone || 'auto');
+  const [timeFormat, setTimeFormat] = useState(settings.timeFormat || '12hr');
+  const [country, setCountry] = useState(settings.manualLocation?.country || '');
+  const [countryCode, setCountryCode] = useState('');
+  const [stateLoc, setStateLoc] = useState(settings.manualLocation?.state || '');
+  const [stateCode, setStateCode] = useState('');
+  const [city, setCity] = useState(settings.manualLocation?.city || '');
+  const [area, setArea] = useState(settings.manualLocation?.area || '');
+  
+  const [pickerConfig, setPickerConfig] = useState<{
+    visible: boolean;
+    type: 'country' | 'city' | 'area';
+    title: string;
+    placeholder: string;
+    options: LocationOption[];
+  }>({
+    visible: false,
+    type: 'country',
+    title: '',
+    placeholder: '',
+    options: [],
+  });
 
   // Username Update Modal
   const [usernameModalVisible, setUsernameModalVisible] = useState(false);
@@ -79,6 +109,11 @@ export default function SettingsScreen() {
 
   // Pick Profile Photo
   const handlePickPhoto = async () => {
+    if (locationMode === 'manual' && (!country || !city)) {
+      Alert.alert('Incomplete Location', 'Please provide at least a Country and City.');
+      return;
+    }
+
     if (!user) {
       Alert.alert('Sign In Required', 'Please sign in to update your profile photo.');
       return;
@@ -164,6 +199,17 @@ export default function SettingsScreen() {
     setThemeMode(mode);
   };
 
+  const saveLocationSettings = () => {
+    saveSettings({
+      ...settings,
+      locationMode: locationMode as any,
+      timezone: timezone,
+      timeFormat: timeFormat as any,
+      manualLocation: locationMode === 'manual' ? { country, state: stateLoc, city, area } : null
+    });
+    Alert.alert('Settings Saved', 'Your location and time settings have been updated.');
+  };
+
   const handleSignOut = async () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -214,12 +260,86 @@ export default function SettingsScreen() {
   const topInset = Math.max(insets.top, Platform.OS === 'android' ? 24 : 0);
   const bottomInset = Math.max(insets.bottom + 105, 120);
 
+  const openCountryPicker = () => {
+    const countries = Country.getAllCountries().map(c => ({ id: c.isoCode, name: c.name }));
+    setPickerConfig({
+      visible: true,
+      type: 'country',
+      title: 'Select Country',
+      placeholder: 'Search countries...',
+      options: countries,
+    });
+  };
+
+  const openStatePicker = () => {
+    if (!countryCode) {
+      Alert.alert('Required', 'Please select a Country first.');
+      return;
+    }
+    const states = State.getStatesOfCountry(countryCode).map(s => ({ id: s.isoCode, name: s.name }));
+    setPickerConfig({
+      visible: true,
+      type: 'area', // using area internally as the type for State since we removed it from the enum
+      title: 'Select State/Province',
+      placeholder: 'Search states...',
+      options: states,
+    });
+  };
+
+  const openCityPicker = () => {
+    if (!countryCode || !stateCode) {
+      Alert.alert('Required', 'Please select a State first.');
+      return;
+    }
+    const cities = City.getCitiesOfState(countryCode, stateCode).map(c => ({ id: c.name, name: c.name }));
+    setPickerConfig({
+      visible: true,
+      type: 'city',
+      title: 'Select City',
+      placeholder: 'Search cities...',
+      options: cities,
+    });
+  };
+
+  const handleLocationSelect = (option: LocationOption) => {
+    if (pickerConfig.type === 'country') {
+      setCountry(option.name);
+      setCountryCode(option.id);
+      setStateLoc('');
+      setStateCode('');
+      setCity('');
+    } else if (pickerConfig.type === 'area') {
+      // Area is now used as State internally
+      setStateLoc(option.name);
+      setStateCode(option.id);
+      setCity('');
+    } else if (pickerConfig.type === 'city') {
+      setCity(option.name);
+    }
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      {/* Peach Header */}
+      <View style={[styles.headerSection, { paddingTop: topInset + 12 }]}>
+        <LinearGradient
+          colors={['#FFF1E6', '#FDCBB1']}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View style={styles.topNav}>
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+             <ChevronLeft color="#1F2937" size={28} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>SETTINGS</Text>
+          <View style={{ width: 36 }} />
+        </View>
+      </View>
+
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: topInset + 8, paddingBottom: bottomInset },
+          { paddingBottom: bottomInset },
         ]}
       >
         {/* User Profile Card with Photo Upload & Edit Username */}
@@ -242,26 +362,66 @@ export default function SettingsScreen() {
 
             <View style={{ flex: 1, marginLeft: 14 }}>
               <Text style={[styles.userName, { color: colors.text }]}>
-                {user?.displayName || profile?.name || 'Discipline Member'}
+                {user?.displayName || profile?.name || 'Guest User'}
               </Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  setNewUsername(user?.username || '');
-                  setUsernameModalVisible(true);
-                }}
-                style={styles.handleChip}
-              >
-                <Text style={[styles.userHandle, { color: colors.primary }]}>
-                  @{user?.username || 'set_username'} ✏️
-                </Text>
-              </TouchableOpacity>
+              
+              {user ? (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setNewUsername(user?.username || '');
+                    setUsernameModalVisible(true);
+                  }}
+                  style={styles.handleChip}
+                >
+                  <Text style={[styles.userHandle, { color: colors.primary }]}>
+                    @{user?.username || 'set_username'} ✏️
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }}
+                  style={styles.handleChip}
+                >
+                  <Text style={[styles.userHandle, { color: colors.primary }]}>
+                    Sign up to join habits 🚀
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
               <Text style={[styles.userSub, { color: colors.secondaryText }]}>
-                {user?.email || 'Logged in'}
+                {user?.email || 'Not logged in'}
               </Text>
             </View>
           </View>
         </Card>
+
+        {/* Admin Panel Link */}
+        {user?.role === 'admin' && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Administrative</Text>
+            <Card variant="greenGlow" style={styles.card}>
+              <TouchableOpacity
+                style={styles.adminRow}
+                onPress={() => router.push('/(admin)')}
+              >
+                <View style={styles.adminIconContainer}>
+                  <ShieldCheck color={colors.primary} size={24} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.rowLabel, { color: colors.text }]}>Admin Dashboard</Text>
+                  <Text style={[styles.rowSub, { color: colors.secondaryText }]}>
+                    Manage habits, users, and app content.
+                  </Text>
+                </View>
+                <ChevronLeft size={20} color={colors.secondaryText} style={{ transform: [{ rotate: '180deg' }] }} />
+              </TouchableOpacity>
+            </Card>
+          </>
+        )}
 
         {/* Theme Selection */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance & Theme</Text>
@@ -317,6 +477,88 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        </Card>
+
+        {/* Location & Time Settings */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Location & Time</Text>
+        <Card style={styles.card}>
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text style={[styles.rowLabel, { color: colors.text }]}>Location Mode</Text>
+              <Text style={[styles.rowSub, { color: colors.secondaryText }]}>
+                {locationMode === 'auto' ? 'GPS Auto-detect' : 'Manual Entry'}
+              </Text>
+            </View>
+            <Switch
+              value={locationMode === 'auto'}
+              onValueChange={(val) => setLocationMode(val ? 'auto' : 'manual')}
+              trackColor={{ false: colors.border, true: colors.primary }}
+            />
+          </View>
+
+          {locationMode === 'manual' && (
+            <View style={{ marginTop: 16 }}>
+              <Text style={[styles.fieldLabel, { color: colors.text, marginTop: 0 }]}>Country</Text>
+              <TouchableOpacity
+                style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 12, justifyContent: 'center' }]}
+                onPress={openCountryPicker}
+              >
+                <Text style={{ color: country ? colors.text : colors.mutedText }}>
+                  {country || 'Select Country'}
+                </Text>
+              </TouchableOpacity>
+              
+              <Text style={[styles.fieldLabel, { color: colors.text, marginTop: 0 }]}>State / Province</Text>
+              <TouchableOpacity
+                style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 12, justifyContent: 'center' }]}
+                onPress={openStatePicker}
+              >
+                <Text style={{ color: stateLoc ? colors.text : colors.mutedText }}>
+                  {stateLoc || 'Select State/Province'}
+                </Text>
+              </TouchableOpacity>
+              
+              <Text style={[styles.fieldLabel, { color: colors.text, marginTop: 0 }]}>City</Text>
+              <TouchableOpacity
+                style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 12, justifyContent: 'center' }]}
+                onPress={openCityPicker}
+              >
+                <Text style={{ color: city ? colors.text : colors.mutedText }}>
+                  {city || 'Select City'}
+                </Text>
+              </TouchableOpacity>
+              
+              <Text style={[styles.fieldLabel, { color: colors.text, marginTop: 0 }]}>Area / Locality (Optional)</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                placeholder="e.g. Phase 6"
+                placeholderTextColor={colors.mutedText}
+                value={area}
+                onChangeText={setArea}
+              />
+            </View>
+          )}
+
+          <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 12 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: colors.text }]}>Time Format</Text>
+              <Text style={[styles.rowSub, { color: colors.secondaryText }]}>
+                {timeFormat === '12hr' ? '12-Hour (AM/PM)' : '24-Hour'}
+              </Text>
+            </View>
+            <Switch
+              value={timeFormat === '24hr'}
+              onValueChange={(val) => setTimeFormat(val ? '24hr' : '12hr')}
+              trackColor={{ false: colors.border, true: colors.primary }}
+            />
+          </View>
+
+          <Button
+            title="Save Location & Time"
+            variant="primary"
+            onPress={saveLocationSettings}
+            style={{ marginTop: 16 }}
+          />
         </Card>
 
         {/* Notifications Settings */}
@@ -439,6 +681,14 @@ export default function SettingsScreen() {
           </View>
         </Modal>
       </ScrollView>
+      <LocationPickerModal
+        visible={pickerConfig.visible}
+        title={pickerConfig.title}
+        placeholder={pickerConfig.placeholder}
+        options={pickerConfig.options}
+        onClose={() => setPickerConfig(prev => ({ ...prev, visible: false }))}
+        onSelect={handleLocationSelect}
+      />
     </SafeAreaView>
   );
 }
@@ -446,6 +696,27 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerSection: {
+    paddingBottom: 16,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 16,
+  },
+  topNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1F2937',
+    letterSpacing: 1,
   },
   scrollContent: {
     padding: 16,
@@ -503,6 +774,19 @@ const styles = StyleSheet.create({
   userSub: {
     fontSize: 12,
     marginTop: 2,
+  },
+  adminRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  adminIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionTitle: {
     fontSize: 16,

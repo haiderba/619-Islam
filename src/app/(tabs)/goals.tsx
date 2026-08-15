@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { GoalCategory, Goal } from '@/types/goal';
 import { ISLAMIC_TEMPLATES, GENERAL_TEMPLATES, GoalTemplate } from '@/constants/templates';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const CATEGORIES: (GoalCategory | 'All')[] = [
   'All',
@@ -78,13 +79,19 @@ export default function GoalsScreen() {
   const bottomInset = Math.max(insets.bottom + 105, 120);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: topInset + 8, paddingBottom: bottomInset },
+          { paddingBottom: bottomInset },
         ]}
       >
+        <ScreenHeader 
+          title="Goals" 
+          subtitle="Build discipline in Deen and Dunya" 
+          topInset={topInset}
+        />
+
         {/* Category Filters */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
           {CATEGORIES.map((cat) => {
@@ -196,8 +203,18 @@ export default function GoalsScreen() {
             </View>
           </Card>
         ))}
+        {/* Custom Goal Button */}
+        <View style={styles.customGoalSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Have something else in mind?</Text>
+          <Button
+            title="Create Custom Goal"
+            variant="outline"
+            onPress={() => router.push('/goal/create')}
+            style={{ marginTop: 12 }}
+          />
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -206,7 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 20,
   },
   filterScroll: {
     marginBottom: 8,

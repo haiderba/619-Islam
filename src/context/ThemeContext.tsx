@@ -26,58 +26,61 @@ export interface ColorPalette {
   greenGlow: string;
   goldGlow: string;
   goldGlowBorder: string;
+  gradientColors: string[];
 }
 
-// Royal Obsidian Emerald & Antique Gold (Dark Mode)
+// Warm Obsidian & Navy (Dark Mode)
 export const DarkPalette: ColorPalette = {
   isDark: true,
-  background: '#040D0A', // Deep Obsidian Emerald
-  card: '#0B1C16', // Rich Emerald Surface
-  cardBorder: 'rgba(212, 175, 55, 0.25)', // Filigree Antique Gold Border
-  surface: '#122720',
-  surfaceHighlight: '#1A332B',
-  primary: '#10B981', // Vibrant Royal Emerald
-  primaryLight: '#34D399', // Bright Mint
-  primaryDark: '#059669',
-  accentGold: '#EAB308', // Warm Antique Gold
-  accentGoldLight: '#FDE047',
+  background: '#0F172A',
+  card: '#1E293B',
+  cardBorder: '#334155',
+  surface: '#1E293B',
+  surfaceHighlight: '#334155',
+  primary: '#F97316', // Orange highlight
+  primaryLight: '#FB923C',
+  primaryDark: '#EA580C',
+  accentGold: '#F59E0B',
+  accentGoldLight: '#FBBF24',
   accentCyan: '#06B6D4',
-  text: '#F8FAFC', // Pure Crisp White
-  secondaryText: '#94A3B8', // Muted Slate
+  text: '#F8FAFC',
+  secondaryText: '#94A3B8',
   mutedText: '#64748B',
-  border: 'rgba(255, 255, 255, 0.12)',
+  border: 'rgba(255, 255, 255, 0.1)',
   success: '#10B981',
   warning: '#F59E0B',
   danger: '#EF4444',
-  greenGlow: 'rgba(16, 185, 129, 0.18)',
-  goldGlow: 'rgba(234, 179, 8, 0.16)',
-  goldGlowBorder: 'rgba(234, 179, 8, 0.35)',
+  greenGlow: 'rgba(249, 115, 22, 0.1)',
+  goldGlow: 'rgba(245, 158, 11, 0.16)',
+  goldGlowBorder: 'rgba(245, 158, 11, 0.35)',
+  gradientColors: ['#1E293B', '#0F172A', '#020617'],
 };
 
-// Porcelain Emerald & Warm Gold (Light Mode)
+// Clean Warm Cream & White (Light Mode)
 export const LightPalette: ColorPalette = {
   isDark: false,
-  background: '#F6F9F7', // Soft Porcelain Mint
-  card: '#FFFFFF', // Pure White Card
-  cardBorder: '#E2E8F0', // Soft Subtle Border
-  surface: '#EDF4F0',
-  surfaceHighlight: '#E2ECE6',
-  primary: '#047857', // Deep Royal Emerald Green
-  primaryLight: '#10B981', // Bright Emerald
-  primaryDark: '#065F46',
-  accentGold: '#B45309', // Warm Rich Gold
-  accentGoldLight: '#D97706',
+  background: '#FDFCFB', // Very warm cream background
+  card: '#FFFFFF',       // Pure white cards for contrast
+  cardBorder: '#F3E8DF',
+  surface: '#F9F5F1',
+  surfaceHighlight: '#F3E8DF',
+  primary: '#F97316',    // Vibrant Orange
+  primaryLight: '#FB923C',
+  primaryDark: '#EA580C',
+  accentGold: '#F59E0B',
+  accentGoldLight: '#FBBF24',
   accentCyan: '#0891B2',
-  text: '#0F172A', // Deep Slate Charcoal (High Legibility)
-  secondaryText: '#475569', // Slate Gray
-  mutedText: '#94A3B8',
-  border: '#E2E8F0',
-  success: '#047857',
-  warning: '#D97706',
+  text: '#111827',
+  secondaryText: '#4B5563',
+  mutedText: '#9CA3AF',
+  border: '#F1F5F9',
+  success: '#10B981',
+  warning: '#F59E0B',
   danger: '#DC2626',
-  greenGlow: 'rgba(4, 120, 87, 0.1)',
-  goldGlow: 'rgba(180, 83, 9, 0.1)',
-  goldGlowBorder: 'rgba(180, 83, 9, 0.25)',
+  greenGlow: 'rgba(249, 115, 22, 0.08)',
+  goldGlow: 'rgba(245, 158, 11, 0.08)',
+  goldGlowBorder: 'rgba(245, 158, 11, 0.2)',
+  gradientColors: ['#FFF7ED', '#FFEDD5', '#FED7AA'], // Warm orange gradient
 };
 
 interface ThemeContextType {

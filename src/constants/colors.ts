@@ -1,27 +1,21 @@
 export const Colors = {
-  background: '#040D0A', // Deep Obsidian Emerald
-  primary: '#10B981', // Royal Emerald
-  primaryDark: '#059669',
-  primaryLight: '#34D399',
-  accentGold: '#EAB308', // Warm Antique Gold
+  background: '#FDFCFB',
+  primary: '#F97316', // Orange
+  primaryDark: '#EA580C',
+  primaryLight: '#FB923C',
+  accentGold: '#EAB308',
   accentCyan: '#06B6D4',
-  card: '#0B1C16', // Rich Emerald Surface
-  cardBorder: 'rgba(212, 175, 55, 0.25)',
-  surface: '#122720',
-  surfaceHighlight: '#1A332B',
-  text: '#F8FAFC', // Crisp White Text
-  secondaryText: '#94A3B8',
-  mutedText: '#64748B',
-  border: 'rgba(255, 255, 255, 0.12)',
+  card: '#FFFFFF',
+  cardBorder: '#F3E8DF',
+  surface: '#F9F5F1',
+  surfaceHighlight: '#F3E8DF',
+  text: '#111827',
+  secondaryText: '#4B5563',
+  mutedText: '#9CA3AF',
+  border: '#F1F5F9',
   success: '#10B981',
   warning: '#F59E0B',
   danger: '#EF4444',
-  goldGlow: 'rgba(234, 179, 8, 0.16)',
-  goldGlowBorder: 'rgba(234, 179, 8, 0.35)',
-  greenGlow: 'rgba(16, 185, 129, 0.18)',
-  glassGlowViolet: 'rgba(16, 185, 129, 0.18)',
-  glassGlowCyan: 'rgba(234, 179, 8, 0.18)',
-  glassGlowBorder: 'rgba(234, 179, 8, 0.25)',
 };
 
 export type ThemeColors = typeof Colors;

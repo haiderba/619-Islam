@@ -1,0 +1,411 @@
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from datetime import timedelta
+from jose import JWTError, jwt
+from typing import List
+
+import models, schemas, auth, email_service
+from database import engine, get_db
+import datetime
+
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="Backend API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+@app.post("/signup")
+def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # Check if username or email is already in use
+    existing_user = db.query(models.User).filter(models.User.username == user.username).first()
+    if existing_user:
+        if existing_user.is_verified:
+            raise HTTPException(status_code=400, detail="Username already registered")
+        else:
+            # Update unverified user details
+            existing_user.email = user.email
+            existing_user.name = user.name or user.username
+            existing_user.fiqh = user.fiqh
+            existing_user.hashed_password = auth.get_password_hash(user.password)
+            db_user = existing_user
+    else:
+        # Check email
+        existing_email = db.query(models.User).filter(models.User.email == user.email).first()
+        if existing_email:
+            if existing_email.is_verified:
+                raise HTTPException(status_code=400, detail="Email already registered")
+            else:
+                existing_email.username = user.username
+                existing_email.name = user.name or user.username
+                existing_email.fiqh = user.fiqh
+                existing_email.hashed_password = auth.get_password_hash(user.password)
+                db_user = existing_email
+        else:
+            hashed_password = auth.get_password_hash(user.password)
+            db_user = models.User(
+                email=user.email,
+                username=user.username,
+                name=user.name or user.username,
+                fiqh=user.fiqh,
+                hashed_password=hashed_password,
+                is_verified=False
+            )
+            db.add(db_user)
+
+    db.commit()
+    db.refresh(db_user)
+
+    # Generate 6-digit OTP
+    otp_code = email_service.generate_otp_code()
+    expires_at = datetime.datetime.utcnow() + timedelta(minutes=10)
+
+    # Invalidate previous unused codes for this email
+    db.query(models.EmailVerification).filter(
+        models.EmailVerification.email == user.email,
+        models.EmailVerification.is_used == False
+    ).update({"is_used": True})
+
+    # Save new OTP record
+    verification_entry = models.EmailVerification(
+        email=user.email,
+        otp_code=otp_code,
+        expires_at=expires_at,
+        is_used=False
+    )
+    db.add(verification_entry)
+    db.commit()
+
+    # Send verification email via Brevo
+    email_sent = email_service.send_verification_email(
+        recipient_email=user.email,
+        recipient_name=user.name or user.username,
+        otp_code=otp_code
+    )
+
+    return {
+        "status": "pending_verification",
+        "email": user.email,
+        "username": user.username,
+        "message": "Verification code sent to your email.",
+        "email_sent": email_sent
+    }
+
+@app.post("/verify-otp", response_model=schemas.AuthTokenResponse)
+def verify_otp(req: schemas.VerifyOtpRequest, db: Session = Depends(get_db)):
+    # Find matching active verification record
+    record = db.query(models.EmailVerification).filter(
+        models.EmailVerification.email == req.email,
+        models.EmailVerification.otp_code == req.otp_code.strip(),
+        models.EmailVerification.is_used == False
+    ).order_by(models.EmailVerification.id.desc()).first()
+
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+
+    if record.expires_at < datetime.datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
+
+    # Mark OTP as used
+    record.is_used = True
+
+    # Mark User as verified
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_verified = True
+    db.commit()
+    db.refresh(user)
+
+    # Generate JWT Token for immediate login
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+@app.post("/resend-otp")
+def resend_otp(req: schemas.ResendOtpRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="No user found with this email")
+
+    # Invalidate previous unused codes
+    db.query(models.EmailVerification).filter(
+        models.EmailVerification.email == req.email,
+        models.EmailVerification.is_used == False
+    ).update({"is_used": True})
+
+    # Generate fresh OTP
+    otp_code = email_service.generate_otp_code()
+    expires_at = datetime.datetime.utcnow() + timedelta(minutes=10)
+
+    verification_entry = models.EmailVerification(
+        email=req.email,
+        otp_code=otp_code,
+        expires_at=expires_at,
+        is_used=False
+    )
+    db.add(verification_entry)
+    db.commit()
+
+    email_sent = email_service.send_verification_email(
+        recipient_email=req.email,
+        recipient_name=user.name or user.username,
+        otp_code=otp_code
+    )
+
+    return {
+        "status": "success",
+        "message": "A new verification code has been sent to your email.",
+        "email_sent": email_sent
+    }
+
+@app.post("/login", response_model=schemas.Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(
+        (models.User.username == form_data.username) | (models.User.email == form_data.username)
+    ).first()
+
+    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username/email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # If admin or already verified, allow login
+    if not user.is_verified and user.username != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please verify your email first.",
+        )
+
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/user/me", response_model=schemas.UserResponse)
+def read_users_me(current_user: models.User = Depends(get_current_user)):
+    return current_user
+
+@app.put("/user/me", response_model=schemas.UserResponse)
+def update_user_me(user_update: schemas.UserUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    if user_update.fiqh is not None:
+        current_user.fiqh = user_update.fiqh
+    if user_update.quran_translation is not None:
+        current_user.quran_translation = user_update.quran_translation
+    if user_update.latitude is not None:
+        current_user.latitude = user_update.latitude
+    if user_update.longitude is not None:
+        current_user.longitude = user_update.longitude
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@app.put("/user/password")
+def update_password(pw_update: schemas.UserPasswordUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    if not auth.verify_password(pw_update.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+    
+    current_user.hashed_password = auth.get_password_hash(pw_update.new_password)
+    db.commit()
+    return {"message": "Password updated successfully"}
+
+# Goals Endpoints
+@app.get("/goals", response_model=List[schemas.GoalResponse])
+def get_goals(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    goals = db.query(models.Goal).filter(models.Goal.user_id == current_user.id).all()
+    return goals
+
+@app.post("/goals", response_model=schemas.GoalResponse)
+def create_goal(goal: schemas.GoalCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    db_goal = models.Goal(**goal.dict(), user_id=current_user.id)
+    db.add(db_goal)
+    db.commit()
+    db.refresh(db_goal)
+    return db_goal
+
+@app.delete("/goals/{goal_id}")
+def delete_goal(goal_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    goal = db.query(models.Goal).filter(models.Goal.id == goal_id, models.Goal.user_id == current_user.id).first()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    db.delete(goal)
+    db.commit()
+    return {"message": "Goal deleted"}
+
+# Task Completions Endpoints
+@app.get("/progress", response_model=List[schemas.TaskCompletionResponse])
+def get_progress(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    progress = db.query(models.TaskCompletion).filter(models.TaskCompletion.user_id == current_user.id).all()
+    return progress
+
+@app.get("/progress/dates")
+def get_progress_dates(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """Return unique dates where the user completed at least one task. Used for streak calculation."""
+    completions = db.query(models.TaskCompletion).filter(
+        models.TaskCompletion.user_id == current_user.id,
+        models.TaskCompletion.completed == True
+    ).all()
+    # Return unique dates sorted descending
+    unique_dates = sorted(set(c.date for c in completions), reverse=True)
+    return [{"date": d} for d in unique_dates]
+
+@app.post("/progress", response_model=schemas.TaskCompletionResponse)
+def create_progress(prog: schemas.TaskCompletionCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    # Check if already exists for date and goal
+    existing = db.query(models.TaskCompletion).filter(
+        models.TaskCompletion.user_id == current_user.id,
+        models.TaskCompletion.goal_id == prog.goal_id,
+        models.TaskCompletion.date == prog.date
+    ).first()
+    if existing:
+        existing.completed = prog.completed
+        db.commit()
+        db.refresh(existing)
+        return existing
+    else:
+        db_prog = models.TaskCompletion(**prog.dict(), user_id=current_user.id)
+        db.add(db_prog)
+        db.commit()
+        db.refresh(db_prog)
+        return db_prog
+
+# Tasbeeh Endpoints
+@app.get("/tasbeeh", response_model=List[schemas.TasbeehItemResponse])
+def get_tasbeeh(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    items = db.query(models.TasbeehItem).filter(models.TasbeehItem.user_id == current_user.id).all()
+    return items
+
+@app.post("/tasbeeh", response_model=schemas.TasbeehItemResponse)
+def create_tasbeeh(item: schemas.TasbeehItemCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    db_item = models.TasbeehItem(**item.dict(), user_id=current_user.id)
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+@app.put("/tasbeeh/{item_id}")
+def update_tasbeeh(item_id: str, current_count: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    item = db.query(models.TasbeehItem).filter(models.TasbeehItem.id == item_id, models.TasbeehItem.user_id == current_user.id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item.current_count = current_count
+    db.commit()
+    db.refresh(item)
+    return item
+
+# Global Habits (Ummah) Endpoints
+@app.get("/global-habits", response_model=List[schemas.GlobalHabitResponse])
+def get_global_habits(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    habits = db.query(models.GlobalHabit).filter(models.GlobalHabit.is_active == True).all()
+    
+    response_habits = []
+    for habit in habits:
+        # Calculate member count
+        member_count = db.query(models.HabitMembership).filter(models.HabitMembership.habit_id == habit.id).count()
+        # Check if current user joined
+        joined = db.query(models.HabitMembership).filter(
+            models.HabitMembership.habit_id == habit.id,
+            models.HabitMembership.user_id == current_user.id
+        ).first() is not None
+
+        habit_dict = habit.__dict__.copy()
+        habit_dict['member_count'] = member_count
+        habit_dict['joined'] = joined
+        response_habits.append(habit_dict)
+        
+    return response_habits
+
+@app.post("/global-habits", response_model=schemas.GlobalHabitResponse)
+def create_global_habit(habit: schemas.GlobalHabitCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    db_habit = models.GlobalHabit(**habit.dict())
+    db.add(db_habit)
+    db.commit()
+    db.refresh(db_habit)
+    # Return dummy member_count/joined for the response
+    habit_dict = db_habit.__dict__.copy()
+    habit_dict['member_count'] = 0
+    habit_dict['joined'] = False
+    return habit_dict
+
+@app.delete("/global-habits/{habit_id}")
+def delete_global_habit(habit_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    habit = db.query(models.GlobalHabit).filter(models.GlobalHabit.id == habit_id).first()
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+        
+    # Delete memberships first (cascade)
+    db.query(models.HabitMembership).filter(models.HabitMembership.habit_id == habit_id).delete()
+    
+    db.delete(habit)
+    db.commit()
+    return {"message": "Habit deleted"}
+
+@app.post("/global-habits/{habit_id}/join")
+def join_global_habit(habit_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    habit = db.query(models.GlobalHabit).filter(models.GlobalHabit.id == habit_id).first()
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+        
+    existing = db.query(models.HabitMembership).filter(
+        models.HabitMembership.habit_id == habit_id,
+        models.HabitMembership.user_id == current_user.id
+    ).first()
+    
+    if existing:
+        return {"message": "Already joined"}
+        
+    membership = models.HabitMembership(user_id=current_user.id, habit_id=habit_id)
+    db.add(membership)
+    db.commit()
+    return {"message": "Successfully joined"}
+
+@app.post("/global-habits/{habit_id}/leave")
+def leave_global_habit(habit_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    membership = db.query(models.HabitMembership).filter(
+        models.HabitMembership.habit_id == habit_id,
+        models.HabitMembership.user_id == current_user.id
+    ).first()
+    
+    if membership:
+        db.delete(membership)
+        db.commit()
+        
+    return {"message": "Successfully left"}

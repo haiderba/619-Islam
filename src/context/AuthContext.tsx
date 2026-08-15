@@ -1,91 +1,66 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth } from '@/services/firebaseConfig';
 import { AuthService } from '@/services/authService';
-import { StorageService } from '@/services/storageService';
 import { UserProfileData } from '@/types/auth';
+import { api, getToken } from '@/config/api';
+import { registerForPushNotificationsAsync } from '@/utils/pushNotifications';
 
 interface AuthContextType {
   user: UserProfileData | null;
-  firebaseUser: FirebaseUser | null;
   loading: boolean;
   emailVerified: boolean;
   signIn: (email: string, pass: string) => Promise<UserProfileData>;
   signUp: (email: string, pass: string, username: string, displayName: string) => Promise<UserProfileData>;
   signOut: () => Promise<void>;
-  resendVerification: () => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
+  verifyOtp: (email: string, otp: string) => Promise<UserProfileData>;
   refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  firebaseUser: null,
   loading: true,
   emailVerified: false,
   signIn: async () => ({} as UserProfileData),
   signUp: async () => ({} as UserProfileData),
   signOut: async () => {},
   resendVerification: async () => {},
+  verifyOtp: async () => ({} as UserProfileData),
   refreshProfile: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Restore persistent login session on app start
   useEffect(() => {
-    async function restoreSession() {
-      try {
-        const cachedUser = await StorageService.getAuthSession();
-        if (cachedUser) {
-          setUser(cachedUser);
+    // Check if logged in on mount
+    AuthService.getUserProfile()
+      .then(profile => {
+        if (profile) {
+          setUser(profile);
+          registerForPushNotificationsAsync(profile.id.toString());
         }
-      } catch (e) {
-        console.warn('Session restore note:', e);
-      }
-    }
-    restoreSession();
+      })
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const refreshProfile = async () => {
-    if (auth.currentUser) {
-      await auth.currentUser.reload();
-      const profile = await AuthService.getUserProfile(auth.currentUser.uid);
-      if (profile) {
+    if (user) {
+      try {
+        const profile = await AuthService.getUserProfile();
         setUser(profile);
-        await StorageService.saveAuthSession(profile);
+      } catch (e) {
+        console.error(e);
       }
-      setFirebaseUser(auth.currentUser);
     }
   };
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      setFirebaseUser(fbUser);
-      if (fbUser) {
-        const profile = await AuthService.getUserProfile(fbUser.uid);
-        if (profile) {
-          setUser(profile);
-          await StorageService.saveAuthSession(profile);
-        }
-      }
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
 
   const signIn = async (email: string, pass: string) => {
     setLoading(true);
     try {
       const profile = await AuthService.signInUser(email, pass);
       setUser(profile);
-      await StorageService.saveAuthSession(profile);
-      if (auth.currentUser) {
-        setFirebaseUser(auth.currentUser);
-      }
       return profile;
     } finally {
       setLoading(false);
@@ -97,10 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const profile = await AuthService.signUpUser(email, pass, username, displayName);
       setUser(profile);
-      await StorageService.saveAuthSession(profile);
-      if (auth.currentUser) {
-        setFirebaseUser(auth.currentUser);
-      }
       return profile;
     } finally {
       setLoading(false);
@@ -109,28 +80,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOutUser = async () => {
     await AuthService.signOutUser();
-    await StorageService.clearAuthSession();
     setUser(null);
-    setFirebaseUser(null);
   };
 
-  const resendVerification = async () => {
-    await AuthService.resendVerificationEmail();
+  const verifyOtp = async (email: string, otp: string) => {
+    return {} as UserProfileData;
   };
 
-  const emailVerified = firebaseUser ? firebaseUser.emailVerified : false;
+  const resendVerification = async (email: string) => {
+  };
+
+  const emailVerified = true; // Email verification skipped for now
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        firebaseUser,
         loading,
         emailVerified,
         signIn,
         signUp,
         signOut: signOutUser,
         resendVerification,
+        verifyOtp,
         refreshProfile,
       }}
     >

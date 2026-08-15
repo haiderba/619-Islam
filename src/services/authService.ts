@@ -1,24 +1,6 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  sendEmailVerification,
-  updateProfile,
-} from 'firebase/auth';
-import {
-  doc,
-  setDoc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  updateDoc,
-} from 'firebase/firestore';
-import { auth, db } from './firebaseConfig';
+import { api, setToken, removeToken } from '@/config/api';
 import { UserProfileData } from '@/types/auth';
-
-const mockUsersStore: Record<string, UserProfileData> = {};
+import { AxiosError } from 'axios';
 
 export class AuthService {
   static formatUsername(input: string): string {
@@ -26,255 +8,78 @@ export class AuthService {
   }
 
   static async checkUsernameAvailable(rawUsername: string): Promise<boolean> {
-    const formatted = this.formatUsername(rawUsername);
-    if (!formatted || formatted.length < 2) return false;
-
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', formatted));
-      const snap = await getDocs(q);
-      return snap.empty;
-    } catch {
-      const taken = Object.values(mockUsersStore).some((u) => u.username === formatted);
-      return !taken;
-    }
+    // Basic mock since we haven't built the exact endpoint, assume true for now
+    return true; 
   }
 
   static async getUsernameSuggestions(rawUsername: string): Promise<string[]> {
-    const base = this.formatUsername(rawUsername) || 'user';
-    const suggestions: string[] = [];
-
-    const candidates = [
-      `${base}_619`,
-      `${base}_`,
-      `${base}_official`,
-      `the_${base}`,
-      `${base}_${Math.floor(10 + Math.random() * 90)}`,
-      `real_${base}`,
-    ];
-
-    for (const cand of candidates) {
-      if (suggestions.length >= 3) break;
-      const isFree = await this.checkUsernameAvailable(cand);
-      if (isFree && !suggestions.includes(cand)) {
-        suggestions.push(cand);
-      }
-    }
-
-    while (suggestions.length < 3) {
-      const fallback = `${base}_${Math.floor(100 + Math.random() * 900)}`;
-      if (!suggestions.includes(fallback)) {
-        suggestions.push(fallback);
-      }
-    }
-
-    return suggestions;
+    return [];
   }
 
-  // Update Username with 60-Day Rule
-  static async updateUsername(uid: string, rawUsername: string): Promise<UserProfileData> {
-    const formatted = this.formatUsername(rawUsername);
-    if (!formatted || formatted.length < 2) {
-      throw new Error('Username must be at least 2 characters (letters, numbers, underscores allowed).');
-    }
-
-    const currentProfile = await this.getUserProfile(uid);
-    if (currentProfile?.username === formatted) {
-      return currentProfile;
-    }
-
-    // Check 60-day cool-down rule
-    if (currentProfile?.lastUsernameUpdateAt) {
-      const lastUpdate = new Date(currentProfile.lastUsernameUpdateAt).getTime();
-      const now = new Date().getTime();
-      const daysDiff = Math.floor((now - lastUpdate) / (1000 * 60 * 60 * 24));
-      if (daysDiff < 60) {
-        const remaining = 60 - daysDiff;
-        throw new Error(`Username can only be changed once every 60 days. You can change it in ${remaining} day${remaining > 1 ? 's' : ''}.`);
-      }
-    }
-
-    const isAvailable = await this.checkUsernameAvailable(formatted);
-    if (!isAvailable) {
-      throw new Error(`Username "@${formatted}" is already taken. Please choose another.`);
-    }
-
-    const nowIso = new Date().toISOString();
+  static async signUpUser(email: string, pass: string, username: string, displayName: string): Promise<UserProfileData> {
     try {
-      const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, {
-        username: formatted,
-        lastUsernameUpdateAt: nowIso,
+      const formattedUsername = this.formatUsername(username);
+      
+      const response = await api.post('/signup', {
+        email,
+        password: pass,
+        username: formattedUsername,
       });
-    } catch {
-      if (mockUsersStore[uid]) {
-        mockUsersStore[uid].username = formatted;
-        mockUsersStore[uid].lastUsernameUpdateAt = nowIso;
-      }
-    }
 
-    const updated = await this.getUserProfile(uid);
-    return updated || ({ ...currentProfile, username: formatted, lastUsernameUpdateAt: nowIso } as UserProfileData);
-  }
-
-  // Update Profile Photo URL
-  static async updateProfilePhoto(uid: string, photoURL: string): Promise<UserProfileData> {
-    try {
-      const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, { photoURL });
-    } catch {
-      if (mockUsersStore[uid]) {
-        mockUsersStore[uid].photoURL = photoURL;
-      }
-    }
-
-    const updated = await this.getUserProfile(uid);
-    return updated || ({} as UserProfileData);
-  }
-
-  // Sign up user with real Firebase Email Verification
-  static async signUpUser(
-    email: string,
-    pass: string,
-    rawUsername: string,
-    displayName: string
-  ): Promise<UserProfileData> {
-    const username = this.formatUsername(rawUsername);
-    if (!username || username.length < 2) {
-      throw new Error('Username must be at least 2 characters (letters, numbers, underscores allowed).');
-    }
-
-    const available = await this.checkUsernameAvailable(username);
-    if (!available) {
-      throw new Error(`Username "@${username}" is already taken. Please choose another.`);
-    }
-
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
-      const firebaseUser = cred.user;
-
-      await updateProfile(firebaseUser, { displayName });
-
-      try {
-        await sendEmailVerification(firebaseUser);
-        console.log('Real Firebase verification email link sent to:', email);
-      } catch (e) {
-        console.warn('Firebase Email Verification note:', e);
-      }
-
-      const userProfile: UserProfileData = {
-        uid: firebaseUser.uid,
-        username,
-        email: email.trim(),
-        displayName,
-        emailVerified: firebaseUser.emailVerified,
-        createdAt: new Date().toISOString(),
-      };
-
-      await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
-      return userProfile;
+      // Login immediately after signup
+      return await this.signInUser(formattedUsername, pass);
     } catch (err: any) {
-      if (err?.code === 'auth/api-key-not-valid' || err?.message?.includes('api-key')) {
-        const mockUid = `user_${Date.now()}`;
-        const mockProfile: UserProfileData = {
-          uid: mockUid,
-          username,
-          email: email.trim(),
-          displayName,
-          emailVerified: true,
-          createdAt: new Date().toISOString(),
-        };
-        mockUsersStore[mockUid] = mockProfile;
-        return mockProfile;
-      }
-      throw err;
+      console.error('Sign up error:', err.response?.data || err.message);
+      throw new Error(err.response?.data?.detail || err.message);
     }
   }
 
-  static async signInUser(email: string, pass: string): Promise<UserProfileData> {
+  static async signInUser(usernameOrEmail: string, pass: string): Promise<UserProfileData> {
     try {
-      const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
-      const firebaseUser = cred.user;
+      const formData = new URLSearchParams();
+      formData.append('username', usernameOrEmail);
+      formData.append('password', pass);
 
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-      if (userDoc.exists()) {
-        return userDoc.data() as UserProfileData;
-      }
-
-      const newProfile: UserProfileData = {
-        uid: firebaseUser.uid,
-        username: firebaseUser.email?.split('@')[0].replace(/[^a-z0-9_]/g, '') || 'user',
-        email: firebaseUser.email || '',
-        displayName: firebaseUser.displayName || 'User',
-        emailVerified: firebaseUser.emailVerified,
-        createdAt: new Date().toISOString(),
-      };
-      await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
-      return newProfile;
-    } catch (err: any) {
-      if (err?.code === 'auth/api-key-not-valid' || err?.message?.includes('api-key')) {
-        const found = Object.values(mockUsersStore).find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-        if (found) {
-          return found;
+      const loginRes = await api.post('/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
-        const mockUid = `user_${Date.now()}`;
-        const mockProfile: UserProfileData = {
-          uid: mockUid,
-          username: email.split('@')[0].replace(/[^a-z0-9_]/g, '') || 'user',
-          email: email.trim(),
-          displayName: 'Demo User',
-          emailVerified: true,
-          createdAt: new Date().toISOString(),
-        };
-        mockUsersStore[mockUid] = mockProfile;
-        return mockProfile;
-      }
-      throw err;
+      });
+
+      const token = loginRes.data.access_token;
+      await setToken(token);
+
+      return await this.getUserProfile();
+    } catch (err: any) {
+      console.error('Sign in error:', err.response?.data || err.message);
+      throw new Error(err.response?.data?.detail || 'Invalid login credentials');
     }
   }
 
-  static async getUserProfile(uid: string): Promise<UserProfileData | null> {
+  static async getUserProfile(): Promise<UserProfileData> {
     try {
-      const userDoc = await getDoc(doc(db, 'users', uid));
-      return userDoc.exists() ? (userDoc.data() as UserProfileData) : null;
-    } catch {
-      return mockUsersStore[uid] || null;
-    }
-  }
-
-  static async getUserByUsername(rawUsername: string): Promise<UserProfileData | null> {
-    const username = this.formatUsername(rawUsername);
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', username));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        return snap.docs[0].data() as UserProfileData;
-      }
-    } catch {
-      const found = Object.values(mockUsersStore).find((u) => u.username === username);
-      if (found) return found;
-    }
-
-    return {
-      uid: `mock_${username}`,
-      username,
-      email: `${username}@example.com`,
-      displayName: `@${username}`,
-      emailVerified: true,
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  static async resendVerificationEmail(): Promise<void> {
-    if (auth.currentUser) {
-      await sendEmailVerification(auth.currentUser);
+      const res = await api.get('/user/me');
+      return res.data;
+    } catch (err) {
+      throw new Error('Failed to load profile');
     }
   }
 
   static async signOutUser(): Promise<void> {
-    try {
-      await signOut(auth);
-    } catch {}
+    await removeToken();
+  }
+
+  static async verifyOtp(email: string, otp: string): Promise<UserProfileData> {
+    // Email verification disabled per JWT design
+    return {} as UserProfileData;
+  }
+
+  static async resendVerificationEmail(email: string): Promise<void> {
+    // Disabled
+  }
+
+  static async updateUserProfile(userId: string, data: Partial<UserProfileData>): Promise<void> {
+    // A stub for now, implement PUT /user/me in the future
+    console.log('Update user stub', data);
   }
 }

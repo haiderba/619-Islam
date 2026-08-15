@@ -69,7 +69,10 @@
           "photosPermission": "619 needs access to your photos to update your profile picture.",
           "cameraPermission": "619 needs camera access to take a profile photo."
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-image",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

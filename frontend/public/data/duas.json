@@ -1,0 +1,62 @@
+{
+  "categories": [
+    {
+      "id": "morning",
+      "title": "Morning & Evening",
+      "duas": [
+        {
+          "id": "m1",
+          "arabic": "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ",
+          "transliteration": "Bismillahil-ladhi la yadurru ma'as-mihi shai'un fil-ardi wa la fis-sama'i, wa Huwas-Sami'ul-'Alim",
+          "translation": "In the Name of Allah with Whose Name there is protection against every kind of harm in the earth or in the heaven, and He is the All-Hearing and All-Knowing.",
+          "reference": "Abu Dawud 4/323",
+          "repeat": 3
+        },
+        {
+          "id": "m2",
+          "arabic": "رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ نَبِيًّا",
+          "transliteration": "Radhitu billahi Rabban, wa bil-Islami dinan, wa bi-Muhammadin (sallallahu 'alayhi wa sallama) Nabiyyan",
+          "translation": "I am pleased with Allah as my Lord, with Islam as my religion and with Muhammad (peace and blessings of Allah be upon him) as my Prophet.",
+          "reference": "Abu Dawud 4/318",
+          "repeat": 3
+        }
+      ]
+    },
+    {
+      "id": "sleep",
+      "title": "Before Sleeping",
+      "duas": [
+        {
+          "id": "s1",
+          "arabic": "بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي، وَبِكَ أَرْفَعُهُ، فَإِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ",
+          "transliteration": "Bismika Rabbi wada'tu janbi, wa bika arfa'uhu, fa'in amsakta nafsi farhamha, wa in arsaltaha fahfazha bima tahfazu bihi 'ibadakas-salihin",
+          "translation": "In Your name my Lord, I lie down and in Your name I rise, so if You should take my soul then have mercy upon it, and if You should return my soul then protect it in the manner You do so with Your righteous servants.",
+          "reference": "Al-Bukhari 11/126",
+          "repeat": 1
+        },
+        {
+          "id": "s2",
+          "arabic": "اللَّهُمَّ بِاسْمِكَ أَمُوتُ وَأَحْيَا",
+          "transliteration": "Allahumma bismika amutu wa ahya",
+          "translation": "O Allah, In Your Name, I die and I live.",
+          "reference": "Al-Bukhari 11/113",
+          "repeat": 1
+        }
+      ]
+    },
+    {
+      "id": "travel",
+      "title": "Travel",
+      "duas": [
+        {
+          "id": "t1",
+          "arabic": "سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ. وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ",
+          "transliteration": "Subhanal-ladhi sakh-khara lana hadha wa ma kunna lahu muqrinin. Wa inna ila Rabbina lamunqalibun.",
+          "translation": "Glory is to Him Who has provided this for us though we could never have had it by our efforts. Surely, unto our Lord we are returning.",
+          "reference": "Surah Az-Zukhruf 43:13-14",
+          "repeat": 1
+        }
+      ]
+    }
+  ]
+}

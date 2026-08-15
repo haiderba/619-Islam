@@ -1,32 +1,22 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { StorageService } from '@/services/storageService';
+import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/colors';
 
 export default function IndexScreen() {
   const router = useRouter();
+  const { session, loading } = useAuth();
 
   useEffect(() => {
-    async function checkOnboarding() {
-      try {
-        const profile = await StorageService.getUserProfile();
-        if (profile && profile.onboardingCompleted) {
-          router.replace('/(tabs)');
-        } else {
-          router.replace('/onboarding');
-        }
-      } catch (e) {
+    if (!loading) {
+      if (session?.user) {
+        router.replace('/(tabs)');
+      } else {
         router.replace('/onboarding');
       }
     }
-
-    const timer = setTimeout(() => {
-      checkOnboarding();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [router]);
+  }, [loading, session, router]);
 
   return (
     <View style={styles.container}>

@@ -11,12 +11,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
 import { PrayerTimesCard } from '@/components/islamic/PrayerTimesCard';
-import { QiblaCompass } from '@/components/islamic/QiblaCompass';
 import { TasbeehCounter } from '@/components/islamic/TasbeehCounter';
 import { AdhkarReader } from '@/components/islamic/AdhkarReader';
-import { QuranReader } from '@/components/islamic/QuranReader';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
-type DeenSection = 'Prayer' | 'Qibla' | 'Tasbeeh' | 'Adhkar' | 'Quran';
+type DeenSection = 'Prayer' | 'Tasbeeh' | 'Adhkar';
 
 export default function DeenScreen() {
   const { colors } = useTheme();
@@ -26,16 +25,21 @@ export default function DeenScreen() {
   const bottomInset = Math.max(insets.bottom + 105, 120);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: topInset + 8, paddingBottom: bottomInset },
+          { paddingBottom: bottomInset },
         ]}
       >
+        <ScreenHeader 
+          title="Deen Hub" 
+          subtitle="Your daily Islamic companion" 
+          topInset={topInset}
+        />
         {/* iOS Native Segmented Control */}
         <View style={[styles.segmentedContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {(['Prayer', 'Qibla', 'Tasbeeh', 'Adhkar', 'Quran'] as DeenSection[]).map((sec) => {
+          {(['Prayer', 'Tasbeeh', 'Adhkar'] as DeenSection[]).map((sec) => {
             const isSelected = activeSection === sec;
             return (
               <TouchableOpacity
@@ -64,13 +68,9 @@ export default function DeenScreen() {
                 >
                   {sec === 'Prayer'
                     ? '🕌 Prayer'
-                    : sec === 'Qibla'
-                    ? '🧭 Qibla'
                     : sec === 'Tasbeeh'
                     ? '📿 Tasbeeh'
-                    : sec === 'Adhkar'
-                    ? '📜 Adhkar'
-                    : '📖 Quran'}
+                    : '📜 Adhkar'}
                 </Text>
               </TouchableOpacity>
             );
@@ -79,12 +79,10 @@ export default function DeenScreen() {
 
         {/* Dynamic Section Render */}
         {activeSection === 'Prayer' && <PrayerTimesCard />}
-        {activeSection === 'Qibla' && <QiblaCompass />}
         {activeSection === 'Tasbeeh' && <TasbeehCounter />}
         {activeSection === 'Adhkar' && <AdhkarReader />}
-        {activeSection === 'Quran' && <QuranReader />}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -93,7 +91,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 20,
     paddingBottom: 100,
   },
   segmentedContainer: {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StorageService, DEFAULT_SETTINGS } from '../services/storageService';
 import { UserProfile, AppSettings } from '../types/user';
+import { AuthService } from '../services/authService';
 
 export function useUserProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -9,9 +10,13 @@ export function useUserProfile() {
 
   const loadProfileAndSettings = async () => {
     setLoading(true);
-    const p = await StorageService.getUserProfile();
+    try {
+      const p = await AuthService.getUserProfile();
+      setProfile(p);
+    } catch {
+      setProfile(null);
+    }
     const s = await StorageService.getSettings();
-    setProfile(p);
     setSettings(s);
     setLoading(false);
   };

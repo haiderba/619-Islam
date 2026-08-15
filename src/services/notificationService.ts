@@ -30,6 +30,24 @@ export class NotificationService {
       return false;
     }
 
+    // Define interactive category for prayers
+    await Notifications.setNotificationCategoryAsync('prayer_alert', [
+      {
+        identifier: 'mark_done',
+        buttonTitle: '✅ Mark as Prayed',
+        options: {
+          opensAppToForeground: true,
+        },
+      },
+      {
+        identifier: 'snooze',
+        buttonTitle: '⏳ Remind in 10m',
+        options: {
+          opensAppToForeground: false,
+        },
+      },
+    ]);
+
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: '619 Discipline & Prayer Alerts',
@@ -71,6 +89,7 @@ export class NotificationService {
             title: `🕌 ${p.name} Prayer in 5 Minutes`,
             body: `Prepare for ${p.name} prayer. Time: ${p.time}. "Success belongs to the believers."`,
             sound: true,
+            categoryIdentifier: 'prayer_alert', // Link to interactive category
             data: { type: 'prayer', prayerName: p.name },
           },
           trigger: {

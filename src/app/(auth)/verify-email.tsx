@@ -1,43 +1,60 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  Alert,
+  TextInput,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Mail, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
-import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/context/AuthContext';
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
+  const { email } = useLocalSearchParams<{ email: string }>();
   const { colors } = useTheme();
-  const { firebaseUser, resendVerification, refreshProfile } = useAuth();
+  const { verifyOtp, resendVerification } = useAuth();
+  
+  const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
-  const [checking, setChecking] = useState(false);
 
-  const handleCheckVerified = async () => {
-    setChecking(true);
+  const handleVerify = async () => {
+    if (otp.length < 6) {
+      Alert.alert('Invalid Code', 'Please enter your full verification code.');
+      return;
+    }
+
+    if (!email) {
+      Alert.alert('Error', 'Email address is missing. Please try signing up again.');
+      return;
+    }
+
+    setVerifying(true);
     try {
-      await refreshProfile();
-      if (firebaseUser?.emailVerified) {
-        Alert.alert('Email Verified! 🎉', 'Your account is verified and ready.');
-        router.replace('/(tabs)');
-      } else {
-        Alert.alert(
-          'Not Verified Yet 📬',
-          'Please open your Gmail/email app, click the link sent by Firebase, then tap check again.'
-        );
-      }
+      await verifyOtp(email, otp);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Verification Failed', error.message || 'Invalid or expired code.');
     } finally {
-      setChecking(false);
+      setVerifying(false);
     }
   };
 
   const handleResend = async () => {
+    if (!email) return;
     setResending(true);
     try {
-      await resendVerification();
-      Alert.alert('Verification Link Resent 📧', `A fresh link was sent to ${firebaseUser?.email || 'your email'}. Check your Spam/Junk folder if needed.`);
-    } catch (e: any) {
-      Alert.alert('Resend Note', e.message || 'Verification link requested.');
+      await resendVerification(email);
+      Alert.alert('Email Sent', 'A new verification code has been sent to your email.');
+    } catch (error: any) {
+      Alert.alert('Failed to resend', error.message || 'Please wait before trying again.');
     } finally {
       setResending(false);
     }
@@ -46,38 +63,43 @@ export default function VerifyEmailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
-        <Text style={styles.emoji}>📧</Text>
+        <View style={styles.iconContainer}>
+          <Mail color={colors.primary} size={48} />
+        </View>
+
         <Text style={[styles.title, { color: colors.text }]}>Check Your Email</Text>
         <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
-          We sent a real verification link to{' '}
-          <Text style={{ color: colors.primary, fontWeight: '800' }}>
-            {firebaseUser?.email || 'your email'}
-          </Text>
-          . Open your email inbox and click the link!
+          We sent a verification code to
         </Text>
+        <Text style={[styles.emailText, { color: colors.primary }]}>{email || 'your email'}</Text>
+        
+        <Card style={[styles.card, { marginTop: 32 }]}>
+          <Text style={[styles.label, { color: colors.text }]}>Verification Code</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+            placeholder="00000000"
+            keyboardType="number-pad"
+            maxLength={8}
+            placeholderTextColor={colors.mutedText}
+            value={otp}
+            onChangeText={setOtp}
+            autoFocus
+          />
 
-        <Card style={styles.card}>
           <Button
-            title="Check Verification Status ✓"
+            title="Verify Code"
             variant="primary"
             size="large"
-            loading={checking}
-            onPress={handleCheckVerified}
-            style={{ marginBottom: 12 }}
+            loading={verifying}
+            onPress={handleVerify}
+            style={{ marginTop: 24, marginBottom: 12 }}
           />
 
           <Button
-            title="Resend Email Link"
-            variant="outline"
+            title="Resend Code"
+            variant="secondary"
             loading={resending}
             onPress={handleResend}
-            style={{ marginBottom: 12 }}
-          />
-
-          <Button
-            title="Skip & Continue to App →"
-            variant="secondary"
-            onPress={() => router.replace('/(tabs)')}
           />
         </Card>
       </View>
@@ -90,30 +112,52 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flex: 1,
     padding: 24,
     justifyContent: 'center',
-    flex: 1,
     alignItems: 'center',
   },
-  emoji: {
-    fontSize: 56,
-    marginBottom: 12,
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 20,
-    marginBottom: 24,
+    lineHeight: 24,
+  },
+  emailText: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 4,
   },
   card: {
     width: '100%',
-    padding: 20,
+    padding: 24,
     borderRadius: 24,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  input: {
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 24,
+    letterSpacing: 8,
+    textAlign: 'center',
+    fontWeight: '800',
+    borderWidth: 1,
   },
 });

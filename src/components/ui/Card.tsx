@@ -56,7 +56,7 @@ export const Card: React.FC<CardProps> = ({ variant = 'default', style, children
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 16,
     borderWidth: 1,
     shadowColor: '#000000',

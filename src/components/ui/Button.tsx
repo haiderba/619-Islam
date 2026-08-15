@@ -35,9 +35,9 @@ export const Button: React.FC<ButtonProps> = ({
     if (variant === 'outline') base = { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary };
     if (variant === 'danger') base = { backgroundColor: colors.danger };
 
-    if (size === 'small') base = { ...base, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10 };
-    if (size === 'medium') base = { ...base, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 };
-    if (size === 'large') base = { ...base, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16 };
+    if (size === 'small') base = { ...base, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 24 };
+    if (size === 'medium') base = { ...base, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 30 };
+    if (size === 'large') base = { ...base, paddingVertical: 16, paddingHorizontal: 32, borderRadius: 36 };
 
     if (disabled) base.opacity = 0.5;
 

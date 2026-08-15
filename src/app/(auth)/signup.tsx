@@ -28,6 +28,7 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [signupError, setSignupError] = useState<string | null>(null);
 
   const [usernameCheck, setUsernameCheck] = useState<{
     available: boolean | null;
@@ -99,31 +100,32 @@ export default function SignupScreen() {
   };
 
   const handleSignUp = async () => {
+    if (loading) return; // Prevent double submission
+    setSignupError(null);
+    
     if (!displayName.trim() || !username.trim() || !email.trim() || !password.trim()) {
-      Alert.alert('Required Fields', 'Please fill in all fields.');
+      setSignupError('Please fill in all fields.');
       return;
     }
 
     if (usernameCheck.available === false) {
-      Alert.alert('Invalid Username', 'Please choose an available username.');
+      setSignupError('Please choose an available username.');
       return;
     }
 
     setLoading(true);
     try {
       await signUp(email, password, username, displayName);
-      Alert.alert(
-        'Verification Email Sent 📧',
-        'Your account has been created. Please check your email inbox to verify your account.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(auth)/verify-email'),
-          },
-        ]
-      );
+      router.replace({ pathname: '/(auth)/verify-email', params: { email } });
     } catch (err: any) {
-      Alert.alert('Signup Error', err.message || 'Failed to create account.');
+      // Map common Supabase errors to friendly messages
+      let errorMsg = err.message || 'Failed to create account.';
+      if (errorMsg.includes('Database error saving new user')) {
+        errorMsg = "Database configuration error. Please ensure the Supabase trigger is set up correctly.";
+      } else if (errorMsg.toLowerCase().includes('rate limit')) {
+        errorMsg = "Too many attempts. Please check your email for the code, or try again in an hour.";
+      }
+      setSignupError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -231,6 +233,12 @@ export default function SignupScreen() {
             value={password}
             onChangeText={setPassword}
           />
+
+          {signupError && (
+            <View style={[styles.errorBox, { backgroundColor: colors.danger + '15', borderColor: colors.danger }]}>
+              <Text style={[styles.errorBoxText, { color: colors.danger }]}>{signupError}</Text>
+            </View>
+          )}
 
           <Button
             title="Create Account"
@@ -346,5 +354,16 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
     fontWeight: '800',
+  },
+  errorBox: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  errorBoxText: {
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

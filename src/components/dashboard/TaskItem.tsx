@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Card } from '../ui/Card';
 import { useTheme } from '@/context/ThemeContext';
 import { Goal } from '../../types/goal';
@@ -28,11 +29,20 @@ export const TaskItem: React.FC<TaskItemProps> = ({ goal, completed, onToggle })
     }
   };
 
+  const handleToggle = () => {
+    Haptics.notificationAsync(
+      completed
+        ? Haptics.NotificationFeedbackType.Warning
+        : Haptics.NotificationFeedbackType.Success
+    );
+    onToggle();
+  };
+
   return (
     <Card style={[styles.card, completed && styles.completedCard]}>
       <TouchableOpacity
         activeOpacity={0.7}
-        onPress={onToggle}
+        onPress={handleToggle}
         style={styles.container}
       >
         <View

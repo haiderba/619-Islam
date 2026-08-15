@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Clean Warm Cream & White (Light Mode) */
+    --color-background: #FDFCFB;
+    --color-card: #FFFFFF;
+    --color-surface: #F9F5F1;
+    --color-border: #F1F5F9;
+    --color-text: #111827;
+    --color-subtext: #4B5563;
+    --color-muted: #9CA3AF;
+  }
+
+  .dark {
+    /* Warm Obsidian & Navy (Dark Mode) */
+    --color-background: #0F172A;
+    --color-card: #1E293B;
+    --color-surface: #1E293B;
+    --color-border: rgba(255, 255, 255, 0.1);
+    --color-text: #F8FAFC;
+    --color-subtext: #94A3B8;
+    --color-muted: #64748B;
+  }
+}
+
+body {
+  @apply bg-background text-text font-sans antialiased;
+}
+
+/* Tajweed Colors */
+tajweed, .tajweed {
+  font-family: inherit;
+}
+tajweed[class="madda_normal"], tajweed[class="madda_permissible"], tajweed[class="madda_necessory"], tajweed[class="madda_obligatory"] {
+  color: #2144C1; /* Deep Blue for Madda */
+}
+tajweed[class="qalaqah"] {
+  color: #DD0008; /* Red for Qalqalah */
+}
+tajweed[class="ikhafa_shafawi"], tajweed[class="ikhafa"] {
+  color: #9400A8; /* Purple for Ikhfa */
+}
+tajweed[class="idgham_shafawi"], tajweed[class="idgham_with_ghunnah"] {
+  color: #169250; /* Green for Idgham with Ghunnah */
+}
+tajweed[class="idgham_without_ghunnah"], tajweed[class="idgham_mutajanisayn"], tajweed[class="idgham_mutaqaribayn"] {
+  color: #A1A1A1; /* Grey for Idgham without Ghunnah */
+}
+tajweed[class="iqlab"] {
+  color: #26BFFD; /* Light Blue for Iqlab */
+}
+tajweed[class="ghunnah"] {
+  color: #FF7E1E; /* Orange for Ghunnah */
+}
+tajweed[class="ham_wasl"], tajweed[class="laam_shamsiyah"], tajweed[class="silent"] {
+  color: #A1A1A1; /* Grey for Silent letters */
+}
+
+@layer utilities {
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}

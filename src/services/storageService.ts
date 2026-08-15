@@ -73,6 +73,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   vibrationEnabled: true,
   reminderInterval: 30,
+  locationMode: 'auto',
+  manualLocation: null,
+  timezone: 'auto',
+  timeFormat: '12hr',
 };
 
 export const DEFAULT_STREAK: StreakData = {

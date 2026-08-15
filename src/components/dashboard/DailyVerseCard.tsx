@@ -7,9 +7,11 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import { Download } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { QuranQuote } from '@/constants/versesAndHadiths';
 
@@ -76,17 +78,15 @@ export const DailyVerseCard: React.FC<DailyVerseCardProps> = ({ quote }) => {
       >
         {/* Decorative Header */}
         <View style={styles.cardHeader}>
-          <View style={styles.brandBadge}>
-            <Text style={[styles.brandTitle, { color: colors.primary }]}>619</Text>
-            <Text style={[styles.brandSub, { color: colors.secondaryText }]}>DISCIPLINE DAILY</Text>
-          </View>
-          <Text style={[styles.headerTag, { color: colors.accentGold, backgroundColor: colors.goldGlow }]}>
-            📖 DAILY QURAN QUOTE
-          </Text>
+          <Image 
+            source={require('@/assets/images/619_logo.png')} 
+            style={styles.logoImage} 
+            resizeMode="contain" 
+          />
         </View>
 
         {/* Arabic Text */}
-        <View style={styles.arabicContainer}>
+        <View style={[styles.arabicContainer, { flex: 1, justifyContent: 'center' }]}>
           <Text style={[styles.arabicText, { color: colors.accentGold }]}>{quote.arabic}</Text>
         </View>
 
@@ -107,20 +107,17 @@ export const DailyVerseCard: React.FC<DailyVerseCardProps> = ({ quote }) => {
         </View>
       </View>
 
-      {/* Export Action Button */}
+      {/* Export Action Button (Absolutely positioned so it is not captured in the PNG) */}
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={handleExportPng}
         disabled={exporting}
-        style={[styles.exportBtn, { backgroundColor: colors.primary }]}
+        style={[styles.exportBtn, { backgroundColor: '#FDF0E6' }]} // matching the new surface Highlight
       >
         {exporting ? (
-          <ActivityIndicator color="#FFFFFF" size="small" />
+          <ActivityIndicator color={colors.primary} size="small" />
         ) : (
-          <>
-            <Text style={styles.exportIcon}>📸</Text>
-            <Text style={styles.exportText}>Export Card as PNG</Text>
-          </>
+          <Download color={colors.primary} size={18} />
         )}
       </TouchableOpacity>
     </View>
@@ -140,43 +137,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 4,
+    height: 420,
+    justifyContent: 'space-between',
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
-  brandBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  brandTitle: {
-    fontWeight: '900',
-    fontSize: 18,
-    letterSpacing: 1.5,
-    marginRight: 6,
-  },
-  brandSub: {
-    fontWeight: '700',
-    fontSize: 9,
-    letterSpacing: 1.5,
-  },
-  headerTag: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+  logoImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
   },
   arabicContainer: {
     marginVertical: 12,
     alignItems: 'center',
   },
   arabicText: {
-    fontSize: 24,
-    lineHeight: Platform.OS === 'android' ? 50 : 44,
+    fontSize: 22,
+    lineHeight: Platform.OS === 'android' ? 44 : 38,
     fontWeight: '700',
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'Traditional Arabic' : 'sans-serif',
@@ -191,8 +171,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   englishText: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 20,
     textAlign: 'center',
     fontStyle: 'italic',
     marginTop: 4,
@@ -212,26 +192,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   exportBtn: {
-    flexDirection: 'row',
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    marginTop: 12,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  exportIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  exportText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 14,
-  },
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    zIndex: 10,
+  }
 });
