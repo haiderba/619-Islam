@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { api } from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { getTodayDateString } from '../utils/dateUtils';
 import { QuranOfflineService } from '../services/quranOfflineService';
 
 export interface SurahMeta {
@@ -28,12 +27,17 @@ export interface Ayah {
   numberInSurah: number;
   verseKey: string; // e.g. "1:1"
   audio?: string;
-  translation?: string;
+  translation?: string; // Primary translation
+  primaryTranslationId?: string;
+  secondaryTranslation?: string; // Secondary translation (optional)
+  secondaryTranslationId?: string;
   words?: QuranWord[];
 }
 
 export interface SurahDetail extends SurahMeta {
   ayahs: Ayah[];
+  primaryTranslationId?: string;
+  secondaryTranslationId?: string;
 }
 
 export interface ChapterInfo {
@@ -58,6 +62,27 @@ export interface QuranSearchResult {
   surahNumber: number;
   ayahNumber: number;
 }
+
+export interface TranslationOption {
+  id: string;
+  name: string;
+  lang: string;
+  isRtl: boolean;
+}
+
+export const AVAILABLE_TRANSLATIONS: TranslationOption[] = [
+  { id: "85", name: "English (M.A.S. Abdel Haleem)", lang: "en", isRtl: false },
+  { id: "20", name: "English (Saheeh International)", lang: "en", isRtl: false },
+  { id: "234", name: "Urdu (Fatah Muhammad Jalandhari)", lang: "ur", isRtl: true },
+  { id: "158", name: "Urdu (Dr. Israr Ahmad - Bayan-ul-Quran)", lang: "ur", isRtl: true },
+  { id: "54", name: "Urdu (Maulana Muhammad Junagarhi)", lang: "ur", isRtl: true },
+  { id: "831", name: "Roman Urdu (Abul Ala Maududi)", lang: "ur-Latn", isRtl: false },
+  { id: "118", name: "Pashto / پښتو (Zakaria Abulsalam)", lang: "ps", isRtl: true },
+  { id: "238", name: "Sindhi / سنڌي (Taj Mehmood Amroti)", lang: "sd", isRtl: true },
+  { id: "122", name: "Hindi / हिन्दी (Maulana Azizul Haque)", lang: "hi", isRtl: false },
+  { id: "31", name: "French (Muhammad Hamidullah)", lang: "fr", isRtl: false },
+  { id: "83", name: "Spanish (Sheikh Isa Garcia)", lang: "es", isRtl: false },
+];
 
 export const QARI_OPTIONS = [
   { id: '7', name: 'Mishary Rashid Alafasy' },
@@ -101,25 +126,20 @@ export function useQuran() {
   const [downloadingVoice, setDownloadingVoice] = useState<string>('');
 
   useEffect(() => {
-    fetchSurahList();
-    checkOfflineStatus();
+    fetchSurahs();
+    checkDownloadStatus();
   }, []);
 
-  const checkOfflineStatus = async () => {
+  const checkDownloadStatus = async () => {
     const info = await QuranOfflineService.getDownloadInfo();
-    setIsDownloaded(info.isDownloaded);
     setDownloadInfo(info);
+    setIsDownloaded(info.isDownloaded);
   };
 
-  const fetchSurahList = async () => {
-    // 1. Try loading offline cached list first for instant 0ms startup
-    const offlineList = await QuranOfflineService.getOfflineSurahList();
-    if (offlineList && offlineList.length > 0) {
-      setSurahs(offlineList);
-      setLoadingList(false);
-    }
-
-    // 2. Fetch fresh list from network if online
+  const fetchSurahs = async () => {
+    setLoadingList(true);
+    
+    // Fetch fresh list from network if online
     if (navigator.onLine) {
       try {
         const res = await axios.get('https://api.quran.com/api/v4/chapters', { headers: QURAN_API_HEADERS });
@@ -133,7 +153,7 @@ export function useQuran() {
         }));
         setSurahs(mappedSurahs);
       } catch (err) {
-        console.warn("Failed to refresh surah list from network, using offline copy if available", err);
+        console.warn("Failed to refresh surah list from network", err);
       } finally {
         setLoadingList(false);
       }
@@ -142,9 +162,14 @@ export function useQuran() {
     }
   };
 
-  const getSurahDetail = async (surahNumber: number, includeWords: boolean = false): Promise<SurahDetail | null> => {
-    // If offline or words not requested, check offline IndexedDB storage first
-    if (!navigator.onLine || !includeWords) {
+  const getSurahDetail = async (
+    surahNumber: number, 
+    includeWords: boolean = false,
+    customPrimaryTrans?: string,
+    customSecondaryTrans?: string
+  ): Promise<SurahDetail | null> => {
+    // If offline or words not requested and no custom translation override, check offline IndexedDB storage first
+    if (!navigator.onLine && !includeWords && !customPrimaryTrans) {
       const offlineDetail = await QuranOfflineService.getOfflineSurah(surahNumber);
       if (offlineDetail) {
         return offlineDetail;
@@ -152,9 +177,20 @@ export function useQuran() {
     }
 
     try {
-      let translationId = user?.quran_translation || localStorage.getItem('quran_translation_pref') || '85';
-      if (translationId.includes('.')) translationId = '85';
+      let primaryId = customPrimaryTrans || user?.quran_translation || localStorage.getItem('quran_primary_translation') || '85';
+      if (primaryId.includes('.')) primaryId = '85';
+
+      let secondaryId = customSecondaryTrans !== undefined 
+        ? customSecondaryTrans 
+        : (localStorage.getItem('quran_secondary_translation') || '');
       
+      if (secondaryId === 'none' || secondaryId === primaryId) {
+        secondaryId = '';
+      }
+
+      // Build comma-separated translation query
+      const activeTransIds = [primaryId, secondaryId].filter(Boolean).join(',');
+
       const [res, chapterRes] = await Promise.all([
         axios.get(`https://api.quran.com/api/v4/verses/by_chapter/${surahNumber}`, {
           headers: QURAN_API_HEADERS,
@@ -162,7 +198,7 @@ export function useQuran() {
             language: 'en',
             words: includeWords,
             word_fields: includeWords ? 'text_uthmani,audio_url,translation' : undefined,
-            translations: translationId,
+            translations: activeTransIds,
             audio: selectedQari,
             fields: 'text_uthmani',
             per_page: 300
@@ -175,8 +211,29 @@ export function useQuran() {
       const c = chapterRes.data.chapter;
       
       const ayahs: Ayah[] = versesData.map((verse: any) => {
-        let translationText = verse.translations && verse.translations.length > 0 ? verse.translations[0].text : "";
-        translationText = translationText.replace(/<[^>]*>?/gm, '');
+        let primaryText = '';
+        let secondaryText = '';
+
+        if (verse.translations && verse.translations.length > 0) {
+          // Match primary translation by resource_id
+          const pMatch = verse.translations.find((t: any) => String(t.resource_id) === String(primaryId));
+          if (pMatch) {
+            primaryText = pMatch.text;
+          } else {
+            primaryText = verse.translations[0]?.text || '';
+          }
+
+          // Match secondary translation by resource_id
+          if (secondaryId) {
+            const sMatch = verse.translations.find((t: any) => String(t.resource_id) === String(secondaryId));
+            if (sMatch) {
+              secondaryText = sMatch.text;
+            }
+          }
+        }
+
+        primaryText = primaryText.replace(/<[^>]*>?/gm, '').trim();
+        secondaryText = secondaryText.replace(/<[^>]*>?/gm, '').trim();
 
         let words: QuranWord[] | undefined;
         if (verse.words && verse.words.length > 0) {
@@ -200,7 +257,10 @@ export function useQuran() {
           numberInSurah: verse.verse_number,
           verseKey: verse.verse_key || `${surahNumber}:${verse.verse_number}`,
           text: arabicText,
-          translation: translationText,
+          translation: primaryText,
+          primaryTranslationId: primaryId,
+          secondaryTranslation: secondaryText || undefined,
+          secondaryTranslationId: secondaryId || undefined,
           audio: verse.audio?.url ? `https://verses.quran.com/${verse.audio.url}` : undefined,
           words,
         };
@@ -213,7 +273,9 @@ export function useQuran() {
         englishNameTranslation: c.translated_name?.name || "",
         numberOfAyahs: c.verses_count,
         revelationType: c.revelation_place === 'makkah' ? 'Meccan' : 'Medinan',
-        ayahs
+        ayahs,
+        primaryTranslationId: primaryId,
+        secondaryTranslationId: secondaryId
       };
     } catch (err) {
       console.warn("Network load failed, attempting fallback to offline store", err);
@@ -241,9 +303,8 @@ export function useQuran() {
       setDownloadInfo(info);
       setDownloadProgress(null);
     } catch (e) {
-      console.error("Failed to download Quran", e);
+      console.error("Full Quran download failed", e);
       setDownloadProgress(null);
-      throw e;
     }
   };
 
@@ -252,45 +313,6 @@ export function useQuran() {
     await QuranOfflineService.deleteOfflineQuran();
     setIsDownloaded(false);
     setDownloadInfo({ isDownloaded: false });
-  };
-
-  // Fetch Chapter Historical Background & Info
-  const getChapterInfo = async (chapterId: number): Promise<ChapterInfo | null> => {
-    try {
-      const res = await axios.get(`https://api.quran.com/api/v4/chapters/${chapterId}/info?language=en`, {
-        headers: QURAN_API_HEADERS
-      });
-      const data = res.data.chapter_info;
-      return {
-        chapterId,
-        shortText: data.short_text || '',
-        text: data.text || '',
-        source: data.source || 'Quran.com'
-      };
-    } catch (e) {
-      console.error(`Failed to fetch info for chapter ${chapterId}`, e);
-      return null;
-    }
-  };
-
-  // Fetch Tafsir for a specific Ayah
-  const getTafsir = async (verseKey: string, tafsirId: number = 169): Promise<TafsirData | null> => {
-    try {
-      const res = await axios.get(`https://api.quran.com/api/v4/tafsirs/${tafsirId}/by_ayah/${verseKey}`, {
-        headers: QURAN_API_HEADERS
-      });
-      const tafsir = res.data.tafsir;
-      return {
-        id: tafsirId,
-        name: tafsir.resource_name || 'Tafsir',
-        authorName: tafsir.author_name || 'Ibn Kathir',
-        verseKey,
-        text: tafsir.text || ''
-      };
-    } catch (e) {
-      console.error(`Failed to fetch tafsir for ${verseKey}`, e);
-      return null;
-    }
   };
 
   // Global Full-Text Quran Search
@@ -329,35 +351,73 @@ export function useQuran() {
     }
   };
 
-  const markSurahRead = async (surahNumber: number) => {
+  const getChapterInfo = async (chapterId: number): Promise<ChapterInfo | null> => {
     try {
-      const today = getTodayDateString();
-      await api.post('/progress', {
-        goal_id: `quran_surah_${surahNumber}`,
-        date: today,
-        completed: true
+      const res = await axios.get(`https://api.quran.com/api/v4/chapters/${chapterId}/info`, {
+        headers: QURAN_API_HEADERS,
+        params: { language: 'en' }
       });
-    } catch (err) {
-      console.error("Failed to mark surah as read", err);
+      const info = res.data.chapter_info;
+      return {
+        chapterId,
+        shortText: (info.short_text || '').replace(/<[^>]*>?/gm, ''),
+        text: (info.text || '').replace(/<[^>]*>?/gm, ''),
+        source: info.source || 'Quran.com'
+      };
+    } catch (e) {
+      console.warn("Failed to fetch chapter info", e);
+      return null;
     }
   };
 
-  return { 
-    surahs, 
-    loadingList, 
-    getSurahDetail, 
+  const getTafsir = async (verseKey: string, tafsirId: number = 169): Promise<TafsirData | null> => {
+    try {
+      const res = await axios.get(`https://api.quran.com/api/v4/tafsirs/${tafsirId}/by_ayah/${verseKey}`, {
+        headers: QURAN_API_HEADERS
+      });
+      const tafsir = res.data.tafsir;
+      return {
+        id: tafsir.id || tafsirId,
+        name: tafsir.resource_name || 'Tafsir',
+        authorName: tafsir.author_name || '',
+        verseKey,
+        text: (tafsir.text || '').replace(/<[^>]*>?/gm, '')
+      };
+    } catch (e) {
+      console.warn("Failed to load tafsir", e);
+      return null;
+    }
+  };
+
+  const markSurahRead = async (surahNumber: number) => {
+    try {
+      await api.post(`/quran/complete/${surahNumber}`);
+    } catch (e) {
+      // Local fallback
+      const saved = JSON.parse(localStorage.getItem('completed_surahs') || '[]');
+      if (!saved.includes(surahNumber)) {
+        saved.push(saved.length > 0 ? surahNumber : surahNumber);
+        localStorage.setItem('completed_surahs', JSON.stringify(saved));
+      }
+    }
+  };
+
+  return {
+    surahs,
+    loadingList,
+    getSurahDetail,
+    searchQuranGlobal,
     getChapterInfo,
     getTafsir,
-    searchQuranGlobal,
-    selectedQari, 
+    selectedQari,
     setSelectedQari,
-    markSurahRead,
+    downloadQuran,
+    deleteOfflineQuran,
     isDownloaded,
     downloadInfo,
     downloadProgress,
     downloadingSurah,
     downloadingVoice,
-    downloadQuran,
-    deleteOfflineQuran
+    markSurahRead,
   };
 }

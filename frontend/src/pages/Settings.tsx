@@ -64,7 +64,12 @@ const Settings: React.FC = () => {
   } = useAppUpdate();
   
   const [fiqh, setFiqh] = useState(user?.fiqh || FIQH_OPTIONS[0]);
-  const [quranTranslation, setQuranTranslation] = useState(user?.quran_translation || QURAN_TRANSLATIONS[0].id);
+  const [quranTranslation, setQuranTranslation] = useState(() => {
+    return user?.quran_translation || localStorage.getItem('quran_primary_translation') || QURAN_TRANSLATIONS[0].id;
+  });
+  const [secondaryQuranTranslation, setSecondaryQuranTranslation] = useState(() => {
+    return localStorage.getItem('quran_secondary_translation') || 'none';
+  });
   const [lat, setLat] = useState(user?.latitude || '');
   const [lng, setLng] = useState(user?.longitude || '');
   
@@ -81,7 +86,7 @@ const Settings: React.FC = () => {
   useEffect(() => {
     if (user) {
       setFiqh(user.fiqh);
-      setQuranTranslation(user.quran_translation || QURAN_TRANSLATIONS[0].id);
+      if (user.quran_translation) setQuranTranslation(user.quran_translation);
       setLat(user.latitude || '');
       setLng(user.longitude || '');
     }
@@ -91,6 +96,9 @@ const Settings: React.FC = () => {
     try {
       setLoading(true);
       setMessage({ text: '', type: '' });
+      localStorage.setItem('quran_primary_translation', quranTranslation);
+      localStorage.setItem('quran_secondary_translation', secondaryQuranTranslation);
+
       const res = await api.put('/user/me', {
         fiqh,
         quran_translation: quranTranslation,
@@ -99,7 +107,7 @@ const Settings: React.FC = () => {
       });
       // Update AuthContext user 
       if (updateUser) updateUser(res.data);
-      setMessage({ text: 'Profile updated successfully', type: 'success' });
+      setMessage({ text: 'Preferences updated successfully', type: 'success' });
     } catch (err: any) {
       setMessage({ text: err.response?.data?.detail || 'Failed to update profile', type: 'error' });
     } finally {
@@ -226,7 +234,9 @@ const Settings: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-subtext mb-1 uppercase tracking-wider">Quran Translation</label>
+                <label className="block text-[11px] font-semibold text-subtext mb-1 uppercase tracking-wider">
+                  Primary Quran Translation (Prominent)
+                </label>
                 <select
                   value={quranTranslation}
                   onChange={(e) => setQuranTranslation(e.target.value)}
@@ -236,7 +246,24 @@ const Settings: React.FC = () => {
                     <option key={opt.id} value={opt.id}>{opt.label}</option>
                   ))}
                 </select>
-                <p className="text-[11px] text-muted mt-1">Select your preferred language/scholar.</p>
+                <p className="text-[11px] text-muted mt-1">Main high-contrast translation displayed on each verse.</p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-subtext mb-1 uppercase tracking-wider">
+                  Secondary Translation (Optional Dual View)
+                </label>
+                <select
+                  value={secondaryQuranTranslation}
+                  onChange={(e) => setSecondaryQuranTranslation(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
+                >
+                  <option value="none">None (Single Translation Only)</option>
+                  {QURAN_TRANSLATIONS.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted mt-1">Shows a second language (e.g. English + Urdu or Urdu + Pashto) side-by-side.</p>
               </div>
             </div>
 

@@ -1,9 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuran, SurahDetail, QARI_OPTIONS, TAFSIR_OPTIONS, ChapterInfo, TafsirData } from '../hooks/useQuran';
+import { 
+  useQuran, 
+  SurahDetail, 
+  QARI_OPTIONS, 
+  TAFSIR_OPTIONS, 
+  AVAILABLE_TRANSLATIONS,
+  ChapterInfo, 
+  TafsirData 
+} from '../hooks/useQuran';
 import { 
   ArrowLeft, Play, Pause, CheckCircle2, SkipBack, SkipForward,
-  Volume2, ChevronUp, Info, BookText, X, Sparkles, Mic, Check, Gauge
+  Volume2, ChevronUp, Info, BookText, X, Sparkles, Mic, Check, Gauge, Languages
 } from 'lucide-react';
 
 const SPEED_OPTIONS = [
@@ -30,6 +38,16 @@ const SurahReader: React.FC = () => {
   const [readMode, setReadMode] = useState<'translation' | 'wordByWord' | 'reading'>('translation');
   const [showQariMenu, setShowQariMenu] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [showTransModal, setShowTransModal] = useState(false);
+
+  // Translation Preferences
+  const [primaryTrans, setPrimaryTrans] = useState(() => {
+    return localStorage.getItem('quran_primary_translation') || '85';
+  });
+  const [secondaryTrans, setSecondaryTrans] = useState(() => {
+    return localStorage.getItem('quran_secondary_translation') || 'none';
+  });
+
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(() => {
     return Number(localStorage.getItem('quran_playback_speed')) || 1.0;
   });
@@ -67,9 +85,9 @@ const SurahReader: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      loadSurah(parseInt(id), readMode === 'wordByWord');
+      loadSurah(parseInt(id), readMode === 'wordByWord', primaryTrans, secondaryTrans);
     }
-  }, [id, selectedQari, readMode]);
+  }, [id, selectedQari, readMode, primaryTrans, secondaryTrans]);
 
   useEffect(() => {
     if (surah) {
@@ -83,9 +101,14 @@ const SurahReader: React.FC = () => {
     }
   }, [surah, playingAyah]);
 
-  const loadSurah = async (surahNumber: number, includeWords: boolean) => {
+  const loadSurah = async (
+    surahNumber: number, 
+    includeWords: boolean, 
+    pTrans: string = primaryTrans, 
+    sTrans: string = secondaryTrans
+  ) => {
     setLoading(true);
-    const detail = await getSurahDetail(surahNumber, includeWords);
+    const detail = await getSurahDetail(surahNumber, includeWords, pTrans, sTrans);
     setSurah(detail);
     setLoading(false);
   };
@@ -298,6 +321,10 @@ const SurahReader: React.FC = () => {
   }
 
   const currentQariName = QARI_OPTIONS.find(q => q.id === selectedQari)?.name || 'Mishary Rashid Alafasy';
+  const primaryTransObj = AVAILABLE_TRANSLATIONS.find(t => String(t.id) === String(primaryTrans)) || AVAILABLE_TRANSLATIONS[0];
+  const secondaryTransObj = AVAILABLE_TRANSLATIONS.find(t => String(t.id) === String(secondaryTrans));
+  const isPrimaryRtl = primaryTransObj?.isRtl ?? false;
+  const isSecondaryRtl = secondaryTransObj?.isRtl ?? false;
 
   return (
     <div className="min-h-screen bg-background pb-40">
@@ -320,6 +347,13 @@ const SurahReader: React.FC = () => {
                   title="Historical Context & Background"
                 >
                   <Info size={16} />
+                </button>
+                <button
+                  onClick={() => setShowTransModal(true)}
+                  className="p-1 rounded-full text-amber-500 hover:bg-amber-500/10 transition-colors flex items-center gap-1"
+                  title="Choose Primary & Secondary Quran Translations"
+                >
+                  <Languages size={16} />
                 </button>
               </div>
               <p className="text-[11px] text-subtext">{surah.englishNameTranslation} • {surah.numberOfAyahs} Verses</p>
@@ -373,10 +407,7 @@ const SurahReader: React.FC = () => {
                   <span 
                     key={ayah.number} 
                     id={`ayah-${ayah.numberInSurah}`}
-                    onClick={() => {
-                      setMushafSelectedAyah(ayah.numberInSurah);
-                      togglePlay(ayah.numberInSurah, ayah.audio);
-                    }}
+                    onClick={() => setMushafSelectedAyah(isSelected ? null : ayah.numberInSurah)}
                     className={`inline-block mx-0.5 px-1.5 py-0.5 rounded-xl cursor-pointer transition-all duration-200 select-none ${
                       isPlaying 
                         ? 'bg-amber-500/25 text-amber-300 ring-2 ring-amber-500 shadow-md font-bold' 
@@ -464,17 +495,19 @@ const SurahReader: React.FC = () => {
                     </button>
                   </div>
 
-                  <button
-                    onClick={() => togglePlay(ayah.numberInSurah, ayah.audio)}
-                    className={`p-2.5 rounded-xl transition-all active:scale-90 ${
-                      isPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface hover:bg-border text-text'
-                    }`}
-                  >
-                    {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => togglePlay(ayah.numberInSurah, ayah.audio)}
+                      className={`p-2.5 rounded-xl transition-all active:scale-90 ${
+                        isPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface hover:bg-border text-text'
+                      }`}
+                    >
+                      {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Word by Word Flow Chips */}
+                {/* Word by Word Interactive Grid */}
                 <div className="flex flex-wrap gap-2.5 justify-end mb-4" dir="rtl">
                   {ayah.words && ayah.words.length > 0 ? (
                     ayah.words.map((word) => {
@@ -483,7 +516,7 @@ const SurahReader: React.FC = () => {
                         <div
                           key={word.id}
                           onClick={() => handlePlayWordAudio(word.id, word.audioUrl)}
-                          className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border transition-all cursor-pointer ${
+                          className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border transition-all cursor-pointer select-none active:scale-95 ${
                             isWordPlaying
                               ? 'bg-amber-500/20 border-amber-500 text-amber-300 ring-2 ring-amber-500 shadow-md scale-105'
                               : 'bg-surface/80 border-border/70 hover:border-primary/40 hover:bg-surface'
@@ -505,11 +538,35 @@ const SurahReader: React.FC = () => {
                   )}
                 </div>
 
-                {/* Full Ayah Translation */}
-                <div className="pt-3 border-t border-border/60">
-                  <p className="text-xs sm:text-sm text-subtext leading-relaxed font-normal">
-                    {ayah.translation}
-                  </p>
+                {/* 🌟 Dual Translations: Primary (Prominent) + Secondary (Subtle) */}
+                <div className="pt-3 border-t border-border/60 space-y-2">
+                  {ayah.translation && (
+                    <div>
+                      <p className={`font-bold leading-relaxed ${
+                        isPrimaryRtl 
+                          ? 'font-urdu text-right text-lg sm:text-xl text-emerald-400 dark:text-emerald-300' 
+                          : 'text-sm sm:text-base text-text'
+                      }`} dir={isPrimaryRtl ? 'rtl' : 'ltr'}>
+                        {ayah.translation}
+                      </p>
+                    </div>
+                  )}
+
+                  {ayah.secondaryTranslation && (
+                    <div className="pt-2 border-t border-border/30">
+                      <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-muted mb-0.5" dir="ltr">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500/60 inline-block" />
+                        <span>{secondaryTransObj?.name || 'Secondary Translation'}</span>
+                      </div>
+                      <p className={`font-medium leading-relaxed ${
+                        isSecondaryRtl 
+                          ? 'font-urdu text-right text-base text-emerald-400/80 dark:text-emerald-300/80' 
+                          : 'text-xs sm:text-sm text-subtext'
+                      }`} dir={isSecondaryRtl ? 'rtl' : 'ltr'}>
+                        {ayah.secondaryTranslation}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -556,11 +613,37 @@ const SurahReader: React.FC = () => {
                   {cleanArabic(ayah.text)}
                 </p>
 
-                {/* Translation */}
-                <div className="pt-3 border-t border-border/60">
-                  <p className="text-xs sm:text-sm text-subtext leading-relaxed font-normal">
-                    {ayah.translation}
-                  </p>
+                {/* 🌟 Dual Translations: Primary (Prominent) + Secondary (Subtle) */}
+                <div className="pt-3 border-t border-border/60 space-y-2">
+                  {/* Primary Translation */}
+                  {ayah.translation && (
+                    <div>
+                      <p className={`font-bold leading-relaxed ${
+                        isPrimaryRtl 
+                          ? 'font-urdu text-right text-lg sm:text-xl text-emerald-400 dark:text-emerald-300' 
+                          : 'text-sm sm:text-base text-text'
+                      }`} dir={isPrimaryRtl ? 'rtl' : 'ltr'}>
+                        {ayah.translation}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Secondary Translation */}
+                  {ayah.secondaryTranslation && (
+                    <div className="pt-2 border-t border-border/30">
+                      <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-muted mb-0.5" dir="ltr">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500/60 inline-block" />
+                        <span>{secondaryTransObj?.name || 'Secondary Translation'}</span>
+                      </div>
+                      <p className={`font-medium leading-relaxed ${
+                        isSecondaryRtl 
+                          ? 'font-urdu text-right text-base text-emerald-400/80 dark:text-emerald-300/80' 
+                          : 'text-xs sm:text-sm text-subtext'
+                      }`} dir={isSecondaryRtl ? 'rtl' : 'ltr'}>
+                        {ayah.secondaryTranslation}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -819,6 +902,79 @@ const SurahReader: React.FC = () => {
             ) : (
               <p className="text-sm text-muted py-6 text-center">Tafsir not found for this Ayah.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 🌐 Dual Translation Selector Modal */}
+      {showTransModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
+          <div className="bg-card border border-border/80 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-base font-black text-text flex items-center gap-2">
+                <Languages size={18} className="text-amber-400" />
+                <span>Translation Languages</span>
+              </h3>
+              <button 
+                onClick={() => setShowTransModal(false)} 
+                className="p-1.5 rounded-full hover:bg-surface text-subtext hover:text-text transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-text mb-1 uppercase tracking-wider text-[10px]">
+                  Primary Language (Prominent)
+                </label>
+                <select
+                  value={primaryTrans}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPrimaryTrans(val);
+                    localStorage.setItem('quran_primary_translation', val);
+                  }}
+                  className="w-full p-2.5 bg-surface border border-border rounded-xl text-text font-medium outline-none focus:ring-2 focus:ring-amber-400"
+                >
+                  {AVAILABLE_TRANSLATIONS.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-muted mt-1">Main high-contrast translation shown on each verse.</p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-text mb-1 uppercase tracking-wider text-[10px]">
+                  Secondary Language (Optional Dual View)
+                </label>
+                <select
+                  value={secondaryTrans}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSecondaryTrans(val);
+                    localStorage.setItem('quran_secondary_translation', val);
+                  }}
+                  className="w-full p-2.5 bg-surface border border-border rounded-xl text-text font-medium outline-none focus:ring-2 focus:ring-amber-400"
+                >
+                  <option value="none">None (Single Translation Only)</option>
+                  {AVAILABLE_TRANSLATIONS.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-muted mt-1">Shows a second language (e.g. English + Urdu or Urdu + Pashto) side-by-side.</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowTransModal(false);
+                if (id) loadSurah(parseInt(id), readMode === 'wordByWord', primaryTrans, secondaryTrans);
+              }}
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black rounded-2xl text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+            >
+              Apply Translation Settings
+            </button>
           </div>
         </div>
       )}
