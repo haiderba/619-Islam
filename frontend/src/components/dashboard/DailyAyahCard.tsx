@@ -174,15 +174,21 @@ const DailyAyahCard: React.FC = () => {
   if (ayahs.length === 0) return null;
 
   const currentAyah = ayahs[selectedIdx] || ayahs[0];
+  const arabicLength = currentAyah?.arabicText?.length || 0;
+  const arabicFontClass = arabicLength > 160
+    ? 'text-lg sm:text-xl leading-[2.0]'
+    : arabicLength > 80
+    ? 'text-xl sm:text-2xl leading-[2.1]'
+    : 'text-2xl sm:text-3xl leading-[2.3]';
 
   return (
-    <div className="bg-gradient-to-br from-[#062426] via-[#093538] to-[#041c1d] border border-amber-500/30 p-5 sm:p-6 rounded-3xl shadow-xl shadow-teal-950/40 text-white mb-6 relative overflow-hidden group">
+    <div className="bg-gradient-to-br from-[#062426] via-[#093538] to-[#041c1d] border border-amber-500/30 p-5 sm:p-6 rounded-3xl shadow-xl shadow-teal-950/40 text-white mb-6 relative overflow-hidden flex flex-col justify-between h-[460px] sm:h-[480px] transition-all">
       {/* Subtle Background Glow Elements */}
       <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Card Header with 619 Logo and Tabs */}
-      <div className="relative z-10 flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/10">
+      {/* ── TOP: Header with 619 Logo and Tabs (Fixed) ── */}
+      <div className="relative z-10 flex items-center justify-between gap-2 pb-3 border-b border-white/10 shrink-0">
         <div className="flex items-center gap-2.5">
           <img src="/logo.png" alt="619 Islam" className="w-8 h-8 object-contain drop-shadow" />
           <div>
@@ -214,84 +220,86 @@ const DailyAyahCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Arabic Calligraphy Text */}
-      <div className="relative z-10 my-4 text-center">
-        <p className="font-arabic text-2xl sm:text-3xl leading-[2.2] text-amber-100 font-medium drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)]">
+      {/* ── MIDDLE: Arabic & English Content (Scrollable & Dynamic Scaling) ── */}
+      <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center my-3 overflow-y-auto px-1 scrollbar-none space-y-3">
+        {/* Main Arabic Calligraphy Text */}
+        <p className={`font-arabic text-amber-100 font-medium drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)] ${arabicFontClass}`}>
           {currentAyah.arabicText}
         </p>
-      </div>
 
-      {/* English Translation */}
-      <div className="relative z-10 my-3 text-center px-2">
-        <p className="text-white/90 text-xs sm:text-sm font-normal italic leading-relaxed">
+        {/* English Translation */}
+        <p className="text-white/90 text-xs sm:text-sm font-normal italic leading-relaxed max-w-sm">
           "{currentAyah.englishTranslation}"
         </p>
       </div>
 
-      {/* Surah Reference Badge & Audio Row */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-3 mt-2 border-t border-white/10">
-        <div 
-          onClick={() => navigate(`/quran/${currentAyah.surahNumber}`)}
-          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl border border-white/10"
-        >
-          <BookOpen size={14} className="text-amber-400 shrink-0" />
-          <span className="text-xs font-bold text-amber-300 truncate">
-            Surah {currentAyah.surahNameEnglish} • {currentAyah.surahNumber}:{currentAyah.ayahNumber}
-          </span>
+      {/* ── BOTTOM: Surah Info + Audio + Action Buttons (Pinned & Consistent) ── */}
+      <div className="relative z-10 pt-2 border-t border-white/10 shrink-0 space-y-2.5">
+        {/* Surah Reference Badge & Audio Row */}
+        <div className="flex items-center justify-between gap-2">
+          <div 
+            onClick={() => navigate(`/quran/${currentAyah.surahNumber}`)}
+            className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-xl border border-white/10 max-w-[200px] truncate"
+          >
+            <BookOpen size={13} className="text-amber-400 shrink-0" />
+            <span className="text-[11px] font-bold text-amber-300 truncate">
+              Surah {currentAyah.surahNameEnglish} • {currentAyah.surahNumber}:{currentAyah.ayahNumber}
+            </span>
+          </div>
+
+          {/* Audio Player Button */}
+          {currentAyah.audioUrl && (
+            <button
+              onClick={handleToggleAudio}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                isPlaying
+                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 animate-pulse'
+                  : 'bg-white/10 hover:bg-white/20 text-white'
+              }`}
+            >
+              {isPlaying ? <Pause size={13} /> : <Play size={13} />}
+              <span>{isPlaying ? 'Playing' : 'Listen'}</span>
+              <Volume2 size={12} className="opacity-70" />
+            </button>
+          )}
         </div>
 
-        {/* Audio Player Button */}
-        {currentAyah.audioUrl && (
+        {/* Action Buttons: Status PNG Download & Share */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Download Status Button */}
           <button
-            onClick={handleToggleAudio}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              isPlaying
-                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 animate-pulse'
-                : 'bg-white/10 hover:bg-white/20 text-white'
-            }`}
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
           >
-            {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-            <span>{isPlaying ? 'Playing' : 'Listen'}</span>
-            <Volume2 size={13} className="opacity-70" />
+            {downloadSuccess ? (
+              <>
+                <Check size={14} className="text-black" />
+                <span>Saved PNG!</span>
+              </>
+            ) : isDownloading ? (
+              <>
+                <Loader2 size={14} className="animate-spin text-black" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Download size={14} />
+                <span>Download Status</span>
+              </>
+            )}
           </button>
-        )}
-      </div>
 
-      {/* Action Buttons: Status PNG Download & Share */}
-      <div className="relative z-10 grid grid-cols-2 gap-2 mt-4">
-        {/* Download Status Button */}
-        <button
-          onClick={handleDownload}
-          disabled={isDownloading}
-          className="flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
-        >
-          {downloadSuccess ? (
-            <>
-              <Check size={15} className="text-black" />
-              <span>Saved PNG!</span>
-            </>
-          ) : isDownloading ? (
-            <>
-              <Loader2 size={15} className="animate-spin text-black" />
-              <span>Generating...</span>
-            </>
-          ) : (
-            <>
-              <Download size={15} />
-              <span>Download Status</span>
-            </>
-          )}
-        </button>
-
-        {/* Share Button */}
-        <button
-          onClick={handleShare}
-          disabled={isDownloading}
-          className="flex items-center justify-center gap-2 py-2.5 px-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 active:scale-95 transition-all"
-        >
-          <Share2 size={15} className="text-amber-400" />
-          <span>Share Story</span>
-        </button>
+          {/* Share Button */}
+          <button
+            onClick={handleShare}
+            disabled={isDownloading}
+            className="flex items-center justify-center gap-2 py-2.5 px-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 active:scale-95 transition-all"
+          >
+            <Share2 size={14} className="text-amber-400" />
+            <span>Share Story</span>
+          </button>
+        </div>
       </div>
     </div>
   );
