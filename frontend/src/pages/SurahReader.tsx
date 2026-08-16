@@ -87,7 +87,7 @@ const SurahReader: React.FC = () => {
     if (id) {
       loadSurah(parseInt(id), readMode === 'wordByWord', primaryTrans, secondaryTrans);
     }
-  }, [id, selectedQari, readMode, primaryTrans, secondaryTrans]);
+  }, [id, readMode, primaryTrans, secondaryTrans]);
 
   useEffect(() => {
     if (surah) {
@@ -147,21 +147,22 @@ const SurahReader: React.FC = () => {
   };
 
   // Universal Bulletproof Audio URL Resolver
-  const getAyahAudioUrl = (surahNum: number, ayahNum: number, qariId: string, directUrl?: string) => {
-    if (directUrl && directUrl.trim().length > 0) {
-      if (directUrl.startsWith('http://') || directUrl.startsWith('https://')) return directUrl;
-      return `https://verses.quran.com/${directUrl}`;
-    }
+  // Universal Bulletproof Audio URL Resolver for all 11 Qaris
+  const getAyahAudioUrl = (surahNum: number, ayahNum: number, qariId: string) => {
     const s3 = String(surahNum).padStart(3, '0');
     const a3 = String(ayahNum).padStart(3, '0');
     const qariMap: Record<string, string> = {
       '7': 'Alafasy_128kbps',
       '2': 'Abdul_Basit_Murattal_192kbps',
-      '3': 'Abdurrahmaan_As-Sudais_192kbps',
+      '1': 'Abdul_Basit_Mujawwad_128kbps',
       '6': 'Husary_128kbps',
       '9': 'Minshawy_Murattal_128kbps',
+      '8': 'Minshawy_Mujawwad_192kbps',
+      '3': 'Abdurrahmaan_As-Sudais_192kbps',
       '4': 'Abu_Bakr_Ash-Shaatree_128kbps',
       '12': 'MaherAlMuaiqly128kbps',
+      '5': 'Ghamadi_40kbps',
+      '11': 'Yasser_Ad-Dussary_128kbps',
     };
     const folder = qariMap[qariId] || 'Alafasy_128kbps';
     return `https://everyayah.com/data/${folder}/${s3}${a3}.mp3`;
@@ -170,15 +171,21 @@ const SurahReader: React.FC = () => {
   const togglePlay = (ayahNumber: number, explicitUrl?: string, overrideQari?: string) => {
     if (!surah) return;
 
+    const qariToUse = overrideQari || selectedQari;
+
     // Toggle pause if currently playing the exact same ayah
     if (playingAyah === ayahNumber && !overrideQari && audioRef.current && !audioRef.current.paused) {
       audioRef.current.pause();
       setPlayingAyah(null);
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
       return;
     }
 
-    const qariToUse = overrideQari || selectedQari;
-    const targetUrl = getAyahAudioUrl(surah.number, ayahNumber, qariToUse, explicitUrl);
+    const targetUrl = explicitUrl && explicitUrl.startsWith('http')
+      ? explicitUrl
+      : getAyahAudioUrl(surah.number, ayahNumber, qariToUse);
 
     if (audioRef.current) {
       audioRef.current.pause();
@@ -195,34 +202,77 @@ const SurahReader: React.FC = () => {
     };
     newAudio.onplay = () => {
       newAudio.playbackRate = playbackSpeedRef.current;
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+      }
     };
-    newAudio.oncanplay = () => {
-      newAudio.playbackRate = playbackSpeedRef.current;
+    newAudio.onpause = () => {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
     };
 
     audioRef.current = newAudio;
     setPlayingAyah(ayahNumber);
     setMushafSelectedAyah(ayahNumber);
 
+    // 🌟 Set up Lock-Screen MediaSession Controls (Background Playback)
+    if ('mediaSession' in navigator && surah) {
+      const qariObj = QARI_OPTIONS.find(q => q.id === qariToUse);
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `Surah ${surah.englishName} (${surah.name}) — Verse ${ayahNumber}`,
+        artist: qariObj?.name || 'Quran Recitation',
+        album: '619 Islam — The Holy Quran',
+        artwork: [
+          { src: '/logo.png', sizes: '512x512', type: 'image/png' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
+        ]
+      });
+
+      navigator.mediaSession.playbackState = 'playing';
+
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(() => {});
+          navigator.mediaSession.playbackState = 'playing';
+        }
+      });
+
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          navigator.mediaSession.playbackState = 'paused';
+        }
+      });
+
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        playNext();
+      });
+
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        playPrev();
+      });
+    }
+
     newAudio.onended = () => {
       const nextAyah = surah.ayahs.find(a => a.numberInSurah === ayahNumber + 1);
       if (nextAyah) {
-        togglePlay(nextAyah.numberInSurah, nextAyah.audio, qariToUse);
+        togglePlay(nextAyah.numberInSurah, undefined, qariToUse);
       } else {
         setPlayingAyah(null);
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'none';
+        }
       }
     };
 
     newAudio.onerror = () => {
-      // Fallback to EveryAyah if primary fails
+      // Fallback to EveryAyah Alafasy if primary fails
       const fallbackUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surah.number).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
       if (targetUrl !== fallbackUrl) {
         const fallbackAudio = new Audio(fallbackUrl);
         fallbackAudio.defaultPlaybackRate = playbackSpeedRef.current;
         fallbackAudio.playbackRate = playbackSpeedRef.current;
-        fallbackAudio.onplay = () => {
-          fallbackAudio.playbackRate = playbackSpeedRef.current;
-        };
         audioRef.current = fallbackAudio;
         fallbackAudio.onended = newAudio.onended;
         fallbackAudio.play().catch(() => setPlayingAyah(null));
@@ -243,23 +293,24 @@ const SurahReader: React.FC = () => {
     }
   };
 
+  // Instant 1-Click Qari Selector (switches voice immediately without requiring 2 clicks)
   const handleSelectQari = (qariId: string) => {
     setSelectedQari(qariId);
     setShowQariMenu(false);
+    localStorage.setItem('selected_qari_id', qariId);
 
-    // Stop current audio and start playing from the beginning of the Surah (Ayah 1)
+    // If already playing or paused on an Ayah, start playing that Ayah with new Qari immediately on 1st click
+    const targetAyah = playingAyah || 1;
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      audioRef.current = null;
     }
 
-    if (surah && surah.ayahs.length > 0) {
-      const firstAyah = surah.ayahs[0];
-      setTimeout(() => {
-        togglePlay(firstAyah.numberInSurah, firstAyah.audio, qariId);
-      }, 50);
-    }
+    // Play immediately with new voice
+    setTimeout(() => {
+      togglePlay(targetAyah, undefined, qariId);
+    }, 10);
   };
 
   const handleSpeedChange = (speed: number) => {
