@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UpdateProvider } from './context/UpdateContext';
 
-// Pages (to be created)
+// Pages
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
@@ -42,7 +42,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <SplashScreen message="Preparing your daily companion..." />;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#062426]">
+        <div className="w-8 h-8 rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin" />
+      </div>
+    );
   }
   
   if (!user) {
@@ -95,9 +99,17 @@ const AppRoutes = () => {
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <AuthProvider>
       <UpdateProvider>
+        {showSplash && (
+          <SplashScreen 
+            message="Preparing 619 Islam..." 
+            onComplete={() => setShowSplash(false)} 
+          />
+        )}
         <BrowserRouter>
           <PWAUpdatePrompt />
           <InstallPrompt />
