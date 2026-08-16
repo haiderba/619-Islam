@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useGoals } from '../hooks/useGoals';
 import { useStreak } from '../hooks/useStreak';
 import { getTodayDateString } from '../utils/dateUtils';
-import { Target, CheckCircle2, Circle, Flame, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight, Calendar } from 'lucide-react';
+import { Target, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight, Calendar, Flame, Sparkles, CheckCircle2, Circle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNamaz } from '../hooks/useNamaz';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import DailyAyahCard from '../components/dashboard/DailyAyahCard';
+import IslamicEventsModal from '../components/dashboard/IslamicEventsModal';
 import { getDesiDate } from '../utils/desiDateUtils';
+import { getUpcomingIslamicEvent, ISLAMIC_MONTHS } from '../utils/islamicEvents';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -17,6 +19,8 @@ const Dashboard: React.FC = () => {
   const { hijriDate, locationName } = useNamaz();
   const { isOnline } = useNetworkStatus();
   const navigate = useNavigate();
+
+  const [showEventsModal, setShowEventsModal] = useState<boolean>(false);
   
   const desiDate = getDesiDate();
   const today = getTodayDateString();
@@ -38,6 +42,13 @@ const Dashboard: React.FC = () => {
   const progressPercentage = activeGoals.length > 0 
     ? Math.round((completedCount / activeGoals.length) * 100) 
     : 0;
+
+  // Compute Hijri Month Number & Upcoming Event
+  const monthNameLower = (hijriDate?.month?.en || '').toLowerCase().trim();
+  const matchedMonth = ISLAMIC_MONTHS.find(m => monthNameLower.includes(m.nameEn.toLowerCase().slice(0, 4)));
+  const currentHijriMonthNum = matchedMonth ? matchedMonth.number : 3; // Default Rabi' al-Awwal = 3
+  const currentHijriDayNum = parseInt(hijriDate?.day || '3') || 3;
+  const upcomingIslamicEvent = getUpcomingIslamicEvent(currentHijriMonthNum, currentHijriDayNum);
 
   const QUICK_FEATURES = [
     {
@@ -103,16 +114,16 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 pb-28 max-w-lg mx-auto">
+    <div className="p-4 sm:p-6 pb-28 max-w-lg mx-auto">
       {/* Header with Location & Date */}
-      <header className="mb-6 pt-2">
+      <header className="mb-4 pt-1">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-text tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-text tracking-tight">
               Hey, {user?.name || user?.username} 👋
             </h1>
           </div>
-          <img src="/logo.png" alt="619 Islam" className="w-11 h-11 object-contain drop-shadow-md hover:scale-105 transition-transform" />
+          <img src="/logo.png" alt="619 Islam" className="w-10 h-10 object-contain drop-shadow-md hover:scale-105 transition-transform" />
         </div>
 
         {/* 🌟 Master Multi-Date & Location Banner */}
@@ -132,15 +143,25 @@ const Dashboard: React.FC = () => {
 
           {/* Bottom Row: Dual Islamic Hijri & Desi Solar Calendars */}
           <div className="grid grid-cols-2 gap-2">
-            {/* Islamic Hijri */}
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 flex items-center gap-2">
-              <span className="text-base shrink-0">🌙</span>
-              <div className="min-w-0">
-                <span className="text-[9px] font-extrabold uppercase text-emerald-400/80 block leading-tight tracking-wider">Islamic Hijri</span>
-                <span className="text-xs font-bold text-emerald-300 truncate block">
-                  {hijriDate ? `${hijriDate.day} ${hijriDate.month.en} ${hijriDate.year} ${hijriDate.designation.abbreviated}` : 'Loading...'}
-                </span>
+            {/* Islamic Hijri (Clickable to open Events Calendar Modal) */}
+            <div 
+              onClick={() => setShowEventsModal(true)}
+              className="bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-2 flex items-center justify-between cursor-pointer transition-all group active:scale-[0.98]"
+              title="Click to view Islamic Events Calendar"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-base shrink-0">🌙</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-extrabold uppercase text-emerald-400/80 block leading-tight tracking-wider">Islamic Hijri</span>
+                    <span className="text-[8px] bg-emerald-500/20 text-emerald-300 font-bold px-1 rounded">Events</span>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-300 truncate block group-hover:text-emerald-200">
+                    {hijriDate ? `${hijriDate.day} ${hijriDate.month.en} ${hijriDate.year}` : 'Loading...'}
+                  </span>
+                </div>
               </div>
+              <ChevronRight size={13} className="text-emerald-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
             </div>
 
             {/* Desi Calendar */}
@@ -154,44 +175,78 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* 🌟 Upcoming Islamic Event Pill Banner */}
+          {upcomingIslamicEvent && (
+            <div
+              onClick={() => setShowEventsModal(true)}
+              className="pt-1.5 border-t border-border/50 flex items-center justify-between text-xs cursor-pointer group"
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Sparkles size={13} className="text-amber-400 shrink-0 animate-pulse" />
+                <span className="text-[11px] text-subtext truncate">
+                  <strong className="text-amber-400 font-bold">{upcomingIslamicEvent.label}:</strong> {upcomingIslamicEvent.event.title}
+                </span>
+              </div>
+              <div className="flex items-center gap-0.5 text-[10px] font-bold text-primary shrink-0 pl-1 group-hover:underline">
+                <span>View All</span>
+                <ChevronRight size={12} />
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-gradient-to-br from-primary to-primary-dark p-4 rounded-2xl shadow-lg shadow-primary/20 text-white">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Target size={18} className="text-white/80" />
-            <span className="font-medium text-white/90 text-xs">Today's Progress</span>
+      {/* ── ⚡ COMPACT STATS ROW (Today's Progress & Streak) ── */}
+      <div className="grid grid-cols-2 gap-2.5 mb-4">
+        {/* Compact Today's Progress */}
+        <div className="bg-gradient-to-r from-primary to-primary-dark px-3.5 py-2.5 rounded-2xl shadow-md shadow-primary/20 text-white flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1 text-[11px] font-medium text-white/90">
+              <Target size={13} className="shrink-0 text-white/80" />
+              <span className="truncate">Progress</span>
+            </div>
+            <div className="text-[10px] text-white/75 font-medium">
+              {todayCompletions.length} of {goals.length} done
+            </div>
           </div>
-          <div className="text-2xl font-black">{progressPercentage}%</div>
-          <div className="text-white/80 text-[11px] mt-0.5">
-            {todayCompletions.length} of {goals.length} completed
-          </div>
+          <div className="text-lg font-black shrink-0 pl-1">{progressPercentage}%</div>
         </div>
 
-        <div className="bg-card border border-border p-4 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Flame size={18} className="text-accentGold" />
-            <span className="font-medium text-subtext text-xs">Current Streak</span>
+        {/* Compact Current Streak */}
+        <div className="bg-card border border-border px-3.5 py-2.5 rounded-2xl shadow-sm flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1 text-[11px] font-medium text-subtext">
+              <Flame size={13} className="text-amber-500 shrink-0" />
+              <span className="truncate">Streak</span>
+            </div>
+            <div className="text-[10px] text-muted font-medium">
+              Best: {streakData.longestStreak} days
+            </div>
           </div>
-          <div className="text-2xl font-black text-text">
-            {streakData.currentStreak} <span className="text-sm font-normal text-muted">days</span>
-          </div>
-          <div className="text-muted text-[11px] mt-0.5">
-            Best: {streakData.longestStreak} days
+          <div className="text-lg font-black text-text shrink-0 pl-1">
+            {streakData.currentStreak}<span className="text-[10px] font-normal text-muted ml-0.5">d</span>
           </div>
         </div>
       </div>
 
-      {/* 🌟 Daily Quran Ayah Card (3 Verses, Audio, Status PNG Generator) */}
+      {/* 🌟 Daily Quran Ayah Banner (Compact Pill & Immersive Modal) */}
       <DailyAyahCard />
+
+      {/* Islamic Events Modal Popup */}
+      <IslamicEventsModal
+        isOpen={showEventsModal}
+        onClose={() => setShowEventsModal(false)}
+        currentMonthNumber={currentHijriMonthNum}
+        currentDayNumber={currentHijriDayNum}
+        hijriYear={hijriDate?.year || 1448}
+      />
 
       {/* Islamic Features - Quick Access Grid (Same Size, Clean Icons) */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold text-text">Explore Features</h2>
-          <span className="text-xs text-muted">Quick Access</span>
+          <h2 className="text-sm font-bold text-text">Explore Features</h2>
+          <span className="text-[11px] text-muted">Quick Access</span>
         </div>
         
         <div className="grid grid-cols-3 gap-2.5">
