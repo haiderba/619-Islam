@@ -226,16 +226,31 @@ const BookDetail: React.FC = () => {
         )}
       </section>
 
-      {/* ── 🎯 PRIMARY CTA (Thumb Zone Priority) ── */}
-      <section className="space-y-2">
-        <button
-          onClick={() => navigate(`/books/${book.id}/read?chapter=${startChapter}`)}
-          className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-sm rounded-2xl shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-        >
-          <BookOpen size={18} className="text-black" />
-          <span>{book.last_chapter ? `Continue Reading (Chap ${book.last_chapter})` : 'Start Reading'}</span>
-          <ChevronRight size={18} className="text-black ml-1" />
-        </button>
+      {/* ── 🎯 PRIMARY CTA LAUNCHERS (Dual Engine: Digital Text & Scanned PDF) ── */}
+      <section className="space-y-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {/* 1. Digital Text Reader Button */}
+          {book.chapters.length > 0 && (
+            <button
+              onClick={() => navigate(`/books/${book.id}/read?chapter=${startChapter}`)}
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              <BookOpen size={17} className="text-black" />
+              <span>{book.last_chapter ? `Resume Text (Chap ${book.last_chapter})` : 'Read Digital Text'}</span>
+              <ChevronRight size={17} className="text-black ml-auto sm:ml-1" />
+            </button>
+          )}
+
+          {/* 2. Original PDF / Manuscript Reader Button */}
+          <button
+            onClick={() => navigate(`/books/${book.id}/pdf`)}
+            className="w-full py-3.5 px-4 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-emerald-950/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-emerald-400/30"
+          >
+            <span className="text-base">📄</span>
+            <span>Read Original PDF Scan</span>
+            <ChevronRight size={17} className="text-white ml-auto sm:ml-1" />
+          </button>
+        </div>
 
         {/* Secondary Actions Row */}
         <div className="grid grid-cols-2 gap-2">
@@ -258,7 +273,7 @@ const BookDetail: React.FC = () => {
             ) : (
               <>
                 <Download size={14} className="text-primary" />
-                <span>Download for Offline</span>
+                <span>Download Offline</span>
               </>
             )}
           </button>

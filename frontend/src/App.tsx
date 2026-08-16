@@ -21,6 +21,7 @@ import Dashboard from './pages/Dashboard';
 import Books from './pages/Books';
 import BookDetail from './pages/BookDetail';
 import BookReader from './pages/BookReader';
+import PdfReader from './pages/PdfReader';
 import MyLibrary from './pages/MyLibrary';
 import Layout from './components/ui/Layout';
 import InstallPrompt from './components/ui/InstallPrompt';
@@ -51,8 +52,9 @@ const AppRoutes = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-      {/* Full screen reader */}
+      {/* Full screen readers */}
       <Route path="/books/:id/read" element={<ProtectedRoute><BookReader /></ProtectedRoute>} />
+      <Route path="/books/:id/pdf" element={<ProtectedRoute><PdfReader /></ProtectedRoute>} />
       
       {/* Protected App Routes inside a Layout */}
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>

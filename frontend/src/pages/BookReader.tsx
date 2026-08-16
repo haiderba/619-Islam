@@ -197,13 +197,25 @@ const BookReader: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => setActiveSheet('theme')}
-            className="p-1.5 rounded-xl hover:opacity-80 transition-opacity active:scale-95"
-            aria-label="Theme & Typography Settings"
-          >
-            <Type size={18} />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Switch to Original PDF Scan Mode */}
+            <button
+              onClick={() => navigate(`/books/${id}/pdf`)}
+              className="px-2.5 py-1 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-500/30 text-[11px] font-bold flex items-center gap-1 active:scale-95 transition-all"
+              title="Read Original PDF Scan"
+            >
+              <span>📄</span>
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+
+            <button
+              onClick={() => setActiveSheet('theme')}
+              className="p-1.5 rounded-xl hover:opacity-80 transition-opacity active:scale-95"
+              aria-label="Theme & Typography Settings"
+            >
+              <Type size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Partial Content Disclaimer Banner if applicable */}

@@ -45,6 +45,7 @@ export interface BookSummary {
   featured: boolean;
   total_chapters: number;
   total_volumes?: number;
+  total_pages?: number;
   current_volume?: number;
   completeness?: 'complete' | 'partial' | 'multi_volume' | string;
   authenticity_status?: string;

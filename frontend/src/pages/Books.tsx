@@ -225,11 +225,18 @@ const Books: React.FC = () => {
       )}
 
       {/* ── 🏷️ MADHHAB / TRADITION FILTER CHIPS (Horizontal Scroll) ── */}
-      <section className="space-y-2">
+      <section className="space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[11px] font-black uppercase tracking-wider text-muted">Tradition / School</span>
+          <span className="text-[11px] font-bold text-amber-400">
+            {selectedTradition === 'all' ? 'All Traditions' : traditions.find(t => t.slug === selectedTradition)?.name || 'Custom'}
+          </span>
+        </div>
+
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <button
             onClick={() => handleSelectTradition('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 ${
               selectedTradition === 'all'
                 ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
                 : 'bg-card border border-border text-subtext hover:text-text'
@@ -237,11 +244,11 @@ const Books: React.FC = () => {
           >
             All Traditions
           </button>
-          {traditions.map((t) => (
+          {traditions.filter(t => t.slug !== 'all').map((t) => (
             <button
               key={t.slug}
               onClick={() => handleSelectTradition(t.slug)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-1.5 ${
                 selectedTradition === t.slug
                   ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
                   : 'bg-card border border-border text-subtext hover:text-text'
@@ -253,51 +260,56 @@ const Books: React.FC = () => {
           ))}
         </div>
 
-        {/* Secondary Filter Row: Format & Completeness */}
-        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-none text-[11px]">
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted font-bold flex items-center gap-1 pl-1">
-              <SlidersHorizontal size={11} />
-              <span>Format:</span>
-            </span>
-            {(['all', 'complete', 'partial', 'multi_volume'] as const).map((comp) => (
-              <button
-                key={comp}
-                onClick={() => setCompletenessFilter(comp)}
-                className={`px-2 py-0.5 rounded-lg font-bold transition-colors ${
-                  completenessFilter === comp
-                    ? 'bg-primary/20 text-primary border border-primary/30'
-                    : 'text-subtext hover:text-text bg-surface'
-                }`}
-              >
-                {comp === 'all' ? 'All' : comp === 'complete' ? 'Complete' : comp === 'partial' ? 'Selections' : 'Multi-Vol'}
-              </button>
-            ))}
-          </div>
+        {/* Format Filter Row */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
+          <span className="text-muted font-bold flex items-center gap-1 pl-1 shrink-0">
+            <SlidersHorizontal size={11} />
+            <span>Format:</span>
+          </span>
+          {(['all', 'complete', 'partial', 'multi_volume'] as const).map((comp) => (
+            <button
+              key={comp}
+              onClick={() => setCompletenessFilter(comp)}
+              className={`px-2.5 py-1 rounded-xl font-bold whitespace-nowrap transition-colors ${
+                completenessFilter === comp
+                  ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm'
+                  : 'text-subtext hover:text-text bg-card border border-border'
+              }`}
+            >
+              {comp === 'all' ? 'All Formats' : comp === 'complete' ? 'Complete Books' : comp === 'partial' ? 'Selections' : 'Multi-Volume'}
+            </button>
+          ))}
+        </div>
 
-          {/* Category Chips */}
-          <div className="flex items-center gap-1">
+        {/* Topic / Category Filter Row */}
+        {categories.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
+            <span className="text-muted font-bold pl-1 shrink-0">Topic:</span>
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`px-2 py-0.5 rounded-lg font-bold transition-colors ${
-                selectedCategory === 'all' ? 'bg-amber-500/20 text-amber-300' : 'text-muted'
+              className={`px-2.5 py-1 rounded-xl font-bold whitespace-nowrap transition-colors ${
+                selectedCategory === 'all'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  : 'text-subtext hover:text-text bg-card border border-border'
               }`}
             >
               All Topics
             </button>
-            {categories.slice(0, 3).map((c) => (
+            {categories.map((c) => (
               <button
                 key={c.slug}
                 onClick={() => setSelectedCategory(c.slug)}
-                className={`px-2 py-0.5 rounded-lg font-bold transition-colors whitespace-nowrap ${
-                  selectedCategory === c.slug ? 'bg-amber-500/20 text-amber-300' : 'text-muted hover:text-subtext'
+                className={`px-2.5 py-1 rounded-xl font-bold whitespace-nowrap transition-colors ${
+                  selectedCategory === c.slug
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'text-subtext hover:text-text bg-card border border-border'
                 }`}
               >
                 {c.name}
               </button>
             ))}
           </div>
-        </div>
+        )}
       </section>
 
       {/* ── 📚 MAIN BOOK CATALOG CARDS (Mobile-First Generous Layout) ── */}
