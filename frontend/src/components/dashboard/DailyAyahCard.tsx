@@ -271,14 +271,14 @@ const DailyAyahCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Middle: Arabic & English Content (Zero Top-Clipping) */}
-            <div className="relative z-10 flex-1 overflow-y-auto my-2 px-2 scrollbar-none flex flex-col items-center text-center">
-              <div className="my-auto py-3 w-full flex flex-col items-center space-y-3">
+            {/* Middle: Arabic & English Content (100% Top-Safe Scroll View) */}
+            <div className="relative z-10 flex-1 overflow-y-auto min-h-0 py-4 px-2 scrollbar-none flex flex-col items-center text-center">
+              <div className="w-full flex flex-col items-center space-y-4 pt-1 pb-4">
                 <p className={`font-arabic text-amber-100 font-medium drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)] ${arabicFontClass}`}>
                   {currentAyah.arabicText}
                 </p>
 
-                <p className="text-white/90 text-xs sm:text-sm font-normal italic leading-relaxed max-w-sm">
+                <p className="text-white/90 text-xs sm:text-sm font-normal italic leading-relaxed max-w-sm px-1">
                   "{currentAyah.englishTranslation}"
                 </p>
               </div>
