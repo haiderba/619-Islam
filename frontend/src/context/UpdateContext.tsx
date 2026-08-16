@@ -26,6 +26,24 @@ interface UpdateContextType {
   requestNotificationPermission: () => Promise<boolean>;
 }
 
+// Semver comparator: Returns true ONLY if serverVer is strictly greater than currentVer
+export function isNewerVersion(serverVer?: string | null, currentVer?: string | null): boolean {
+  if (!serverVer || !currentVer) return false;
+  if (serverVer === currentVer) return false;
+
+  const sParts = serverVer.split('.').map(n => parseInt(n, 10) || 0);
+  const cParts = currentVer.split('.').map(n => parseInt(n, 10) || 0);
+
+  for (let i = 0; i < Math.max(sParts.length, cParts.length); i++) {
+    const s = sParts[i] ?? 0;
+    const c = cParts[i] ?? 0;
+    if (s > c) return true;
+    if (s < c) return false;
+  }
+
+  return false;
+}
+
 const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
 
 export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -61,6 +79,21 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     },
   });
 
+  // Dismiss any lingering update notifications from the mobile notification center
+  const dismissPendingUpdateNotifications = async () => {
+    try {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && 'getNotifications' in reg) {
+          const notifications = await reg.getNotifications({ tag: '619-app-update' });
+          notifications.forEach(n => n.close());
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to dismiss pending notifications', e);
+    }
+  };
+
   // Send a rich native mobile push notification when a new update arrives
   const sendUpdateNotification = async (newVersion: string) => {
     try {
@@ -68,7 +101,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (Notification.permission !== 'granted') return;
 
       const lastNotified = localStorage.getItem('619_last_notified_update');
-      if (lastNotified === newVersion) return; // Prevent duplicate notifications
+      if (lastNotified === newVersion) return; // Prevent duplicate notifications for same version
 
       const title = `✨ 619 Islam Update Available (v${newVersion})`;
       const options: any = {
@@ -77,7 +110,11 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         badge: '/favicon.png',
         tag: '619-app-update',
         renotify: true,
-        data: { url: '/' }
+        data: { 
+          url: '/',
+          version: newVersion,
+          timestamp: Date.now()
+        }
       };
 
       if ('serviceWorker' in navigator) {
@@ -111,7 +148,8 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const ver = data.version;
         const needsReinstall = !!data.requiresReinstall;
 
-        if (ver && ver !== CURRENT_APP_VERSION) {
+        // ONLY trigger update if server version is strictly newer than current running app version
+        if (ver && isNewerVersion(ver, CURRENT_APP_VERSION)) {
           setServerVersion(ver);
           setManualUpdateAvailable(true);
           setRequiresReinstall(needsReinstall);
@@ -129,6 +167,10 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             currentVersion: CURRENT_APP_VERSION,
             requiresReinstall: needsReinstall
           };
+        } else {
+          // App is up to date: clean up any stale notification in the notification tray
+          setManualUpdateAvailable(false);
+          dismissPendingUpdateNotifications();
         }
       }
     } catch (e) {
@@ -146,7 +188,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const timeout = setTimeout(() => {
       checkLiveVersion();
-    }, 3000);
+    }, 2000);
 
     const interval = setInterval(() => {
       checkLiveVersion();
@@ -183,12 +225,15 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setShowWhatsNew(true);
       localStorage.removeItem('show_whats_new_after_update');
       localStorage.setItem('last_seen_app_version', CURRENT_APP_VERSION);
+      dismissPendingUpdateNotifications();
     }
   }, []);
 
   const applyUpdate = async () => {
     setApplyingUpdate(true);
     setManualUpdateAvailable(false);
+    await dismissPendingUpdateNotifications();
+
     try {
       localStorage.setItem('show_whats_new_after_update', 'true');
       localStorage.setItem('last_seen_app_version', serverVersion || CURRENT_APP_VERSION);
@@ -221,6 +266,8 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Clean Reinstall / Purge Stale Caches
   const reinstallApp = async () => {
     setApplyingUpdate(true);
+    await dismissPendingUpdateNotifications();
+
     try {
       // 1. Unregister all service workers
       if ('serviceWorker' in navigator) {
@@ -250,6 +297,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setManualUpdateAvailable(false);
     sessionStorage.setItem('dismissed_update_version', serverVersion || CURRENT_APP_VERSION);
     localStorage.setItem('applied_update_version', serverVersion || CURRENT_APP_VERSION);
+    dismissPendingUpdateNotifications();
   };
 
   const checkForUpdates = async (_manual: boolean = false): Promise<UpdateCheckResult> => {
