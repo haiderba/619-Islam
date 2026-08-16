@@ -329,56 +329,92 @@ const SurahReader: React.FC = () => {
   return (
     <div className="min-h-screen bg-background pb-40">
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-md border-b border-border px-4 py-3 shadow-sm">
-        <div className="flex items-center justify-between max-w-2xl mx-auto">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => navigate('/quran')}
-              className="p-2 hover:bg-surface rounded-full text-subtext transition-colors active:scale-95"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-base text-text">{surah.englishName}</h1>
-                <button
-                  onClick={handleOpenInfo}
-                  className="p-1 rounded-full text-primary hover:bg-primary/10 transition-colors"
-                  title="Historical Context & Background"
-                >
-                  <Info size={16} />
-                </button>
-                <button
-                  onClick={() => setShowTransModal(true)}
-                  className="p-1 rounded-full text-amber-500 hover:bg-amber-500/10 transition-colors flex items-center gap-1"
-                  title="Choose Primary & Secondary Quran Translations"
-                >
-                  <Languages size={16} />
-                </button>
+      <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border shadow-sm">
+        <div className="max-w-2xl mx-auto px-3.5 sm:px-4 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            {/* Left: Back & Title */}
+            <div className="flex items-center gap-2 min-w-0">
+              <button 
+                onClick={() => navigate('/quran')}
+                className="p-2 hover:bg-surface rounded-2xl text-subtext hover:text-text transition-colors active:scale-95 shrink-0"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h1 className="font-black text-base sm:text-lg text-text truncate">
+                    {surah.englishName}
+                  </h1>
+                  <span className="text-xs font-arabic text-amber-500 font-bold shrink-0">
+                    ({surah.name})
+                  </span>
+                </div>
+                <p className="text-[11px] text-subtext truncate">
+                  {surah.englishNameTranslation} • {surah.numberOfAyahs} Verses
+                </p>
               </div>
-              <p className="text-[11px] text-subtext">{surah.englishNameTranslation} • {surah.numberOfAyahs} Verses</p>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Language Selector Pill */}
+              <button
+                onClick={() => setShowTransModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500/25 text-xs font-black shadow-sm active:scale-95 transition-all"
+                title="Change Primary & Secondary Quran Translations"
+              >
+                <Languages size={14} className="shrink-0" />
+                <span className="text-[11px] uppercase tracking-wide">
+                  {primaryTransObj.lang.split('-')[0].toUpperCase()}
+                  {secondaryTransObj ? ` + ${secondaryTransObj.lang.split('-')[0].toUpperCase()}` : ''}
+                </span>
+              </button>
+
+              {/* Info Button */}
+              <button
+                onClick={handleOpenInfo}
+                className="p-2 rounded-xl bg-surface hover:bg-border text-subtext hover:text-text active:scale-95 transition-colors"
+                title="Historical Context & Background"
+              >
+                <Info size={16} />
+              </button>
             </div>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="flex bg-surface p-1 rounded-xl border border-border text-xs font-bold">
+          {/* Sub-row: 3-Segment Mode Switcher */}
+          <div className="mt-2.5 pt-2 border-t border-border/40 grid grid-cols-3 gap-1 bg-surface/60 p-1 rounded-2xl border border-border/60 text-xs font-bold">
             <button
               onClick={() => setReadMode('translation')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${readMode === 'translation' ? 'bg-primary text-white shadow-sm' : 'text-subtext hover:text-text'}`}
+              className={`py-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                readMode === 'translation' 
+                  ? 'bg-primary text-white shadow-md' 
+                  : 'text-subtext hover:text-text'
+              }`}
             >
-              Verses
+              <span>📖</span>
+              <span>Verses</span>
             </button>
             <button
               onClick={() => setReadMode('wordByWord')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${readMode === 'wordByWord' ? 'bg-primary text-white shadow-sm' : 'text-subtext hover:text-text'}`}
+              className={`py-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                readMode === 'wordByWord' 
+                  ? 'bg-primary text-white shadow-md' 
+                  : 'text-subtext hover:text-text'
+              }`}
             >
-              Words
+              <span>🔤</span>
+              <span>Words</span>
             </button>
             <button
               onClick={() => setReadMode('reading')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${readMode === 'reading' ? 'bg-primary text-white shadow-sm' : 'text-subtext hover:text-text'}`}
+              className={`py-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                readMode === 'reading' 
+                  ? 'bg-primary text-white shadow-md' 
+                  : 'text-subtext hover:text-text'
+              }`}
             >
-              Mushaf
+              <span>📜</span>
+              <span>Mushaf</span>
             </button>
           </div>
         </div>
@@ -538,30 +574,38 @@ const SurahReader: React.FC = () => {
                   )}
                 </div>
 
-                {/* 🌟 Dual Translations: Primary (Prominent) + Secondary (Subtle) */}
-                <div className="pt-3 border-t border-border/60 space-y-2">
+                {/* 🌟 Dual Translations: Primary (High-Contrast & Prominent) + Secondary (Subtle) */}
+                <div className="pt-3.5 border-t border-border/70 space-y-3">
+                  {/* 1. Primary Translation (Prominent & High Contrast) */}
                   {ayah.translation && (
-                    <div>
-                      <p className={`font-bold leading-relaxed ${
+                    <div className="bg-surface/40 dark:bg-black/20 p-3.5 rounded-2xl border border-border/40 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                          <span>📖</span>
+                          <span>{primaryTransObj.name}</span>
+                        </span>
+                      </div>
+                      <p className={`leading-relaxed ${
                         isPrimaryRtl 
-                          ? 'font-urdu text-right text-lg sm:text-xl text-emerald-400 dark:text-emerald-300' 
-                          : 'text-sm sm:text-base text-text'
+                          ? 'font-urdu text-right text-xl sm:text-2xl font-bold text-emerald-400 dark:text-emerald-300 leading-[2.3]' 
+                          : 'text-sm sm:text-base font-bold text-text dark:text-zinc-100 leading-relaxed'
                       }`} dir={isPrimaryRtl ? 'rtl' : 'ltr'}>
                         {ayah.translation}
                       </p>
                     </div>
                   )}
 
+                  {/* 2. Secondary Translation (Subtle Contextual Block) */}
                   {ayah.secondaryTranslation && (
-                    <div className="pt-2 border-t border-border/30">
-                      <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-muted mb-0.5" dir="ltr">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500/60 inline-block" />
+                    <div className="bg-surface/60 dark:bg-surface/40 p-3 rounded-2xl border border-border/50 space-y-1">
+                      <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-subtext" dir="ltr">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
                         <span>{secondaryTransObj?.name || 'Secondary Translation'}</span>
                       </div>
-                      <p className={`font-medium leading-relaxed ${
+                      <p className={`leading-relaxed ${
                         isSecondaryRtl 
-                          ? 'font-urdu text-right text-base text-emerald-400/80 dark:text-emerald-300/80' 
-                          : 'text-xs sm:text-sm text-subtext'
+                          ? 'font-urdu text-right text-lg text-emerald-300/80 font-medium leading-[2.1]' 
+                          : 'text-xs sm:text-sm text-subtext leading-relaxed font-normal'
                       }`} dir={isSecondaryRtl ? 'rtl' : 'ltr'}>
                         {ayah.secondaryTranslation}
                       </p>
@@ -613,32 +657,38 @@ const SurahReader: React.FC = () => {
                   {cleanArabic(ayah.text)}
                 </p>
 
-                {/* 🌟 Dual Translations: Primary (Prominent) + Secondary (Subtle) */}
-                <div className="pt-3 border-t border-border/60 space-y-2">
-                  {/* Primary Translation */}
+                {/* 🌟 Dual Translations: Primary (High-Contrast & Prominent) + Secondary (Subtle) */}
+                <div className="pt-3.5 border-t border-border/70 space-y-3">
+                  {/* 1. Primary Translation (Prominent & High Contrast) */}
                   {ayah.translation && (
-                    <div>
-                      <p className={`font-bold leading-relaxed ${
+                    <div className="bg-surface/40 dark:bg-black/20 p-3.5 rounded-2xl border border-border/40 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                          <span>📖</span>
+                          <span>{primaryTransObj.name}</span>
+                        </span>
+                      </div>
+                      <p className={`leading-relaxed ${
                         isPrimaryRtl 
-                          ? 'font-urdu text-right text-lg sm:text-xl text-emerald-400 dark:text-emerald-300' 
-                          : 'text-sm sm:text-base text-text'
+                          ? 'font-urdu text-right text-xl sm:text-2xl font-bold text-emerald-400 dark:text-emerald-300 leading-[2.3]' 
+                          : 'text-sm sm:text-base font-bold text-text dark:text-zinc-100 leading-relaxed'
                       }`} dir={isPrimaryRtl ? 'rtl' : 'ltr'}>
                         {ayah.translation}
                       </p>
                     </div>
                   )}
 
-                  {/* Secondary Translation */}
+                  {/* 2. Secondary Translation (Subtle Contextual Block) */}
                   {ayah.secondaryTranslation && (
-                    <div className="pt-2 border-t border-border/30">
-                      <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-muted mb-0.5" dir="ltr">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500/60 inline-block" />
+                    <div className="bg-surface/60 dark:bg-surface/40 p-3 rounded-2xl border border-border/50 space-y-1">
+                      <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-subtext" dir="ltr">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
                         <span>{secondaryTransObj?.name || 'Secondary Translation'}</span>
                       </div>
-                      <p className={`font-medium leading-relaxed ${
+                      <p className={`leading-relaxed ${
                         isSecondaryRtl 
-                          ? 'font-urdu text-right text-base text-emerald-400/80 dark:text-emerald-300/80' 
-                          : 'text-xs sm:text-sm text-subtext'
+                          ? 'font-urdu text-right text-lg text-emerald-300/80 font-medium leading-[2.1]' 
+                          : 'text-xs sm:text-sm text-subtext leading-relaxed font-normal'
                       }`} dir={isSecondaryRtl ? 'rtl' : 'ltr'}>
                         {ayah.secondaryTranslation}
                       </p>
