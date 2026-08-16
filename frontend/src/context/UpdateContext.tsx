@@ -51,12 +51,11 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (res.ok) {
         const data = await res.json();
         const serverVersion = data.version;
-        const serverBuildTime = Number(data.buildTime) || 0;
+        const dismissedVersion = sessionStorage.getItem('dismissed_update_version');
+        const appliedVersion = localStorage.getItem('applied_update_version');
 
-        const lastKnownBuild = Number(localStorage.getItem('619_app_build_time')) || 0;
-
-        // If server version is greater or build time is newer
-        if (serverVersion !== CURRENT_APP_VERSION || (lastKnownBuild > 0 && serverBuildTime > lastKnownBuild)) {
+        // Only trigger update prompt if server has a newer version AND user hasn't already dismissed/applied it in this session
+        if (serverVersion && serverVersion !== CURRENT_APP_VERSION && serverVersion !== dismissedVersion && serverVersion !== appliedVersion) {
           console.log(`[UpdateContext] New version detected: ${serverVersion} (current: ${CURRENT_APP_VERSION})`);
           setManualUpdateAvailable(true);
           
@@ -72,29 +71,16 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return false;
   };
 
-  // Poll for updates on load, focus, and every 45s
+  // Poll for updates on load, focus, and every 60s
   useEffect(() => {
-    // Record current build time on initial load
-    fetch(`/version.json?_t=${Date.now()}`, { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.buildTime && !localStorage.getItem('619_app_build_time')) {
-          localStorage.setItem('619_app_build_time', String(data.buildTime));
-        }
-      })
-      .catch(() => {});
-
-    // Check after 2 seconds
     const timeout = setTimeout(() => {
       checkLiveVersion();
-    }, 2000);
+    }, 3000);
 
-    // Periodic check every 45 seconds
     const interval = setInterval(() => {
       checkLiveVersion();
-    }, 45 * 1000);
+    }, 60 * 1000);
 
-    // Check on visibility/focus
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         checkLiveVersion();
@@ -131,21 +117,12 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const applyUpdate = async () => {
     setApplyingUpdate(true);
+    setManualUpdateAvailable(false);
     try {
       localStorage.setItem('show_whats_new_after_update', 'true');
       localStorage.setItem('last_seen_app_version', CURRENT_APP_VERSION);
+      localStorage.setItem('applied_update_version', CURRENT_APP_VERSION);
       
-      // Update build timestamp to latest
-      try {
-        const res = await fetch(`/version.json?_t=${Date.now()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.buildTime) {
-            localStorage.setItem('619_app_build_time', String(data.buildTime));
-          }
-        }
-      } catch (e) {}
-
       // Trigger Workbox skipWaiting
       if (needRefresh) {
         await updateServiceWorker(true);
@@ -165,6 +142,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const dismissUpdate = () => {
     setNeedRefresh(false);
     setManualUpdateAvailable(false);
+    sessionStorage.setItem('dismissed_update_version', CURRENT_APP_VERSION);
   };
 
   const checkForUpdates = async (): Promise<boolean> => {

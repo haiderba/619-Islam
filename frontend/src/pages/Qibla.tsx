@@ -205,8 +205,10 @@ const Qibla: React.FC = () => {
     requestGPSLocation();
   }, [requestGPSLocation]);
 
-  // 2. Multi-Sensor Orientation Listener (iOS WebKit, Android Absolute & Standard)
-  const handleOrientation = useCallback((event: DeviceOrientationEvent | any) => {
+  const hasAbsoluteRef = useRef<boolean>(false);
+
+  // 2. Multi-Sensor Orientation Listener (Clean separation between iOS, Android Absolute, and Relative)
+  const handleOrientation = useCallback((event: DeviceOrientationEvent | any, isAbsoluteEvent: boolean = false) => {
     let compassHeading: number | null = null;
 
     // Detect device tilt
@@ -215,20 +217,24 @@ const Qibla: React.FC = () => {
       setTiltWarning(isTilted);
     }
 
-    // 🍎 iOS WebKit Compass Heading (0 = North, clockwise)
+    // 🍎 1. iOS WebKit Compass Heading (0 = True North, clockwise)
     if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
       compassHeading = Number(event.webkitCompassHeading);
       setSensorActive(true);
       setPermissionRequired(false);
+      hasAbsoluteRef.current = true;
     } 
-    // 🤖 Android Absolute Orientation (event.absolute === true or deviceorientationabsolute)
-    else if (event.absolute === true && event.alpha !== null && event.alpha !== undefined) {
-      compassHeading = (360 - event.alpha) % 360;
-      setSensorActive(true);
-      setPermissionRequired(false);
+    // 🤖 2. Android Absolute Orientation (deviceorientationabsolute or absolute === true)
+    else if (isAbsoluteEvent || event.absolute === true) {
+      if (event.alpha !== null && event.alpha !== undefined) {
+        compassHeading = (360 - event.alpha) % 360;
+        setSensorActive(true);
+        setPermissionRequired(false);
+        hasAbsoluteRef.current = true;
+      }
     } 
-    // Standard Alpha Fallback
-    else if (event.alpha !== null && event.alpha !== undefined) {
+    // 📱 3. Standard Fallback (ONLY if absolute orientation has never fired)
+    else if (!hasAbsoluteRef.current && event.alpha !== null && event.alpha !== undefined) {
       compassHeading = (360 - event.alpha) % 360;
       setSensorActive(true);
       setPermissionRequired(false);
@@ -256,8 +262,8 @@ const Qibla: React.FC = () => {
 
         // Deadzone Noise Gate: if movement is under 0.2 degrees, hold steady
         if (Math.abs(diff) > 0.2) {
-          // Low-pass exponential smoothing factor (0.15 gives fluid motion without lag)
-          const smoothed = (current + diff * 0.15 + 360) % 360;
+          // Low-pass exponential smoothing factor (0.18 gives fluid response without jitter)
+          const smoothed = (current + diff * 0.18 + 360) % 360;
           smoothHeadingRef.current = smoothed;
 
           // Direct DOM transform update for ultra-low latency
@@ -275,8 +281,9 @@ const Qibla: React.FC = () => {
 
           if (qiblaBearing !== null) {
             const relDiff = ((qiblaBearing - currentHeading + 540) % 360) - 180;
-            setDiffAngleDisplay(relDiff);
-            const aligned = Math.abs(relDiff) <= 3;
+            const roundedDiff = Math.round(relDiff);
+            setDiffAngleDisplay(roundedDiff);
+            const aligned = Math.abs(roundedDiff) <= 4;
             setIsAligned(aligned);
 
             // Haptic vibration on alignment
@@ -311,8 +318,7 @@ const Qibla: React.FC = () => {
         if (state === 'granted') {
           setPermissionRequired(false);
           setSensorActive(true);
-          window.addEventListener('deviceorientation', handleOrientation, true);
-          window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+          window.addEventListener('deviceorientation', (e) => handleOrientation(e, false), true);
         } else {
           setError("Sensor permission denied. Please enable motion sensors in Safari Settings.");
           setPermissionRequired(true);
@@ -322,11 +328,10 @@ const Qibla: React.FC = () => {
         setError("Please allow sensor access when prompted.");
       }
     } else {
-      // Android / Generic
       setPermissionRequired(false);
       setSensorActive(true);
-      window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      window.addEventListener('deviceorientation', handleOrientation, true);
+      window.addEventListener('deviceorientationabsolute', (e) => handleOrientation(e, true), true);
+      window.addEventListener('deviceorientation', (e) => handleOrientation(e, false), true);
     }
   };
 
@@ -334,16 +339,19 @@ const Qibla: React.FC = () => {
     // @ts-ignore
     const isIOS = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
     
+    const handleAbs = (e: any) => handleOrientation(e, true);
+    const handleRel = (e: any) => handleOrientation(e, false);
+
     if (isIOS) {
       setPermissionRequired(true);
     } else {
-      window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      window.addEventListener('deviceorientation', handleOrientation, true);
+      window.addEventListener('deviceorientationabsolute', handleAbs, true);
+      window.addEventListener('deviceorientation', handleRel, true);
     }
 
     return () => {
-      window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
-      window.removeEventListener('deviceorientation', handleOrientation, true);
+      window.removeEventListener('deviceorientationabsolute', handleAbs, true);
+      window.removeEventListener('deviceorientation', handleRel, true);
     };
   }, [handleOrientation]);
 
