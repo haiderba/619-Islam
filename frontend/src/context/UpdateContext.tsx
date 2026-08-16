@@ -18,6 +18,7 @@ const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
 export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [applyingUpdate, setApplyingUpdate] = useState(false);
+  const [manualUpdateAvailable, setManualUpdateAvailable] = useState(false);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -25,10 +26,11 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   } = useRegisterSW({
     onRegistered(r) {
       if (r) {
-        // Periodic check for SW updates every 10 minutes
+        // Immediate check on register + periodic check every 2 minutes
+        r.update();
         setInterval(() => {
           r.update();
-        }, 10 * 60 * 1000);
+        }, 2 * 60 * 1000);
       }
     },
     onRegisterError(error) {
@@ -36,19 +38,80 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     },
   });
 
-  // Check for updates on visibility change (reopening the app)
+  // Active Live Version Check function
+  const checkLiveVersion = async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`/version.json?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const serverVersion = data.version;
+        const serverBuildTime = Number(data.buildTime) || 0;
+
+        const lastKnownBuild = Number(localStorage.getItem('619_app_build_time')) || 0;
+
+        // If server version is greater or build time is newer
+        if (serverVersion !== CURRENT_APP_VERSION || (lastKnownBuild > 0 && serverBuildTime > lastKnownBuild)) {
+          console.log(`[UpdateContext] New version detected: ${serverVersion} (current: ${CURRENT_APP_VERSION})`);
+          setManualUpdateAvailable(true);
+          
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then(reg => reg?.update());
+          }
+          return true;
+        }
+      }
+    } catch (e) {
+      // Network offline or failed
+    }
+    return false;
+  };
+
+  // Poll for updates on load, focus, and every 45s
   useEffect(() => {
+    // Record current build time on initial load
+    fetch(`/version.json?_t=${Date.now()}`, { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.buildTime && !localStorage.getItem('619_app_build_time')) {
+          localStorage.setItem('619_app_build_time', String(data.buildTime));
+        }
+      })
+      .catch(() => {});
+
+    // Check after 2 seconds
+    const timeout = setTimeout(() => {
+      checkLiveVersion();
+    }, 2000);
+
+    // Periodic check every 45 seconds
+    const interval = setInterval(() => {
+      checkLiveVersion();
+    }, 45 * 1000);
+
+    // Check on visibility/focus
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && 'serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistration().then((reg) => {
-          if (reg) reg.update();
-        });
+      if (document.visibilityState === 'visible') {
+        checkLiveVersion();
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistration().then((reg) => {
+            if (reg) reg.update();
+          });
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('focus', handleVisibility);
+
     return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', handleVisibility);
     };
@@ -71,7 +134,29 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       localStorage.setItem('show_whats_new_after_update', 'true');
       localStorage.setItem('last_seen_app_version', CURRENT_APP_VERSION);
-      await updateServiceWorker(true);
+      
+      // Update build timestamp to latest
+      try {
+        const res = await fetch(`/version.json?_t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.buildTime) {
+            localStorage.setItem('619_app_build_time', String(data.buildTime));
+          }
+        }
+      } catch (e) {}
+
+      // Trigger Workbox skipWaiting
+      if (needRefresh) {
+        await updateServiceWorker(true);
+      } else {
+        // Clear caches and reload
+        if ('caches' in window) {
+          const names = await caches.keys();
+          await Promise.all(names.map(name => caches.delete(name)));
+        }
+        window.location.reload();
+      }
     } catch (err) {
       window.location.reload();
     }
@@ -79,26 +164,28 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const dismissUpdate = () => {
     setNeedRefresh(false);
+    setManualUpdateAvailable(false);
   };
 
   const checkForUpdates = async (): Promise<boolean> => {
+    const isNew = await checkLiveVersion();
     if ('serviceWorker' in navigator) {
       try {
         const reg = await navigator.serviceWorker.getRegistration();
-        if (reg) {
-          await reg.update();
-        }
+        if (reg) await reg.update();
       } catch (e) {
         console.error(e);
       }
     }
-    return needRefresh;
+    return isNew || needRefresh;
   };
+
+  const isUpdateReady = needRefresh || manualUpdateAvailable;
 
   return (
     <UpdateContext.Provider
       value={{
-        updateAvailable: needRefresh,
+        updateAvailable: isUpdateReady,
         applyingUpdate,
         applyUpdate,
         dismissUpdate,
