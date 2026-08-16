@@ -20,17 +20,14 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [applyingUpdate, setApplyingUpdate] = useState(false);
   const [manualUpdateAvailable, setManualUpdateAvailable] = useState(false);
 
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
+  useRegisterSW({
     onRegistered(r) {
       if (r) {
-        // Immediate check on register + periodic check every 2 minutes
+        // Immediate check on register + periodic check every 5 minutes
         r.update();
         setInterval(() => {
           r.update();
-        }, 2 * 60 * 1000);
+        }, 5 * 60 * 1000);
       }
     },
     onRegisterError(error) {
@@ -122,27 +119,35 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem('show_whats_new_after_update', 'true');
       localStorage.setItem('last_seen_app_version', CURRENT_APP_VERSION);
       localStorage.setItem('applied_update_version', CURRENT_APP_VERSION);
+      sessionStorage.setItem('dismissed_update_version', CURRENT_APP_VERSION);
       
-      // Trigger Workbox skipWaiting
-      if (needRefresh) {
-        await updateServiceWorker(true);
-      } else {
-        // Clear caches and reload
-        if ('caches' in window) {
+      // Clear caches and reload
+      if ('caches' in window) {
+        try {
           const names = await caches.keys();
           await Promise.all(names.map(name => caches.delete(name)));
-        }
-        window.location.reload();
+        } catch (e) {}
       }
+
+      if ('serviceWorker' in navigator) {
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const reg of regs) {
+            await reg.update();
+          }
+        } catch (e) {}
+      }
+
+      window.location.reload();
     } catch (err) {
       window.location.reload();
     }
   };
 
   const dismissUpdate = () => {
-    setNeedRefresh(false);
     setManualUpdateAvailable(false);
     sessionStorage.setItem('dismissed_update_version', CURRENT_APP_VERSION);
+    localStorage.setItem('applied_update_version', CURRENT_APP_VERSION);
   };
 
   const checkForUpdates = async (): Promise<boolean> => {
@@ -155,15 +160,13 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.error(e);
       }
     }
-    return isNew || needRefresh;
+    return isNew;
   };
-
-  const isUpdateReady = needRefresh || manualUpdateAvailable;
 
   return (
     <UpdateContext.Provider
       value={{
-        updateAvailable: isUpdateReady,
+        updateAvailable: manualUpdateAvailable,
         applyingUpdate,
         applyUpdate,
         dismissUpdate,

@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: [
         'favicon.png',
         'apple-touch-icon.png',
@@ -58,7 +58,7 @@ export default defineConfig({
         navigateFallback: null,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        skipWaiting: false,
+        skipWaiting: true,
         dontCacheBustURLsMatching: /\.[0-9a-f]{8}\./,
         runtimeCaching: [
           {
