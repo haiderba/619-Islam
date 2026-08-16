@@ -176,38 +176,47 @@ const Books: React.FC = () => {
             <div
               key={book.id}
               onClick={() => navigate(`/books/${book.id}/read?chapter=${book.last_chapter}`)}
-              className="bg-gradient-to-r from-card to-surface border border-primary/25 rounded-2xl p-3.5 shadow-sm flex items-center gap-3.5 cursor-pointer hover:border-primary/50 transition-all group"
+              className="bg-card border border-primary/30 hover:border-primary/60 rounded-2xl p-3 shadow-sm flex items-center gap-3 cursor-pointer transition-all group overflow-hidden"
             >
-              <img
-                src={book.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
-                alt={book.title}
-                className="w-13 h-18 object-cover rounded-xl shadow-md shrink-0 group-hover:scale-105 transition-transform"
-              />
-              <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider block">
-                  Chapter {book.last_chapter}
-                </span>
-                <h3 className="text-sm font-bold text-text truncate group-hover:text-primary transition-colors">
+              {/* Fixed Dimension Thumbnail */}
+              <div className="w-16 h-20 rounded-xl overflow-hidden shadow-md shrink-0 bg-surface border border-border">
+                <img
+                  src={book.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+                  alt={book.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+              </div>
+
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-primary uppercase tracking-wider">
+                    Chapter {book.last_chapter}
+                  </span>
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-primary/10 text-primary">
+                    {book.progress_percent}%
+                  </span>
+                </div>
+
+                <h3 className="text-xs font-bold text-text truncate group-hover:text-primary transition-colors">
                   {book.title}
                 </h3>
-                <p className="text-[11px] text-subtext truncate mt-0.5">
+                <p className="text-[11px] text-subtext truncate">
                   {typeof book.author === 'string' ? book.author : book.author?.name || 'Classical Scholar'}
                 </p>
 
                 {/* Progress bar */}
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+                <div className="pt-1">
+                  <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-primary rounded-full transition-all duration-300"
                       style={{ width: `${Math.max(book.progress_percent, 5)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-bold text-text shrink-0">{book.progress_percent}%</span>
                 </div>
               </div>
 
-              <div className="p-2 rounded-xl bg-primary text-white shrink-0 shadow-md group-hover:translate-x-0.5 transition-transform">
-                <ArrowRight size={16} />
+              <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-md group-hover:translate-x-0.5 transition-transform">
+                <ArrowRight size={15} />
               </div>
             </div>
           ))}
@@ -288,18 +297,18 @@ const Books: React.FC = () => {
               <div
                 key={book.id}
                 onClick={() => navigate(`/books/${book.id}`)}
-                className="bg-card border border-border/80 rounded-2xl p-3.5 shadow-sm flex items-start gap-3.5 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group"
+                className="bg-card border border-border/80 rounded-2xl p-3.5 shadow-sm flex items-start gap-3.5 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group overflow-hidden"
               >
-                {/* Book Cover */}
-                <div className="relative shrink-0">
+                {/* Book Cover with Fixed Aspect Ratio */}
+                <div className="relative shrink-0 w-20 h-28 rounded-xl overflow-hidden shadow-md bg-surface border border-border">
                   <img
                     src={book.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
                     alt={book.title}
-                    className="w-20 h-28 object-cover rounded-xl shadow-md group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />
                   {book.featured && (
-                    <span className="absolute -top-1.5 -left-1.5 bg-amber-500 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-md shadow-sm">
-                      FEATURED
+                    <span className="absolute top-1 left-1 bg-amber-500 text-slate-950 font-black text-[8px] px-1.5 py-0.5 rounded shadow-sm uppercase tracking-wider">
+                      Featured
                     </span>
                   )}
                 </div>
@@ -307,7 +316,7 @@ const Books: React.FC = () => {
                 {/* Metadata */}
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-bold text-text leading-snug group-hover:text-primary transition-colors">
+                    <h3 className="text-xs font-bold text-text leading-snug group-hover:text-primary transition-colors line-clamp-2">
                       {book.title}
                     </h3>
                     <button
@@ -323,28 +332,28 @@ const Books: React.FC = () => {
                   </div>
 
                   {book.title_ar && (
-                    <p className="text-xs font-semibold text-emerald-400 font-arabic truncate" dir="rtl">
+                    <p className="text-xs font-bold text-emerald-400 font-arabic truncate" dir="rtl">
                       {book.title_ar}
                     </p>
                   )}
 
-                  <p className="text-xs text-subtext font-medium truncate">
+                  <p className="text-[11px] text-subtext font-medium truncate">
                     {book.author?.name || 'Classical Scholar'}
                   </p>
 
                   {/* Badges */}
                   <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
                     {book.tradition && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
                         {book.tradition.name}
                       </span>
                     )}
                     {book.category && (
-                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-surface text-subtext border border-border">
+                      <span className="text-[9px] font-medium px-2 py-0.5 rounded-md bg-surface text-subtext border border-border">
                         {book.category.name}
                       </span>
                     )}
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-lg text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
                       {book.total_chapters} {book.total_chapters === 1 ? 'Chapter' : 'Chapters'}
                     </span>
                   </div>
