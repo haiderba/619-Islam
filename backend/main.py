@@ -942,3 +942,67 @@ def delete_bookmark(
         db.delete(bm)
         db.commit()
     return {"status": "success", "message": "Bookmark deleted"}
+
+# ==================== FEEDBACK & FEATURE REQUEST ENDPOINTS ====================
+
+@app.post("/feedback", response_model=schemas.UserFeedbackResponse)
+def submit_feedback(
+    fb_in: schemas.UserFeedbackCreate,
+    db: Session = Depends(get_db)
+):
+    feedback_id = str(uuid.uuid4())
+    obj = models.UserFeedback(
+        id=feedback_id,
+        user_name=fb_in.user_name,
+        user_email=fb_in.user_email,
+        category=fb_in.category,
+        subject=fb_in.subject,
+        message=fb_in.message,
+        status="new",
+        created_at=datetime.datetime.utcnow()
+    )
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+@app.get("/admin/feedbacks", response_model=List[schemas.UserFeedbackResponse])
+def get_admin_feedbacks(
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.UserFeedback)
+    if status and status != "all":
+        query = query.filter(models.UserFeedback.status == status)
+    if category and category != "all":
+        query = query.filter(models.UserFeedback.category == category)
+    return query.order_by(models.UserFeedback.created_at.desc()).all()
+
+@app.patch("/admin/feedbacks/{feedback_id}/status", response_model=schemas.UserFeedbackResponse)
+def update_feedback_status(
+    feedback_id: str,
+    status_update: schemas.UserFeedbackUpdateStatus,
+    db: Session = Depends(get_db)
+):
+    fb = db.query(models.UserFeedback).filter(models.UserFeedback.id == feedback_id).first()
+    if not fb:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    fb.status = status_update.status
+    if status_update.admin_notes is not None:
+        fb.admin_notes = status_update.admin_notes
+    db.commit()
+    db.refresh(fb)
+    return fb
+
+@app.delete("/admin/feedbacks/{feedback_id}")
+def delete_feedback(
+    feedback_id: str,
+    db: Session = Depends(get_db)
+):
+    fb = db.query(models.UserFeedback).filter(models.UserFeedback.id == feedback_id).first()
+    if fb:
+        db.delete(fb)
+        db.commit()
+    return {"status": "success", "message": "Feedback deleted successfully"}
+

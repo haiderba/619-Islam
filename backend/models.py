@@ -266,3 +266,18 @@ class UserBookPreference(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+class UserFeedback(Base):
+    __tablename__ = "user_feedbacks"
+
+    id = Column(String, primary_key=True, index=True) # UUID string
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_name = Column(String, nullable=True)
+    user_email = Column(String, nullable=True)
+    category = Column(String, default="feature_request") # feature_request, bug_report, translation_correction, improvement, compliment
+    subject = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    status = Column(String, default="new") # new, under_review, planned, resolved
+    admin_notes = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+

@@ -15,11 +15,14 @@ import {
   Bell, 
   RotateCcw, 
   Download,
-  Heart
+  Heart,
+  MessageSquare,
+  Star
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppUpdate } from '../context/UpdateContext';
 import { CreditsModal } from '../components/ui/CreditsModal';
+import { FeedbackModal } from '../components/ui/FeedbackModal';
 
 const FIQH_OPTIONS = [
   "Sunni (Hanafi)",
@@ -84,6 +87,7 @@ const Settings: React.FC = () => {
   const [message, setMessage] = useState({ text: '', type: '' });
   const [updateFeedback, setUpdateFeedback] = useState<string | null>(null);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Update local state if user context updates late
   useEffect(() => {
@@ -459,6 +463,42 @@ const Settings: React.FC = () => {
             </button>
           </section>
 
+          {/* 💬 Suggest Features, Feedback & GitHub Star Card */}
+          <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
+                <MessageSquare size={16} className="text-amber-500" /> Feedback & Community
+              </h3>
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                Open Source
+              </span>
+            </div>
+
+            <p className="text-xs text-subtext leading-relaxed">
+              Suggest new features, report bugs, request translation additions, or star our GitHub repository!
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              <button
+                onClick={() => setShowFeedbackModal(true)}
+                className="w-full py-2.5 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              >
+                <MessageSquare size={13} />
+                <span>Suggest Feature</span>
+              </button>
+
+              <a
+                href="https://github.com/haiderba/619-Islam"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-black dark:bg-surface dark:hover:bg-border border border-border text-white dark:text-text text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              >
+                <Star size={13} className="fill-amber-400 text-amber-400" />
+                <span>Star on GitHub</span>
+              </a>
+            </div>
+          </section>
+
           {/* Security */}
           <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
             <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
@@ -505,6 +545,12 @@ const Settings: React.FC = () => {
       <CreditsModal
         isOpen={showCreditsModal}
         onClose={() => setShowCreditsModal(false)}
+      />
+
+      {/* 💬 Feedback & Feature Request Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
       />
     </div>
   );

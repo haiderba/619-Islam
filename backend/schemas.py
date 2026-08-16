@@ -277,3 +277,32 @@ class UserBookPreferenceResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# ==================== FEEDBACK SCHEMAS ====================
+
+class UserFeedbackCreate(BaseModel):
+    category: str = "feature_request" # feature_request, bug_report, translation_correction, improvement, compliment
+    subject: str
+    message: str
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
+
+class UserFeedbackUpdateStatus(BaseModel):
+    status: str # new, under_review, planned, resolved
+    admin_notes: Optional[str] = None
+
+class UserFeedbackResponse(BaseModel):
+    id: str
+    user_id: Optional[int] = None
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
+    category: str
+    subject: str
+    message: str
+    status: str
+    admin_notes: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+

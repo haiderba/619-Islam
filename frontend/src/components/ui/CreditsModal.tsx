@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Sparkles, X, Check, Award, Code2, Lightbulb } from 'lucide-react';
+import { Heart, Sparkles, X, Check, Award, Code2, Lightbulb, Star } from 'lucide-react';
 
 interface CreditsModalProps {
   isOpen: boolean;
@@ -175,8 +175,18 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
 
         </div>
 
-        {/* Footer Close */}
-        <div className="p-4 bg-surface/50 border-t border-border flex justify-end">
+        {/* Footer */}
+        <div className="p-4 bg-surface/50 border-t border-border flex items-center justify-between gap-2">
+          <a
+            href="https://github.com/haiderba/619-Islam"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-black dark:bg-card dark:hover:bg-surface border border-border text-white dark:text-text text-xs font-bold shadow-sm active:scale-95 transition-all"
+          >
+            <Star size={13} className="fill-amber-400 text-amber-400" />
+            <span>Star on GitHub</span>
+          </a>
+
           <button
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-card border border-border text-xs font-bold text-subtext hover:text-text hover:bg-surface transition-colors"
