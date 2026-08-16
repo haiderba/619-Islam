@@ -44,17 +44,25 @@ export interface BookSummary {
   is_downloadable: boolean;
   featured: boolean;
   total_chapters: number;
+  total_volumes?: number;
+  current_volume?: number;
+  completeness?: 'complete' | 'partial' | 'multi_volume' | string;
+  authenticity_status?: string;
   author?: Author;
   tradition?: Tradition;
   category?: Category;
   is_favorite: boolean;
   progress_percent: number;
   last_chapter: number;
+  last_page?: number;
 }
 
 export interface BookChapterSummary {
   id: number;
   chapter_number: number;
+  volume_number?: number;
+  page_start?: number;
+  page_end?: number;
   title: string;
   title_ar?: string;
   title_ur?: string;
@@ -64,6 +72,9 @@ export interface BookChapterDetail extends BookChapterSummary {
   content_ar?: string;
   content_en?: string;
   content_ur?: string;
+  volume_number?: number;
+  page_number?: number;
+  total_pages?: number;
 }
 
 export interface BookSource {

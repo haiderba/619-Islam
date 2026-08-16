@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
-  Menu, 
-  Settings2, 
   Bookmark, 
   ChevronLeft, 
   ChevronRight, 
   Check, 
-  X
+  X,
+  Hash,
+  Share2,
+  Sliders,
+  Type,
+  Layers
 } from 'lucide-react';
 import { booksApi } from '../services/booksApi';
 import { BookDetail, BookChapterDetail } from '../types/books';
@@ -27,15 +30,24 @@ const BookReader: React.FC = () => {
   const [chapter, setChapter] = useState<BookChapterDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Reader Settings
+  // Chrome Visibility (Tap screen center to toggle)
+  const [showToolbars, setShowToolbars] = useState<boolean>(true);
+
+  // Bottom Sheets / Modals
+  const [activeSheet, setActiveSheet] = useState<'toc' | 'goto' | 'theme' | 'bookmark' | null>(null);
+
+  // Reader Preferences
   const [fontSize, setFontSize] = useState<number>(18);
   const [theme, setTheme] = useState<ReaderTheme>('dark');
   const [langView, setLangView] = useState<LanguageView>('all');
-  const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [showDrawer, setShowDrawer] = useState<boolean>(false);
-  const [showBookmarkModal, setShowBookmarkModal] = useState<boolean>(false);
+
+  // Go to page / chapter state
+  const [gotoInput, setGotoInput] = useState<string>('');
+
+  // Bookmark state
   const [bookmarkNote, setBookmarkNote] = useState<string>('');
   const [bookmarkSaved, setBookmarkSaved] = useState<boolean>(false);
+  const [copiedCitation, setCopiedCitation] = useState<boolean>(false);
 
   // Load preferences
   useEffect(() => {
@@ -62,7 +74,6 @@ const BookReader: React.FC = () => {
       setChapter(chapData);
       setLoading(false);
 
-      // Auto update reading progress
       if (bookData) {
         const total = bookData.total_chapters || 1;
         const percent = Math.min(Math.round((currentChapterNum / total) * 100), 100);
@@ -86,6 +97,16 @@ const BookReader: React.FC = () => {
     }
   };
 
+  const handleGotoChapter = (e: React.FormEvent) => {
+    e.preventDefault();
+    const num = parseInt(gotoInput);
+    if (book && !isNaN(num) && num >= 1 && num <= (book.total_chapters || 1)) {
+      setSearchParams({ chapter: String(num) });
+      setActiveSheet(null);
+      setGotoInput('');
+    }
+  };
+
   const handleSaveBookmark = async () => {
     if (!book || !chapter) return;
     await booksApi.createBookmark({
@@ -97,324 +118,268 @@ const BookReader: React.FC = () => {
     setBookmarkSaved(true);
     setTimeout(() => {
       setBookmarkSaved(false);
-      setShowBookmarkModal(false);
+      setActiveSheet(null);
       setBookmarkNote('');
     }, 1200);
   };
 
-  // Theme Styles
+  const handleCopyCitation = () => {
+    if (!book || !chapter) return;
+    const citation = `"${chapter.title}" — from ${book.title} (Vol 1, Chap ${chapter.chapter_number}), by ${book.author?.name || 'Classical Scholar'}. Accessed via 619 Islam.`;
+    navigator.clipboard.writeText(citation);
+    setCopiedCitation(true);
+    setTimeout(() => setCopiedCitation(false), 2000);
+  };
+
+  // Theme Styling Classes
   const getThemeClasses = () => {
     switch (theme) {
       case 'light':
-        return 'bg-[#fcfbf9] text-[#1a1a1a]';
+        return {
+          container: 'bg-[#faf8f5] text-[#1c1917]',
+          card: 'bg-white border-[#e7e5e4]',
+          header: 'bg-[#faf8f5]/95 border-[#e7e5e4] text-[#1c1917]',
+          toolbar: 'bg-[#faf8f5]/95 border-[#e7e5e4] text-[#1c1917]',
+          arabic: 'text-[#1e3a2b]',
+          subtext: 'text-[#78716c]',
+          highlight: 'bg-amber-200 text-black'
+        };
       case 'sepia':
-        return 'bg-[#f6eee3] text-[#433422]';
+        return {
+          container: 'bg-[#f4ecd8] text-[#433422]',
+          card: 'bg-[#ede3cc] border-[#d8cdb4]',
+          header: 'bg-[#f4ecd8]/95 border-[#d8cdb4] text-[#433422]',
+          toolbar: 'bg-[#f4ecd8]/95 border-[#d8cdb4] text-[#433422]',
+          arabic: 'text-[#2b3a1e]',
+          subtext: 'text-[#7d6b53]',
+          highlight: 'bg-amber-300 text-black'
+        };
       case 'dark':
       default:
-        return 'bg-[#0b0f19] text-[#e2e8f0]';
+        return {
+          container: 'bg-[#081819] text-[#e6f4f1]',
+          card: 'bg-[#0d282a] border-[#164345]',
+          header: 'bg-[#081819]/95 border-[#164345] text-[#e6f4f1]',
+          toolbar: 'bg-[#081819]/95 border-[#164345] text-[#e6f4f1]',
+          arabic: 'text-amber-200',
+          subtext: 'text-[#84a9a6]',
+          highlight: 'bg-amber-500/30 text-amber-200'
+        };
     }
   };
 
-  const getCardClasses = () => {
-    switch (theme) {
-      case 'light':
-        return 'bg-white border-[#e5e0d8] shadow-sm';
-      case 'sepia':
-        return 'bg-[#ede3d3] border-[#decbb7] shadow-sm';
-      case 'dark':
-      default:
-        return 'bg-[#131b2e] border-slate-800 shadow-md';
-    }
-  };
+  const themeStyle = getThemeClasses();
+  const isPartial = book?.completeness === 'partial';
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${getThemeClasses()}`}>
-      {/* 🌟 Top Navigation Bar */}
-      <header className={`sticky top-0 z-30 px-4 py-3 border-b backdrop-blur-md transition-colors flex items-center justify-between ${
-        theme === 'dark' ? 'bg-[#0b0f19]/90 border-slate-800' : theme === 'sepia' ? 'bg-[#f6eee3]/90 border-[#e3d3bd]' : 'bg-[#fcfbf9]/90 border-neutral-200'
-      }`}>
-        <button
-          onClick={() => navigate(`/books/${id}`)}
-          className="p-2 rounded-xl border border-current/15 hover:bg-current/10 transition-colors"
-          title="Back to Book"
-        >
-          <ArrowLeft size={18} />
-        </button>
+    <div className={`min-h-screen ${themeStyle.container} transition-colors duration-200 relative pb-28 select-text`}>
+      {/* ── 📱 MINIMAL TOP HEADER (Auto-hides or toggles) ── */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-40 px-4 py-3 backdrop-blur-md border-b ${themeStyle.header} transition-transform duration-300 ${
+          showToolbars ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+          <button
+            onClick={() => navigate(`/books/${id}`)}
+            className="p-1.5 rounded-xl hover:opacity-80 transition-opacity active:scale-95"
+            aria-label="Back to Book Detail"
+          >
+            <ArrowLeft size={18} />
+          </button>
 
-        <div className="text-center min-w-0 max-w-[200px] px-2">
-          <h2 className="text-xs font-bold truncate">
-            {book?.title || 'Islamic Reader'}
-          </h2>
-          <p className="text-[10px] opacity-70 truncate">
-            Chapter {currentChapterNum} of {book?.total_chapters || 1}
-          </p>
+          <div className="flex-1 min-w-0 text-center">
+            <h2 className="text-xs font-black truncate">
+              {book?.title || 'Islamic Reader'}
+            </h2>
+            <p className={`text-[10px] ${themeStyle.subtext} truncate font-bold`}>
+              Vol 1 • Chapter {currentChapterNum} of {book?.total_chapters || 1}
+            </p>
+          </div>
+
+          <button
+            onClick={() => setActiveSheet('theme')}
+            className="p-1.5 rounded-xl hover:opacity-80 transition-opacity active:scale-95"
+            aria-label="Theme & Typography Settings"
+          >
+            <Type size={18} />
+          </button>
         </div>
 
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowBookmarkModal(true)}
-            className="p-2 rounded-xl border border-current/15 hover:bg-current/10 transition-colors"
-            title="Bookmark"
-          >
-            <Bookmark size={18} />
-          </button>
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-2 rounded-xl border border-current/15 hover:bg-current/10 transition-colors"
-            title="Reader Settings"
-          >
-            <Settings2 size={18} />
-          </button>
-          <button
-            onClick={() => setShowDrawer(true)}
-            className="p-2 rounded-xl border border-current/15 hover:bg-current/10 transition-colors"
-            title="Table of Contents"
-          >
-            <Menu size={18} />
-          </button>
-        </div>
+        {/* Partial Content Disclaimer Banner if applicable */}
+        {isPartial && (
+          <div className="mt-1 -mx-4 -mb-3 py-1 px-4 bg-amber-500/15 border-t border-amber-500/20 text-center text-[10px] font-bold text-amber-400">
+            Selected Chapters • Authentic Traditional Extract
+          </div>
+        )}
       </header>
 
-      {/* ⚙️ Reader Customization Dropdown Panel */}
-      {showSettings && (
-        <div className={`p-4 border-b space-y-4 animate-in slide-in-from-top-2 duration-150 ${
-          theme === 'dark' ? 'bg-[#101726] border-slate-800' : theme === 'sepia' ? 'bg-[#eee3d1] border-[#decbb7]' : 'bg-neutral-100 border-neutral-200'
-        }`}>
-          <div className="max-w-md mx-auto space-y-3">
-            {/* Theme switcher */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold">Theme</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { setTheme('dark'); booksApi.updateUserPreferences({ reader_theme: 'dark' }); }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                    theme === 'dark' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-slate-900 text-slate-300 border-slate-700'
-                  }`}
-                >
-                  Dark
-                </button>
-                <button
-                  onClick={() => { setTheme('sepia'); booksApi.updateUserPreferences({ reader_theme: 'sepia' }); }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                    theme === 'sepia' ? 'bg-[#8d6748] text-white border-[#8d6748] shadow-sm' : 'bg-[#e8dcce] text-[#433422] border-[#decbb7]'
-                  }`}
-                >
-                  Sepia
-                </button>
-                <button
-                  onClick={() => { setTheme('light'); booksApi.updateUserPreferences({ reader_theme: 'light' }); }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                    theme === 'light' ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' : 'bg-white text-neutral-800 border-neutral-300'
-                  }`}
-                >
-                  Light
-                </button>
-              </div>
-            </div>
-
-            {/* Font size slider */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold">Text Size</span>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    const next = Math.max(14, fontSize - 2);
-                    setFontSize(next);
-                    booksApi.updateUserPreferences({ reader_font_size: next });
-                  }}
-                  className="px-2.5 py-1 rounded-lg border border-current/20 font-black text-xs hover:bg-current/10"
-                >
-                  A-
-                </button>
-                <span className="text-xs font-bold min-w-[28px] text-center">{fontSize}px</span>
-                <button
-                  onClick={() => {
-                    const next = Math.min(28, fontSize + 2);
-                    setFontSize(next);
-                    booksApi.updateUserPreferences({ reader_font_size: next });
-                  }}
-                  className="px-2.5 py-1 rounded-lg border border-current/20 font-black text-xs hover:bg-current/10"
-                >
-                  A+
-                </button>
-              </div>
-            </div>
-
-            {/* Language filter */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold">Language View</span>
-              <div className="flex items-center gap-1.5">
-                {(['all', 'ar', 'en', 'ur'] as LanguageView[]).map((lv) => (
-                  <button
-                    key={lv}
-                    onClick={() => setLangView(lv)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase transition-all ${
-                      langView === lv 
-                        ? 'bg-primary text-white shadow-sm' 
-                        : 'bg-current/10 opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    {lv}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 📖 Reader Body */}
-      <main className="max-w-lg mx-auto p-5 pb-32 space-y-6">
+      {/* ── 📖 MAIN READING CANVAS (Tap Center to Toggle Toolbars) ── */}
+      <main 
+        onClick={() => setShowToolbars(prev => !prev)}
+        className="max-w-2xl mx-auto px-5 pt-20 pb-16 space-y-6 cursor-pointer"
+      >
         {loading ? (
           <div className="space-y-4 py-8">
-            <div className="h-8 bg-current/10 animate-pulse rounded-xl" />
-            <div className="h-48 bg-current/10 animate-pulse rounded-2xl" />
-            <div className="h-48 bg-current/10 animate-pulse rounded-2xl" />
+            <div className="h-8 w-48 bg-white/10 animate-pulse rounded-2xl mx-auto" />
+            <div className="h-64 bg-white/5 animate-pulse rounded-3xl" />
+            <div className="h-48 bg-white/5 animate-pulse rounded-3xl" />
           </div>
         ) : !chapter ? (
-          <div className="text-center py-16 space-y-3">
-            <p className="text-sm font-bold opacity-80">Chapter not found</p>
+          <div className="text-center py-20 space-y-3">
+            <h3 className="text-sm font-bold">Chapter not available</h3>
             <button
-              onClick={() => setSearchParams({ chapter: '1' })}
+              onClick={() => navigate(`/books/${id}`)}
               className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold"
             >
-              Go to Chapter 1
+              Back to Overview
             </button>
           </div>
         ) : (
           <article className="space-y-6">
             {/* Chapter Header */}
-            <div className="text-center space-y-2 pb-4 border-b border-current/10">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-primary">
+            <div className="text-center space-y-2 pb-4 border-b border-white/10">
+              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${themeStyle.card} text-primary`}>
                 Chapter {chapter.chapter_number}
               </span>
-              <h1 className="text-xl font-black leading-snug">
+              <h1 className="text-lg sm:text-xl font-black leading-snug">
                 {chapter.title}
               </h1>
               {chapter.title_ar && (
-                <p className="text-base font-bold text-emerald-400 font-arabic pt-1" dir="rtl">
+                <p className={`font-arabic text-base sm:text-lg font-bold ${themeStyle.arabic}`} dir="rtl">
                   {chapter.title_ar}
                 </p>
               )}
             </div>
 
-            {/* 🌙 Arabic Original Text */}
-            {(langView === 'all' || langView === 'ar') && chapter.content_ar && (
-              <section className={`p-5 rounded-3xl border ${getCardClasses()} space-y-3`}>
-                <div className="flex items-center justify-between border-b border-current/10 pb-2">
-                  <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider">
-                    النص العربي الأصلي
-                  </span>
-                  <span className="text-xs">📜</span>
-                </div>
+            {/* Content Display based on Language Filter */}
+            <div className="space-y-6 leading-relaxed">
+              {/* Arabic Content */}
+              {(langView === 'all' || langView === 'ar') && chapter.content_ar && (
                 <div 
-                  className="font-arabic leading-[2.4] text-right font-medium tracking-normal"
+                  className={`font-arabic text-right leading-[2.4] font-medium ${themeStyle.arabic} p-4 sm:p-6 rounded-3xl ${themeStyle.card} border shadow-sm select-text`}
                   style={{ fontSize: `${fontSize + 3}px` }}
                   dir="rtl"
                 >
-                  {chapter.content_ar.split('\n').map((para, idx) => (
-                    <p key={idx} className="mb-4 last:mb-0">
-                      {para}
-                    </p>
-                  ))}
+                  {chapter.content_ar}
                 </div>
-              </section>
-            )}
+              )}
 
-            {/* 🇬🇧 English Translation */}
-            {(langView === 'all' || langView === 'en') && chapter.content_en && (
-              <section className={`p-5 rounded-3xl border ${getCardClasses()} space-y-3`}>
-                <div className="flex items-center justify-between border-b border-current/10 pb-2">
-                  <span className="text-[10px] font-black uppercase text-primary tracking-wider">
-                    English Translation & Commentary
-                  </span>
-                  <span className="text-xs">🇬🇧</span>
-                </div>
+              {/* English Translation */}
+              {(langView === 'all' || langView === 'en') && chapter.content_en && (
                 <div 
-                  className="leading-relaxed font-sans"
+                  className={`p-4 sm:p-6 rounded-3xl ${themeStyle.card} border shadow-sm leading-relaxed select-text font-serif`}
                   style={{ fontSize: `${fontSize}px` }}
                 >
-                  {chapter.content_en.split('\n').map((para, idx) => (
-                    <p key={idx} className="mb-3.5 last:mb-0 opacity-90">
-                      {para}
-                    </p>
-                  ))}
+                  <p className="whitespace-pre-line">{chapter.content_en}</p>
                 </div>
-              </section>
-            )}
+              )}
 
-            {/* 🇵🇰 Urdu Translation */}
-            {(langView === 'all' || langView === 'ur') && chapter.content_ur && (
-              <section className={`p-5 rounded-3xl border ${getCardClasses()} space-y-3`}>
-                <div className="flex items-center justify-between border-b border-current/10 pb-2">
-                  <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
-                    اردو ترجمہ و تشریح
-                  </span>
-                  <span className="text-xs">🇵🇰</span>
-                </div>
+              {/* Urdu Translation */}
+              {(langView === 'all' || langView === 'ur') && chapter.content_ur && (
                 <div 
-                  className="font-arabic leading-[2.2] text-right font-medium"
+                  className={`font-urdu text-right leading-[2.3] p-4 sm:p-6 rounded-3xl ${themeStyle.card} border shadow-sm select-text`}
                   style={{ fontSize: `${fontSize + 2}px` }}
                   dir="rtl"
                 >
-                  {chapter.content_ur.split('\n').map((para, idx) => (
-                    <p key={idx} className="mb-3.5 last:mb-0 opacity-90">
-                      {para}
-                    </p>
-                  ))}
+                  <p className="whitespace-pre-line">{chapter.content_ur}</p>
                 </div>
-              </section>
-            )}
+              )}
+            </div>
+
+            {/* Chapter Navigation Stepper */}
+            <div className="pt-6 flex items-center justify-between gap-3" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={handlePrevChapter}
+                disabled={currentChapterNum <= 1}
+                className={`flex-1 py-3 px-3 rounded-2xl border ${themeStyle.card} text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none`}
+              >
+                <ChevronLeft size={16} />
+                <span>Previous Chapter</span>
+              </button>
+
+              <button
+                onClick={handleNextChapter}
+                disabled={Boolean(book && currentChapterNum >= (book.total_chapters || 1))}
+                className={`flex-1 py-3 px-3 rounded-2xl border ${themeStyle.card} text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none text-primary font-black`}
+              >
+                <span>Next Chapter</span>
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </article>
         )}
       </main>
 
-      {/* 🧭 Bottom Chapter Navigation Bar */}
-      <footer className={`fixed bottom-0 left-0 right-0 z-30 px-4 py-3 border-t backdrop-blur-md transition-colors ${
-        theme === 'dark' ? 'bg-[#0b0f19]/90 border-slate-800' : theme === 'sepia' ? 'bg-[#f6eee3]/90 border-[#e3d3bd]' : 'bg-[#fcfbf9]/90 border-neutral-200'
-      }`}>
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
+      {/* ── 📱 THUMB ZONE BOTTOM TOOLBAR (5 Essential Tools) ── */}
+      <nav
+        className={`fixed bottom-0 left-0 right-0 z-40 px-4 py-2.5 backdrop-blur-md border-t ${themeStyle.toolbar} transition-transform duration-300 ${
+          showToolbars ? 'translate-y-0' : 'translate-y-full'
+        } safe-area-pb`}
+      >
+        <div className="max-w-md mx-auto flex items-center justify-around">
+          {/* 1. TOC */}
           <button
-            onClick={handlePrevChapter}
-            disabled={currentChapterNum <= 1}
-            className="flex-1 py-2.5 px-3 rounded-xl border border-current/15 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none hover:bg-current/10 transition-colors"
+            onClick={() => setActiveSheet('toc')}
+            className="flex flex-col items-center gap-1 p-1 text-xs font-bold hover:opacity-80 active:scale-95"
           >
-            <ChevronLeft size={16} />
-            <span>Previous</span>
+            <Layers size={19} className="text-primary" />
+            <span className="text-[10px]">Chapters</span>
           </button>
 
-          <span className="text-[11px] font-bold opacity-70 shrink-0">
-            {currentChapterNum} / {book?.total_chapters || 1}
-          </span>
-
+          {/* 2. Go to Page / Vol */}
           <button
-            onClick={handleNextChapter}
-            disabled={!book || currentChapterNum >= (book.total_chapters || 1)}
-            className="flex-1 py-2.5 px-3 rounded-xl bg-primary text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 disabled:opacity-30 disabled:pointer-events-none transition-all"
+            onClick={() => setActiveSheet('goto')}
+            className="flex flex-col items-center gap-1 p-1 text-xs font-bold hover:opacity-80 active:scale-95"
           >
-            <span>Next</span>
-            <ChevronRight size={16} />
+            <Hash size={19} className="text-amber-400" />
+            <span className="text-[10px]">Go to</span>
+          </button>
+
+          {/* 3. Typography & Theme */}
+          <button
+            onClick={() => setActiveSheet('theme')}
+            className="flex flex-col items-center gap-1 p-1 text-xs font-bold hover:opacity-80 active:scale-95"
+          >
+            <Sliders size={19} className="text-emerald-400" />
+            <span className="text-[10px]">Theme</span>
+          </button>
+
+          {/* 4. Bookmark / Note */}
+          <button
+            onClick={() => setActiveSheet('bookmark')}
+            className="flex flex-col items-center gap-1 p-1 text-xs font-bold hover:opacity-80 active:scale-95"
+          >
+            <Bookmark size={19} className="text-rose-400" />
+            <span className="text-[10px]">Bookmark</span>
+          </button>
+
+          {/* 5. More / Citation */}
+          <button
+            onClick={handleCopyCitation}
+            className="flex flex-col items-center gap-1 p-1 text-xs font-bold hover:opacity-80 active:scale-95"
+          >
+            {copiedCitation ? <Check size={19} className="text-emerald-400" /> : <Share2 size={19} className="text-sky-400" />}
+            <span className="text-[10px]">{copiedCitation ? 'Copied' : 'Cite'}</span>
           </button>
         </div>
-      </footer>
+      </nav>
 
-      {/* 📑 Table of Contents Side Drawer */}
-      {showDrawer && book && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex justify-end">
-          <div className={`w-4/5 max-w-sm h-full p-5 flex flex-col space-y-4 shadow-2xl animate-in slide-in-from-right duration-200 ${
-            theme === 'dark' ? 'bg-[#0f172a] text-slate-100' : theme === 'sepia' ? 'bg-[#ede3d3] text-[#433422]' : 'bg-white text-neutral-900'
-          }`}>
-            <div className="flex items-center justify-between border-b border-current/10 pb-3">
-              <h3 className="text-sm font-black">Table of Contents</h3>
-              <button 
-                onClick={() => setShowDrawer(false)}
-                className="p-1 rounded-lg hover:bg-current/10"
-              >
+      {/* ── 📑 BOTTOM SHEET 1: TABLE OF CONTENTS ── */}
+      {activeSheet === 'toc' && book && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className={`p-5 rounded-t-3xl border-t ${themeStyle.card} max-w-lg mx-auto w-full max-h-[75vh] flex flex-col space-y-4 animate-in slide-in-from-bottom duration-200 shadow-2xl`}>
+            <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0">
+              <div className="flex items-center gap-2">
+                <Layers size={18} className="text-primary" />
+                <h3 className="text-sm font-black">Table of Contents</h3>
+              </div>
+              <button onClick={() => setActiveSheet(null)} className="p-1 rounded-full text-subtext hover:text-text">
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            <div className="flex-1 overflow-y-auto divide-y divide-white/5 space-y-1 pr-1">
               {book.chapters.map((chap) => {
                 const isActive = chap.chapter_number === currentChapterNum;
                 return (
@@ -422,21 +387,19 @@ const BookReader: React.FC = () => {
                     key={chap.id}
                     onClick={() => {
                       setSearchParams({ chapter: String(chap.chapter_number) });
-                      setShowDrawer(false);
+                      setActiveSheet(null);
                     }}
-                    className={`w-full text-left p-3 rounded-2xl border transition-all flex items-center justify-between ${
+                    className={`w-full py-3 px-3 rounded-2xl text-left transition-all flex items-center justify-between ${
                       isActive
-                        ? 'bg-primary text-white border-primary font-bold shadow-sm'
-                        : 'border-current/10 hover:bg-current/5'
+                        ? 'bg-primary text-white font-black shadow-md'
+                        : 'hover:bg-white/5 text-text'
                     }`}
                   >
-                    <div className="min-w-0 pr-2">
-                      <div className="text-[10px] uppercase font-bold opacity-75">
-                        Chapter {chap.chapter_number}
-                      </div>
-                      <div className="text-xs truncate font-semibold">
-                        {chap.title}
-                      </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`text-xs w-6 text-center font-bold ${isActive ? 'text-white' : 'text-primary'}`}>
+                        {chap.chapter_number}
+                      </span>
+                      <span className="text-xs truncate">{chap.title}</span>
                     </div>
                     {isActive && <Check size={16} className="shrink-0" />}
                   </button>
@@ -447,42 +410,149 @@ const BookReader: React.FC = () => {
         </div>
       )}
 
-      {/* 🔖 Bookmark Dialog */}
-      {showBookmarkModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`max-w-sm w-full p-5 rounded-3xl border shadow-2xl space-y-4 ${
-            theme === 'dark' ? 'bg-[#131b2e] border-slate-800 text-slate-100' : theme === 'sepia' ? 'bg-[#ede3d3] border-[#decbb7] text-[#433422]' : 'bg-white border-neutral-200 text-neutral-900'
-          }`}>
-            <div className="flex items-center justify-between">
+      {/* ── 🔢 BOTTOM SHEET 2: GO TO CHAPTER / PAGE ── */}
+      {activeSheet === 'goto' && book && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className={`p-5 rounded-t-3xl border-t ${themeStyle.card} max-w-lg mx-auto w-full space-y-4 animate-in slide-in-from-bottom duration-200 shadow-2xl`}>
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <Bookmark size={18} className="text-primary" />
-                <h3 className="text-sm font-black">Add Bookmark</h3>
+                <Hash size={18} className="text-amber-400" />
+                <h3 className="text-sm font-black">Jump to Chapter</h3>
               </div>
-              <button 
-                onClick={() => setShowBookmarkModal(false)}
-                className="p-1 rounded-lg hover:bg-current/10"
-              >
-                <X size={16} />
+              <button onClick={() => setActiveSheet(null)} className="p-1 rounded-full text-subtext hover:text-text">
+                <X size={18} />
               </button>
             </div>
 
+            <form onSubmit={handleGotoChapter} className="space-y-3">
+              <p className="text-xs text-subtext">
+                Enter chapter number (1 to {book.total_chapters}):
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={book.total_chapters}
+                  value={gotoInput}
+                  onChange={(e) => setGotoInput(e.target.value)}
+                  placeholder={`e.g. ${currentChapterNum}`}
+                  className="flex-1 bg-surface border border-border rounded-2xl px-4 py-3 text-sm text-text font-bold outline-none focus:border-primary"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-primary text-white font-bold text-xs rounded-2xl shadow-md active:scale-95 transition-all"
+                >
+                  Go
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── 🎨 BOTTOM SHEET 3: THEME & TYPOGRAPHY ── */}
+      {activeSheet === 'theme' && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className={`p-5 rounded-t-3xl border-t ${themeStyle.card} max-w-lg mx-auto w-full space-y-5 animate-in slide-in-from-bottom duration-200 shadow-2xl`}>
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Sliders size={18} className="text-emerald-400" />
+                <h3 className="text-sm font-black">Reader Settings</h3>
+              </div>
+              <button onClick={() => setActiveSheet(null)} className="p-1 rounded-full text-subtext hover:text-text">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Theme Selector */}
             <div className="space-y-2">
-              <label className="text-[11px] font-bold opacity-80 block">
-                Chapter {currentChapterNum}: {chapter?.title}
-              </label>
-              <textarea
-                value={bookmarkNote}
-                onChange={(e) => setBookmarkNote(e.target.value)}
-                placeholder="Optional reflection or note for this passage..."
-                rows={3}
-                className="w-full p-2.5 rounded-xl border border-current/20 bg-current/5 text-xs focus:outline-none focus:border-primary"
+              <label className="text-xs font-bold text-subtext uppercase tracking-wider block">Theme</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['dark', 'sepia', 'light'] as ReaderTheme[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTheme(t)}
+                    className={`py-2.5 px-3 rounded-2xl text-xs font-bold capitalize transition-all border ${
+                      theme === t
+                        ? 'border-primary bg-primary/20 text-primary font-black shadow-md'
+                        : 'border-white/10 bg-surface text-subtext'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Font Size Slider */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-subtext uppercase tracking-wider">Font Size</span>
+                <span className="text-primary">{fontSize}px</span>
+              </div>
+              <input
+                type="range"
+                min={14}
+                max={28}
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="w-full accent-primary"
               />
             </div>
 
+            {/* Language Filter */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-subtext uppercase tracking-wider block">Language View</label>
+              <div className="grid grid-cols-4 gap-1.5 text-xs">
+                {(['all', 'ar', 'en', 'ur'] as LanguageView[]).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLangView(l)}
+                    className={`py-2 px-1 rounded-xl font-bold uppercase transition-all border ${
+                      langView === l
+                        ? 'bg-primary text-white border-primary shadow-sm'
+                        : 'bg-surface border-white/10 text-subtext'
+                    }`}
+                  >
+                    {l === 'all' ? 'All' : l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 🔖 BOTTOM SHEET 4: BOOKMARK & NOTES ── */}
+      {activeSheet === 'bookmark' && book && chapter && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className={`p-5 rounded-t-3xl border-t ${themeStyle.card} max-w-lg mx-auto w-full space-y-4 animate-in slide-in-from-bottom duration-200 shadow-2xl`}>
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Bookmark size={18} className="text-rose-400" />
+                <h3 className="text-sm font-black">Bookmark Chapter {chapter.chapter_number}</h3>
+              </div>
+              <button onClick={() => setActiveSheet(null)} className="p-1 rounded-full text-subtext hover:text-text">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-subtext">
+              Save your place and add an optional study note:
+            </p>
+
+            <textarea
+              value={bookmarkNote}
+              onChange={(e) => setBookmarkNote(e.target.value)}
+              placeholder="Add reflection or note for this chapter..."
+              rows={3}
+              className="w-full bg-surface border border-border rounded-2xl p-3 text-xs text-text outline-none focus:border-primary resize-none"
+            />
+
             <button
               onClick={handleSaveBookmark}
-              disabled={bookmarkSaved}
-              className="w-full py-2.5 bg-primary text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 flex items-center justify-center gap-1.5"
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
             >
               {bookmarkSaved ? (
                 <>
@@ -490,7 +560,10 @@ const BookReader: React.FC = () => {
                   <span>Bookmark Saved!</span>
                 </>
               ) : (
-                <span>Save Bookmark</span>
+                <>
+                  <Bookmark size={16} />
+                  <span>Save Bookmark to My Shelf</span>
+                </>
               )}
             </button>
           </div>

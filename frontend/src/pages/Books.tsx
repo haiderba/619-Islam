@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BookOpen, 
@@ -7,10 +7,10 @@ import {
   Bookmark, 
   ChevronRight, 
   Clock, 
-  Check, 
   X, 
   Library,
-  ArrowRight
+  Sparkles,
+  SlidersHorizontal
 } from 'lucide-react';
 import { booksApi } from '../services/booksApi';
 import { BookSummary, Tradition, Category, UserLibraryData } from '../types/books';
@@ -25,9 +25,9 @@ const Books: React.FC = () => {
 
   const [selectedTradition, setSelectedTradition] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [completenessFilter, setCompletenessFilter] = useState<'all' | 'complete' | 'partial' | 'multi_volume'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [showTraditionModal, setShowTraditionModal] = useState<boolean>(false);
 
   // Load initial traditions, categories, and preferences
   useEffect(() => {
@@ -47,7 +47,6 @@ const Books: React.FC = () => {
       const savedTrad = pref?.preferred_tradition_slug || localStorage.getItem('619_book_pref_tradition') || 'all';
       setSelectedTradition(savedTrad);
 
-      // Fetch books
       const initialBooks = await booksApi.getBooks({
         tradition: savedTrad,
         category: 'all'
@@ -70,14 +69,13 @@ const Books: React.FC = () => {
       });
       setBooks(res);
       setLoading(false);
-    }, 250);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [selectedTradition, selectedCategory, searchQuery]);
 
   const handleSelectTradition = async (slug: string) => {
     setSelectedTradition(slug);
-    setShowTraditionModal(false);
     await booksApi.updateUserPreferences({ preferred_tradition_slug: slug });
   };
 
@@ -87,333 +85,346 @@ const Books: React.FC = () => {
     setBooks(prev => prev.map(b => b.id === bookId ? { ...b, is_favorite: newStatus } : b));
   };
 
-  const activeTraditionName = traditions.find(t => t.slug === selectedTradition)?.name || 'All Traditions';
+  const filteredBooks = useMemo(() => {
+    if (completenessFilter === 'all') return books;
+    return books.filter(b => {
+      const comp = b.completeness || (b.total_chapters > 5 ? 'complete' : 'partial');
+      return comp === completenessFilter;
+    });
+  }, [books, completenessFilter]);
+
+  const parseReferenceQuery = (query: string) => {
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed) return null;
+    const match = trimmed.match(/^([a-z\s\-]+?)\s*(?:vol(?:ume)?\s*(\d+))?\s*(?:p(?:age)?|chap(?:ter)?|:)?\s*(\d+)?$/i);
+    if (match && match[1]) {
+      return {
+        bookHint: match[1].trim(),
+        volume: match[2] ? parseInt(match[2]) : undefined,
+        chapterOrPage: match[3] ? parseInt(match[3]) : undefined
+      };
+    }
+    return null;
+  };
+
+  const refParsed = parseReferenceQuery(searchQuery);
 
   return (
-    <div className="p-6 pb-28 max-w-lg mx-auto space-y-6">
-      {/* Top Header */}
-      <header className="pt-2 space-y-2">
+    <div className="p-4 sm:p-6 pb-28 max-w-lg mx-auto space-y-5">
+      {/* ── 📱 HEADER & STICKY SEARCH BAR (Mobile-First) ── */}
+      <header className="space-y-3 pt-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-primary/10 border border-primary/20 text-primary">
-              <Library size={24} />
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-inner">
+              <Library size={20} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-text tracking-tight">Islamic Library</h1>
-              <p className="text-xs text-subtext font-medium">Authoritative Classics & Digital Readers</p>
+              <h1 className="text-lg font-black text-text tracking-tight">Islamic Library</h1>
+              <p className="text-[11px] text-subtext">Classical Books, Hadith & Fiqh</p>
             </div>
           </div>
 
           <button
             onClick={() => navigate('/library')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border text-xs font-bold text-text hover:bg-surface transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-surface hover:bg-border/60 border border-border rounded-xl text-xs font-bold text-text transition-all active:scale-95"
           >
-            <Bookmark size={13} className="text-primary" />
-            <span>My Library</span>
+            <Bookmark size={13} className="text-amber-500" />
+            <span>My Shelf</span>
           </button>
         </div>
 
-        {/* 🌟 Active Tradition Selector Strip */}
-        <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-sm flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base shrink-0">🏛️</span>
-            <div className="min-w-0">
-              <span className="text-[10px] font-extrabold uppercase text-primary block leading-tight tracking-wider">
-                Tradition Filter
-              </span>
-              <span className="text-xs font-bold text-text truncate block">
-                Showing: <span className="text-primary font-black">{activeTraditionName}</span>
-              </span>
+        {/* Search Input */}
+        <div className="relative">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtext" />
+          <input
+            type="text"
+            placeholder="Search books, authors or reference (e.g. Kafi 1:2)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-card border border-border hover:border-primary/40 focus:border-primary rounded-2xl pl-10 pr-9 py-3 text-xs text-text placeholder-subtext transition-colors shadow-sm outline-none font-medium"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-subtext hover:text-text rounded-full"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Reference Direct Jump Badge */}
+        {refParsed && refParsed.chapterOrPage && (
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-400 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="shrink-0" />
+              <span>Jump to <strong>{refParsed.bookHint}</strong> {refParsed.volume ? `Vol ${refParsed.volume} ` : ''}Chapter {refParsed.chapterOrPage}</span>
             </div>
+            <span className="font-bold text-[10px] uppercase tracking-wider underline">Direct Reference</span>
           </div>
-
-          <button
-            onClick={() => setShowTraditionModal(true)}
-            className="shrink-0 px-3 py-1.5 rounded-xl bg-primary text-white font-bold text-xs shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-          >
-            Change
-          </button>
-        </div>
+        )}
       </header>
 
-      {/* 🔎 Search Bar */}
-      <div className="relative">
-        <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtext pointer-events-none" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search books, authors, or topics..."
-          className="w-full pl-10 pr-9 py-2.5 bg-card border border-border rounded-xl text-text text-xs placeholder:text-subtext focus:outline-none focus:border-primary transition-colors shadow-sm"
-        />
-        {searchQuery && (
-          <button 
-            onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-subtext hover:text-text"
-          >
-            <X size={15} />
-          </button>
-        )}
-      </div>
-
-      {/* 📖 Continue Reading Widget (if exists) */}
+      {/* ── 📖 CONTINUE READING (Horizontal Snap Carousel) ── */}
       {userLibrary && userLibrary.continue_reading.length > 0 && !searchQuery && (
         <section className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-extrabold uppercase text-subtext tracking-wider flex items-center gap-1.5">
+            <h3 className="text-xs font-black uppercase tracking-wider text-text flex items-center gap-1.5">
               <Clock size={13} className="text-primary" />
               <span>Continue Reading</span>
-            </h2>
-            <button 
-              onClick={() => navigate('/library')} 
-              className="text-[11px] font-bold text-primary hover:underline flex items-center"
-            >
-              View all <ChevronRight size={12} />
-            </button>
+            </h3>
+            <span className="text-[10px] text-muted font-bold">
+              {userLibrary.continue_reading.length} Active
+            </span>
           </div>
 
-          {userLibrary.continue_reading.slice(0, 1).map((book) => (
-            <div
-              key={book.id}
-              onClick={() => navigate(`/books/${book.id}/read?chapter=${book.last_chapter}`)}
-              className="bg-card border border-primary/30 hover:border-primary/60 rounded-2xl p-3 shadow-sm flex items-center gap-3 cursor-pointer transition-all group overflow-hidden"
-            >
-              {/* Fixed Dimension Thumbnail */}
-              <div className="w-16 h-20 rounded-xl overflow-hidden shadow-md shrink-0 bg-surface border border-border">
-                <img
-                  src={book.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
-                  alt={book.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-              </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+            {userLibrary.continue_reading.map((b) => (
+              <div
+                key={b.id}
+                onClick={() => navigate(`/books/${b.id}/read?chapter=${b.last_chapter || 1}`)}
+                className="w-[280px] shrink-0 snap-start bg-gradient-to-br from-card to-surface border border-border hover:border-primary/40 rounded-3xl p-3.5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98]"
+              >
+                <div className="flex gap-3 items-center">
+                  <div className="w-14 h-18 shrink-0 rounded-xl bg-gradient-to-br from-[#062426] to-[#041c1d] border border-amber-500/30 flex flex-col items-center justify-center text-amber-400 shadow-sm p-1.5 text-center">
+                    <BookOpen size={18} className="mb-0.5" />
+                    <span className="text-[8px] font-arabic font-bold truncate max-w-full text-amber-200">
+                      {b.title_ar || b.title}
+                    </span>
+                  </div>
 
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-primary uppercase tracking-wider">
-                    Chapter {book.last_chapter}
-                  </span>
-                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-primary/10 text-primary">
-                    {book.progress_percent}%
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                      Chapter {b.last_chapter || 1}
+                    </span>
+                    <h4 className="text-xs font-black text-text truncate mt-1 group-hover:text-primary transition-colors">
+                      {b.title}
+                    </h4>
+                    <p className="text-[10px] text-subtext truncate">
+                      {b.author?.name || 'Classical Scholar'}
+                    </p>
+                  </div>
                 </div>
 
-                <h3 className="text-xs font-bold text-text truncate group-hover:text-primary transition-colors">
-                  {book.title}
-                </h3>
-                <p className="text-[11px] text-subtext truncate">
-                  {typeof book.author === 'string' ? book.author : book.author?.name || 'Classical Scholar'}
-                </p>
-
-                {/* Progress bar */}
-                <div className="pt-1">
-                  <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+                <div className="mt-3 pt-2.5 border-t border-border/60">
+                  <div className="flex items-center justify-between text-[10px] mb-1">
+                    <span className="text-subtext font-medium">Progress</span>
+                    <span className="font-bold text-primary">{b.progress_percent || 0}%</span>
+                  </div>
+                  <div className="w-full bg-border h-1.5 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-primary rounded-full transition-all duration-300"
-                      style={{ width: `${Math.max(book.progress_percent, 5)}%` }}
+                      className="bg-primary h-full rounded-full transition-all duration-300"
+                      style={{ width: `${Math.max(b.progress_percent || 5, 5)}%` }}
                     />
                   </div>
                 </div>
               </div>
-
-              <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-md group-hover:translate-x-0.5 transition-transform">
-                <ArrowRight size={15} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
       )}
 
-      {/* 🏷️ Categories Horizontal Scroll */}
+      {/* ── 🏷️ MADHHAB / TRADITION FILTER CHIPS (Horizontal Scroll) ── */}
       <section className="space-y-2">
-        <h2 className="text-xs font-extrabold uppercase text-subtext tracking-wider">Categories</h2>
-        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none no-scrollbar">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <button
-            onClick={() => setSelectedCategory('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all border ${
-              selectedCategory === 'all'
-                ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
-                : 'bg-card text-text border-border hover:bg-surface'
+            onClick={() => handleSelectTradition('all')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 ${
+              selectedTradition === 'all'
+                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                : 'bg-card border border-border text-subtext hover:text-text'
             }`}
           >
-            All Categories
+            All Traditions
           </button>
-          {categories.map((cat) => (
+          {traditions.map((t) => (
             <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.slug)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all border flex items-center gap-1.5 ${
-                selectedCategory === cat.slug
-                  ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
-                  : 'bg-card text-text border-border hover:bg-surface'
+              key={t.slug}
+              onClick={() => handleSelectTradition(t.slug)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-1.5 ${
+                selectedTradition === t.slug
+                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                  : 'bg-card border border-border text-subtext hover:text-text'
               }`}
             >
-              <span>{cat.name}</span>
+              <span>{t.name}</span>
+              {t.name_ar && <span className="text-[10px] font-arabic opacity-75">({t.name_ar})</span>}
             </button>
           ))}
         </div>
+
+        {/* Secondary Filter Row: Format & Completeness */}
+        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-none text-[11px]">
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted font-bold flex items-center gap-1 pl-1">
+              <SlidersHorizontal size={11} />
+              <span>Format:</span>
+            </span>
+            {(['all', 'complete', 'partial', 'multi_volume'] as const).map((comp) => (
+              <button
+                key={comp}
+                onClick={() => setCompletenessFilter(comp)}
+                className={`px-2 py-0.5 rounded-lg font-bold transition-colors ${
+                  completenessFilter === comp
+                    ? 'bg-primary/20 text-primary border border-primary/30'
+                    : 'text-subtext hover:text-text bg-surface'
+                }`}
+              >
+                {comp === 'all' ? 'All' : comp === 'complete' ? 'Complete' : comp === 'partial' ? 'Selections' : 'Multi-Vol'}
+              </button>
+            ))}
+          </div>
+
+          {/* Category Chips */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-2 py-0.5 rounded-lg font-bold transition-colors ${
+                selectedCategory === 'all' ? 'bg-amber-500/20 text-amber-300' : 'text-muted'
+              }`}
+            >
+              All Topics
+            </button>
+            {categories.slice(0, 3).map((c) => (
+              <button
+                key={c.slug}
+                onClick={() => setSelectedCategory(c.slug)}
+                className={`px-2 py-0.5 rounded-lg font-bold transition-colors whitespace-nowrap ${
+                  selectedCategory === c.slug ? 'bg-amber-500/20 text-amber-300' : 'text-muted hover:text-subtext'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* 📚 Books Catalog Grid */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-extrabold uppercase text-subtext tracking-wider">
-            {selectedCategory !== 'all' 
-              ? `${categories.find(c => c.slug === selectedCategory)?.name || 'Books'}` 
-              : 'Available Books'} ({books.length})
+      {/* ── 📚 MAIN BOOK CATALOG CARDS (Mobile-First Generous Layout) ── */}
+      <main className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xs font-black uppercase tracking-wider text-muted">
+            {selectedTradition === 'all' ? 'Featured Classical Works' : `${traditions.find(t => t.slug === selectedTradition)?.name || 'Tradition'} Collection`}
           </h2>
+          <span className="text-xs font-bold text-subtext">
+            {filteredBooks.length} {filteredBooks.length === 1 ? 'Book' : 'Books'}
+          </span>
         </div>
 
         {loading ? (
-          <div className="space-y-3 py-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-28 bg-card animate-pulse rounded-2xl border border-border" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="bg-card border border-border p-4 rounded-3xl animate-pulse h-32" />
             ))}
           </div>
-        ) : books.length === 0 ? (
-          <div className="text-center py-12 px-4 bg-card border border-border rounded-2xl space-y-3">
-            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+        ) : filteredBooks.length === 0 ? (
+          <div className="bg-card border border-border p-8 rounded-3xl text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-surface border border-border text-muted flex items-center justify-center mx-auto">
               <BookOpen size={24} />
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-text">No books found</h3>
-              <p className="text-xs text-subtext mt-1">
-                Try switching traditions, selecting another category, or adjusting your search query.
-              </p>
-            </div>
+            <h4 className="text-sm font-bold text-text">No Books Found</h4>
+            <p className="text-xs text-subtext max-w-xs mx-auto">
+              Try switching your tradition filter or search for a different title or author.
+            </p>
             <button
               onClick={() => {
                 setSelectedTradition('all');
-                setSelectedCategory('all');
                 setSearchQuery('');
+                setCompletenessFilter('all');
+                setSelectedCategory('all');
               }}
-              className="px-4 py-1.5 bg-primary text-white rounded-xl text-xs font-bold shadow-sm"
+              className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold"
             >
-              Show All Traditions
+              Reset Filters
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3">
-            {books.map((book) => (
+          filteredBooks.map((b) => {
+            const isComplete = b.completeness === 'complete' || b.total_chapters >= 10;
+            const isMultiVol = b.completeness === 'multi_volume' || (b.total_volumes && b.total_volumes > 1);
+
+            return (
               <div
-                key={book.id}
-                onClick={() => navigate(`/books/${book.id}`)}
-                className="bg-card border border-border/80 rounded-2xl p-3.5 shadow-sm flex items-start gap-3.5 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group overflow-hidden"
+                key={b.id}
+                onClick={() => navigate(`/books/${b.id}`)}
+                className="bg-card hover:bg-surface border border-border hover:border-primary/40 rounded-3xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-4 items-center group active:scale-[0.99]"
               >
-                {/* Book Cover with Fixed Aspect Ratio */}
-                <div className="relative shrink-0 w-20 h-28 rounded-xl overflow-hidden shadow-md bg-surface border border-border">
-                  <img
-                    src={book.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
-                    alt={book.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                  {book.featured && (
-                    <span className="absolute top-1 left-1 bg-amber-500 text-slate-950 font-black text-[8px] px-1.5 py-0.5 rounded shadow-sm uppercase tracking-wider">
-                      Featured
-                    </span>
-                  )}
+                {/* Book Miniature Cover with Calligraphy Ribbon */}
+                <div className="w-18 h-26 shrink-0 rounded-2xl bg-gradient-to-br from-[#062426] via-[#093538] to-[#041c1d] border border-amber-500/40 flex flex-col items-center justify-between p-2 text-center relative overflow-hidden shadow-md group-hover:scale-105 transition-transform">
+                  <div className="w-full flex justify-between items-center text-[9px] text-amber-400 font-bold opacity-80">
+                    <span>{b.tradition?.slug?.slice(0, 3)?.toUpperCase() || 'ISL'}</span>
+                    <span>📖</span>
+                  </div>
+
+                  <span className="font-arabic text-amber-200 text-xs font-bold leading-tight line-clamp-2 my-auto drop-shadow">
+                    {b.title_ar || b.title}
+                  </span>
+
+                  <span className="text-[8px] font-sans text-amber-300 font-bold opacity-90 truncate max-w-full">
+                    {b.language?.toUpperCase() || 'AR/EN'}
+                  </span>
                 </div>
 
-                {/* Metadata */}
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-xs font-bold text-text leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                      {book.title}
-                    </h3>
+                {/* Book Details */}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-center justify-between gap-1">
+                    {/* Tradition Badge + Completeness Badge */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        {b.tradition?.name || 'General'}
+                      </span>
+                      
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                        isComplete
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          : isMultiVol
+                          ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                          : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                      }`}>
+                        {isComplete ? 'Complete' : isMultiVol ? `${b.total_volumes || 2} Vols` : 'Selections'}
+                      </span>
+                    </div>
+
+                    {/* Favorite Heart */}
                     <button
-                      onClick={(e) => handleToggleFavorite(e, book.id)}
-                      className={`p-1.5 rounded-lg border transition-colors shrink-0 ${
-                        book.is_favorite 
-                          ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' 
-                          : 'bg-surface border-border text-subtext hover:text-rose-400'
+                      onClick={(e) => handleToggleFavorite(e, b.id)}
+                      className={`p-1.5 rounded-full transition-colors ${
+                        b.is_favorite ? 'text-rose-500 bg-rose-500/10' : 'text-muted hover:text-rose-400'
                       }`}
                     >
-                      <Heart size={14} fill={book.is_favorite ? 'currentColor' : 'none'} />
+                      <Heart size={15} fill={b.is_favorite ? 'currentColor' : 'none'} />
                     </button>
                   </div>
 
-                  {book.title_ar && (
-                    <p className="text-xs font-bold text-emerald-400 font-arabic truncate" dir="rtl">
-                      {book.title_ar}
+                  <div>
+                    <h3 className="font-black text-sm text-text leading-tight group-hover:text-primary transition-colors line-clamp-1">
+                      {b.title}
+                    </h3>
+                    <p className="text-xs text-subtext font-medium truncate mt-0.5">
+                      {b.author?.name || 'Classical Islamic Scholar'}
+                    </p>
+                  </div>
+
+                  {b.description && (
+                    <p className="text-[11px] text-muted line-clamp-2 leading-relaxed">
+                      {b.description}
                     </p>
                   )}
 
-                  <p className="text-[11px] text-subtext font-medium truncate">
-                    {book.author?.name || 'Classical Scholar'}
-                  </p>
-
-                  {/* Badges */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
-                    {book.tradition && (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
-                        {book.tradition.name}
-                      </span>
-                    )}
-                    {book.category && (
-                      <span className="text-[9px] font-medium px-2 py-0.5 rounded-md bg-surface text-subtext border border-border">
-                        {book.category.name}
-                      </span>
-                    )}
-                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                      {book.total_chapters} {book.total_chapters === 1 ? 'Chapter' : 'Chapters'}
-                    </span>
+                  {/* Bottom Meta Row */}
+                  <div className="flex items-center justify-between text-[10px] text-subtext pt-1 border-t border-border/50">
+                    <span>{b.total_chapters} Chapters</span>
+                    <div className="flex items-center gap-1 text-primary font-bold group-hover:translate-x-0.5 transition-transform">
+                      <span>Explore</span>
+                      <ChevronRight size={13} />
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })
         )}
-      </section>
-
-      {/* 🏛️ Tradition Selector Modal */}
-      {showTraditionModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🏛️</span>
-                <h3 className="text-lg font-black text-text">Choose Tradition</h3>
-              </div>
-              <button 
-                onClick={() => setShowTraditionModal(false)}
-                className="p-1 rounded-xl text-subtext hover:text-text bg-surface"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <p className="text-xs text-subtext leading-relaxed">
-              Select your preferred school of thought. This customizes your default library view while allowing you to explore all traditions at any time.
-            </p>
-
-            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-              {traditions.map((t) => {
-                const isSelected = selectedTradition === t.slug;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => handleSelectTradition(t.slug)}
-                    className={`w-full text-left p-3 rounded-2xl border transition-all flex items-center justify-between ${
-                      isSelected
-                        ? 'bg-primary text-white border-primary shadow-md shadow-primary/20 font-bold'
-                        : 'bg-surface border-border text-text hover:border-primary/50'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-xs font-bold">{t.name}</div>
-                      {t.name_ur && (
-                        <div className={`text-[10px] ${isSelected ? 'text-white/80' : 'text-subtext'}`}>
-                          {t.name_ur} • {t.name_ar}
-                        </div>
-                      )}
-                    </div>
-                    {isSelected && <Check size={16} className="shrink-0 text-white" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      </main>
     </div>
   );
 };
