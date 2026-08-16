@@ -13,6 +13,23 @@
         background-color: #0d2b2c;
       }
     </style>
+    <script>
+      // Self-Healing Cache Auto-Recovery Guard
+      window.addEventListener('error', function (event) {
+        if (event.error && (event.error.message || '').includes('hooks') || (event.error.message || '').includes('Rendered more')) {
+          console.warn('[AutoRecovery] Stale bundle hook mismatch detected, clearing cache and reloading...');
+          if ('caches' in window) {
+            caches.keys().then(function(keys) {
+              return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+            }).then(function() {
+              window.location.reload(true);
+            });
+          } else {
+            window.location.reload(true);
+          }
+        }
+      });
+    </script>
   </head>
   <body class="bg-[#0d2b2c]">
     <div id="root"></div>
