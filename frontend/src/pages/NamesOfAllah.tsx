@@ -252,7 +252,7 @@ export const NamesOfAllah: React.FC = () => {
   const activePlayingName = currentPlayingIndex !== null ? ALLAH_NAMES[currentPlayingIndex] : null;
 
   return (
-    <div className="p-4 sm:p-6 pb-28 max-w-lg mx-auto">
+    <div className="p-4 sm:p-6 pb-28 max-w-6xl mx-auto w-full">
       {/* ── Top Navigation Header ── */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -549,8 +549,8 @@ export const NamesOfAllah: React.FC = () => {
             ))}
           </div>
 
-          {/* 99 Names Grid List (10 per Page) with Real-Time Synchronized Highlighting */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {/* 99 Names Grid List with Real-Time Synchronized Highlighting */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {paginatedNames.map((name) => {
               const trueIndex = ALLAH_NAMES.findIndex(n => n.id === name.id);
               const isCurrentlyPlaying = currentPlayingIndex === trueIndex;

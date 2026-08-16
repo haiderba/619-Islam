@@ -56,7 +56,7 @@ export const IslamicQuiz: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 pb-28 max-w-lg mx-auto">
+    <div className="p-4 sm:p-6 pb-28 max-w-4xl mx-auto w-full">
       {/* ── Top Navigation ── */}
       <div className="flex items-center justify-between mb-4">
         <button

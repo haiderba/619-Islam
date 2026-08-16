@@ -95,7 +95,7 @@ export const Duas: React.FC = () => {
   });
 
   return (
-    <div className="p-4 sm:p-6 pb-28 max-w-lg mx-auto">
+    <div className="p-4 sm:p-6 pb-28 max-w-6xl mx-auto w-full">
       {/* ── Top Header Navigation ── */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -190,7 +190,8 @@ export const Duas: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        /* ── Duas Cards List ── */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredDuas.map((dua) => {
             const currentCount = counters[dua.id] || 0;
             const isCompleted = currentCount >= dua.repeat;

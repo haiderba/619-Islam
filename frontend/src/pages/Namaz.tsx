@@ -46,8 +46,8 @@ const Namaz: React.FC = () => {
   const nextPrayer = getNextPrayer();
 
   return (
-    <div className="p-6 pb-24 max-w-lg mx-auto">
-      <header className="mb-6 pt-4 space-y-3">
+    <div className="p-4 sm:p-6 pb-28 max-w-5xl mx-auto w-full">
+      <header className="mb-6 pt-1 space-y-3">
         <div>
           <h1 className="text-3xl font-black text-text tracking-tight">Prayer Times</h1>
           <div className="flex items-center gap-1.5 text-primary mt-1 text-sm font-medium">
@@ -119,7 +119,7 @@ const Namaz: React.FC = () => {
           <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {PRAYERS.map((prayer) => {
             const timeStr = timings ? timings[prayer.name as keyof typeof timings] : '--:--';
             const isCompleted = !!completedPrayers[prayer.name];

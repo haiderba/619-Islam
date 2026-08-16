@@ -110,7 +110,7 @@ const Books: React.FC = () => {
   const refParsed = parseReferenceQuery(searchQuery);
 
   return (
-    <div className="p-4 sm:p-6 pb-28 max-w-lg mx-auto space-y-5">
+    <div className="p-4 sm:p-6 pb-28 max-w-6xl mx-auto w-full space-y-5">
       {/* ── 📱 HEADER & STICKY SEARCH BAR (Mobile-First) ── */}
       <header className="space-y-3 pt-1">
         <div className="flex items-center justify-between">

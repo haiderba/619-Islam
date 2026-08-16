@@ -124,7 +124,7 @@ const BookDetail: React.FC = () => {
   const startChapter = book.last_chapter || 1;
 
   return (
-    <div className="p-4 sm:p-6 pb-32 max-w-lg mx-auto space-y-5">
+    <div className="p-4 sm:p-6 pb-32 max-w-5xl mx-auto w-full space-y-5">
       {/* ── 📱 TOP NAVIGATION BAR ── */}
       <div className="flex items-center justify-between pt-1">
         <button

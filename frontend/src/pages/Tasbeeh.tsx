@@ -101,7 +101,7 @@ const Tasbeeh: React.FC = () => {
   };
 
   return (
-    <div className="p-6 pb-24 max-w-lg mx-auto">
+    <div className="p-4 sm:p-6 pb-28 max-w-4xl mx-auto w-full">
       <header className="mb-6 pt-4 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-text">Tasbeeh</h1>

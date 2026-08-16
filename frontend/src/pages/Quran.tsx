@@ -178,8 +178,8 @@ const Quran: React.FC = () => {
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 pb-24 max-w-lg mx-auto">
-      <header className="mb-4 pt-4">
+    <div className="p-4 sm:p-6 pb-28 max-w-6xl mx-auto w-full">
+      <header className="mb-4 pt-1">
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-3xl font-black text-text tracking-tight">The Holy Quran</h1>
           {!isOnline && (
@@ -402,7 +402,7 @@ const Quran: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4 mt-2">
-            <div className="space-y-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {paginatedSurahs.map(surah => {
                 const done = completedSurahs.has(surah.number);
                 return (
@@ -422,13 +422,13 @@ const Quran: React.FC = () => {
                   </div>
                 );
               })}
-              {filteredSurahs.length === 0 && (
-                <div className="text-center py-10">
-                  <Book size={40} className="mx-auto text-muted mb-3" />
-                  <p className="text-subtext text-sm">No Surahs found.</p>
-                </div>
-              )}
             </div>
+            {filteredSurahs.length === 0 && (
+              <div className="text-center py-10">
+                <Book size={40} className="mx-auto text-muted mb-3" />
+                <p className="text-subtext text-sm">No Surahs found.</p>
+              </div>
+            )}
             <PaginationBar page={currentPage} total={totalPages}
               onPrev={() => setCurrentPage(p => Math.max(1, p - 1))}
               onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))} />
@@ -444,7 +444,7 @@ const Quran: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {paginatedJuz.map(juz => {
                 const surahNums = Object.keys(juz.verse_mapping).map(Number);
                 const first = surahs.find(s => s.number === surahNums[0]);

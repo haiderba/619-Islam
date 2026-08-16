@@ -62,7 +62,7 @@ const MyLibrary: React.FC = () => {
   };
 
   return (
-    <div className="p-6 pb-28 max-w-lg mx-auto space-y-6">
+    <div className="p-4 sm:p-6 pb-28 max-w-6xl mx-auto w-full space-y-6">
       {/* Top Header */}
       <div className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-3">
