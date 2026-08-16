@@ -139,64 +139,76 @@ const Dashboard: React.FC = () => {
           <img src="/logo.png" alt="619 Islam" className="w-10 h-10 object-contain drop-shadow-md hover:scale-105 transition-transform" />
         </div>
 
-        {/* 🌟 Master Multi-Date & Location Banner */}
-        <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-sm space-y-2 mt-3">
-          {/* Top Row: Gregorian Normal Date & Location */}
-          <div className="flex items-center justify-between text-xs border-b border-border/50 pb-2">
+        {/* 🌟 Master Multi-Date & Location Banner (Spacious, Zero-Clipping, Premium Hierarchy) */}
+        <div className="bg-card border border-border/80 rounded-3xl p-4 shadow-sm space-y-3 mt-3">
+          {/* Top Row: Gregorian Date & Location */}
+          <div className="flex items-center justify-between text-xs border-b border-border/60 pb-2.5">
             <div className="flex items-center gap-1.5 font-bold text-text">
               <Calendar size={14} className="text-primary shrink-0" />
               <span>{gregorianFormatted}</span>
             </div>
 
-            <div className="flex items-center gap-1 font-medium text-subtext bg-surface px-2.5 py-0.5 rounded-full border border-border text-[11px] max-w-[170px] truncate">
+            <div className="flex items-center gap-1.5 font-medium text-subtext bg-surface px-2.5 py-1 rounded-full border border-border text-[11px]">
               <MapPin size={11} className="text-primary shrink-0" />
-              <span className="truncate">{locationName}</span>
+              <span className="truncate max-w-[150px]">{locationName}</span>
             </div>
           </div>
 
-          {/* Bottom Row: Dual Islamic Hijri & Desi Solar Calendars */}
-          <div className="grid grid-cols-2 gap-2">
-            {/* Islamic Hijri (Clickable with Little Moon Observatory Button) */}
-            <div className="bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-2 flex items-center justify-between transition-all">
-              <div 
-                onClick={() => setShowEventsModal(true)}
-                className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer group"
-                title="Click to view Islamic Events Calendar"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-extrabold uppercase text-emerald-400/80 block leading-tight tracking-wider">Islamic Hijri</span>
-                    <span className="text-[8px] bg-emerald-500/20 text-emerald-300 font-bold px-1 rounded group-hover:bg-emerald-500/30">Events</span>
-                  </div>
-                  <span className="text-xs font-bold text-emerald-300 truncate block group-hover:text-emerald-200">
-                    {hijriDate ? `${hijriDate.day} ${hijriDate.month.en} ${hijriDate.year}` : 'Loading...'}
-                  </span>
-                </div>
+          {/* Middle Section: Full Islamic Hijri Date, Desi Solar & Interactive Quick Launchers */}
+          <div className="bg-gradient-to-br from-emerald-500/10 via-[#072d2f]/40 to-transparent border border-emerald-500/25 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+            {/* Left: Full Unclipped Islamic Date & Desi Date */}
+            <div 
+              onClick={() => setShowEventsModal(true)}
+              className="min-w-0 flex-1 cursor-pointer group"
+              title="Click to view 12-Month Islamic Events Calendar"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider">Islamic Hijri</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  {hijriDate?.year || '1448'} {hijriDate?.designation?.abbreviated || 'AH'}
+                </span>
               </div>
 
-              {/* 🌙 Interactive Little Moon Button */}
+              {/* Full Hijri Date Title */}
+              <h2 className="text-sm sm:text-base font-black text-text group-hover:text-emerald-400 transition-colors mt-0.5 leading-snug">
+                {hijriDate ? `${hijriDate.day} ${hijriDate.month.en}` : 'Loading date...'}
+              </h2>
+
+              {/* Desi Solar Calendar Inline Sub-Pill */}
+              <div className="flex items-center gap-1 text-[11px] text-amber-400/90 font-bold mt-1">
+                <span>🌾</span>
+                <span>{desiDate.day} {desiDate.monthEn}</span>
+                <span className="font-urdu text-[10px] text-amber-300">({desiDate.monthUr})</span>
+              </div>
+            </div>
+
+            {/* Right: Interactive Moon Sighting & Calendar Quick Launchers */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* 🌙 Moon Sighting Observatory Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowMoonModal(true);
                 }}
-                className="p-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-amber-300 ml-1 shrink-0"
-                title="Moon Sighting & Astronomy Observatory"
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-xs font-bold flex flex-col items-center justify-center text-amber-300 shadow-sm active:scale-95 transition-all"
+                title="Open Moon Sighting & Astronomy Observatory"
               >
-                <span className="text-sm leading-none">{moonEmoji}</span>
-                <span className="text-[9px] font-bold text-white/90">{todayMoon.illumination}%</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-base leading-none">{moonEmoji}</span>
+                  <span className="text-[10px] font-black text-white">{todayMoon.illumination}%</span>
+                </div>
+                <span className="text-[8px] font-extrabold uppercase tracking-wider text-emerald-300 mt-0.5">Moon</span>
               </button>
-            </div>
 
-            {/* Desi Calendar */}
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 flex items-center gap-2">
-              <span className="text-base shrink-0">🌾</span>
-              <div className="min-w-0">
-                <span className="text-[9px] font-extrabold uppercase text-amber-400/80 block leading-tight tracking-wider">Desi Solar</span>
-                <span className="text-xs font-bold text-amber-300 truncate block">
-                  {desiDate.day} {desiDate.monthEn} ({desiDate.monthUr})
-                </span>
-              </div>
+              {/* 🗓️ 12-Month Events Calendar Button */}
+              <button
+                onClick={() => setShowEventsModal(true)}
+                className="px-2.5 py-1.5 rounded-xl bg-surface hover:bg-card border border-border text-xs font-bold flex flex-col items-center justify-center text-subtext hover:text-text shadow-sm active:scale-95 transition-all"
+                title="View All Islamic Month Events"
+              >
+                <span className="text-sm leading-none">🗓️</span>
+                <span className="text-[8px] font-extrabold uppercase tracking-wider text-subtext mt-0.5">Events</span>
+              </button>
             </div>
           </div>
 
@@ -204,7 +216,7 @@ const Dashboard: React.FC = () => {
           {upcomingIslamicEvent && (
             <div
               onClick={() => setShowEventsModal(true)}
-              className="pt-1.5 border-t border-border/50 flex items-center justify-between text-xs cursor-pointer group"
+              className="pt-2 border-t border-border/50 flex items-center justify-between text-xs cursor-pointer group"
             >
               <div className="flex items-center gap-1.5 min-w-0">
                 <Sparkles size={13} className="text-amber-400 shrink-0 animate-pulse" />
@@ -212,7 +224,7 @@ const Dashboard: React.FC = () => {
                   <strong className="text-amber-400 font-bold">{upcomingIslamicEvent.label}:</strong> {upcomingIslamicEvent.event.title}
                 </span>
               </div>
-              <div className="flex items-center gap-0.5 text-[10px] font-bold text-primary shrink-0 pl-1 group-hover:underline">
+              <div className="flex items-center gap-0.5 text-[10px] font-bold text-primary shrink-0 pl-2 group-hover:underline">
                 <span>View All</span>
                 <ChevronRight size={12} />
               </div>
