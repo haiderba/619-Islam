@@ -13,6 +13,7 @@ import MoonSightingModal from '../components/dashboard/MoonSightingModal';
 import { getDesiDate } from '../utils/desiDateUtils';
 import { getUpcomingIslamicEvent, ISLAMIC_MONTHS } from '../utils/islamicEvents';
 import { getMoonPhase } from '../utils/lunarEngine';
+import { TopInstallButton } from '../components/ui/InstallPrompt';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -124,7 +125,10 @@ const Dashboard: React.FC = () => {
               Hey, {user?.name || user?.username} 👋
             </h1>
           </div>
-          <img src="/logo.png" alt="619 Islam" className="w-10 h-10 object-contain drop-shadow-md hover:scale-105 transition-transform" />
+          <div className="flex items-center gap-2">
+            <TopInstallButton />
+            <img src="/logo.png" alt="619 Islam" className="w-10 h-10 object-contain drop-shadow-md hover:scale-105 transition-transform" />
+          </div>
         </div>
 
         {/* 🌟 Master Multi-Date & Location Banner (Matching Signature Quran / Ayah Glass Palette) */}
