@@ -22,6 +22,10 @@ export const NamesOfAllah: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
+  // Pagination State (10 Names per Page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   // Audio State
   const [isPlayingAll, setIsPlayingAll] = useState(false);
   const [currentPlayingIndex, setCurrentPlayingIndex] = useState<number | null>(null);
@@ -42,6 +46,11 @@ export const NamesOfAllah: React.FC = () => {
   // Detailed Modal State
   const [activeModalName, setActiveModalName] = useState<NameOfAllah | null>(null);
 
+  // Reset pagination on search / category filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory]);
+
   // Filtered List
   const filteredNames = ALLAH_NAMES.filter(name => {
     const matchesSearch = 
@@ -55,6 +64,13 @@ export const NamesOfAllah: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
+  // Pagination Calculations
+  const totalPages = Math.ceil(filteredNames.length / ITEMS_PER_PAGE) || 1;
+  const paginatedNames = filteredNames.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   // Handle Play Individual Name Audio
   const playNameAudio = (name: NameOfAllah, index?: number) => {
     if (audioRef.current) {
@@ -65,22 +81,21 @@ export const NamesOfAllah: React.FC = () => {
     const audio = new Audio(name.audioUrl);
     audioRef.current = audio;
     
-    if (index !== undefined) {
-      setCurrentPlayingIndex(index);
-    } else {
-      const idx = ALLAH_NAMES.findIndex(n => n.id === name.id);
-      setCurrentPlayingIndex(idx >= 0 ? idx : null);
-    }
+    const trueIndex = index !== undefined ? index : ALLAH_NAMES.findIndex(n => n.id === name.id);
+    setCurrentPlayingIndex(trueIndex >= 0 ? trueIndex : null);
 
     audio.onended = () => {
       if (isPlayingAll) {
-        // Move to next name
-        const nextIdx = ((index ?? 0) + 1) % ALLAH_NAMES.length;
+        // Move to next name & switch page if necessary
+        const nextIdx = ((trueIndex >= 0 ? trueIndex : 0) + 1) % ALLAH_NAMES.length;
+        const targetPage = Math.floor(nextIdx / ITEMS_PER_PAGE) + 1;
+        setCurrentPage(targetPage);
         playNameAudio(ALLAH_NAMES[nextIdx], nextIdx);
         
-        // Scroll item into view
-        const el = document.getElementById(`name-card-${ALLAH_NAMES[nextIdx].id}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          const el = document.getElementById(`name-card-${ALLAH_NAMES[nextIdx].id}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
       } else {
         setCurrentPlayingIndex(null);
       }
@@ -88,7 +103,9 @@ export const NamesOfAllah: React.FC = () => {
 
     audio.onerror = () => {
       if (isPlayingAll) {
-        const nextIdx = ((index ?? 0) + 1) % ALLAH_NAMES.length;
+        const nextIdx = ((trueIndex >= 0 ? trueIndex : 0) + 1) % ALLAH_NAMES.length;
+        const targetPage = Math.floor(nextIdx / ITEMS_PER_PAGE) + 1;
+        setCurrentPage(targetPage);
         playNameAudio(ALLAH_NAMES[nextIdx], nextIdx);
       } else {
         setCurrentPlayingIndex(null);
@@ -373,11 +390,12 @@ export const NamesOfAllah: React.FC = () => {
             ))}
           </div>
 
-          {/* 99 Names Grid List */}
+          {/* 99 Names Grid List (10 per Page) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {filteredNames.map((name, index) => {
+            {paginatedNames.map((name) => {
               const isCurrentlyPlaying = currentPlayingIndex !== null && ALLAH_NAMES[currentPlayingIndex]?.id === name.id;
               const isMemorized = memorizedIds.includes(name.id);
+              const trueIndex = ALLAH_NAMES.findIndex(n => n.id === name.id);
 
               return (
                 <div
@@ -422,7 +440,7 @@ export const NamesOfAllah: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          playNameAudio(name, index);
+                          playNameAudio(name, trueIndex);
                         }}
                         className={`p-1.5 rounded-xl border text-xs mt-1.5 transition-all ${
                           isCurrentlyPlaying
@@ -439,6 +457,97 @@ export const NamesOfAllah: React.FC = () => {
               );
             })}
           </div>
+
+          {/* ── 📄 PREMIUM MOBILE-FIRST PAGINATION ── */}
+          {totalPages > 1 && (
+            <div className="mt-4 bg-card/75 dark:bg-[#062426]/75 backdrop-blur-xl border border-border/80 dark:border-amber-500/20 rounded-3xl p-4 shadow-sm space-y-3">
+              {/* Status Row: Single Line Info */}
+              <div className="flex items-center justify-between text-xs border-b border-border/60 pb-2.5">
+                <span className="text-subtext font-medium text-[11px]">
+                  Showing <strong className="text-text font-bold">{(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredNames.length)}</strong> of <strong className="text-text font-bold">{filteredNames.length}</strong> Divine Names
+                </span>
+                
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                  Page {currentPage} of {totalPages}
+                </span>
+              </div>
+
+              {/* Navigation Action Buttons Row */}
+              <div className="flex items-center justify-between gap-1.5">
+                {/* Previous Button */}
+                <button
+                  onClick={() => {
+                    setCurrentPage(prev => Math.max(1, prev - 1));
+                    window.scrollTo({ top: 150, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1}
+                  className="px-3.5 py-2 rounded-2xl bg-surface hover:bg-card border border-border text-text font-bold text-xs disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all flex items-center gap-1 shrink-0"
+                >
+                  <ChevronLeft size={15} />
+                  <span className="hidden sm:inline">Prev</span>
+                </button>
+
+                {/* Windowed Page Number Pills */}
+                <div className="flex items-center justify-center gap-1 flex-1 overflow-x-auto py-0.5">
+                  {(() => {
+                    const pages: (number | string)[] = [];
+                    if (totalPages <= 6) {
+                      for (let i = 1; i <= totalPages; i++) pages.push(i);
+                    } else {
+                      if (currentPage <= 3) {
+                        pages.push(1, 2, 3, 4, '...', totalPages);
+                      } else if (currentPage >= totalPages - 2) {
+                        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                      } else {
+                        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+                      }
+                    }
+
+                    return pages.map((page, idx) => {
+                      if (page === '...') {
+                        return (
+                          <span key={`dots-${idx}`} className="w-6 text-center text-xs font-bold text-muted select-none">
+                            •••
+                          </span>
+                        );
+                      }
+
+                      const isCurrent = currentPage === page;
+                      return (
+                        <button
+                          key={`page-${page}`}
+                          onClick={() => {
+                            setCurrentPage(Number(page));
+                            window.scrollTo({ top: 150, behavior: 'smooth' });
+                          }}
+                          className={`w-8 h-8 rounded-xl text-xs font-black transition-all flex items-center justify-center shrink-0 ${
+                            isCurrent
+                              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 scale-105'
+                              : 'bg-surface/80 hover:bg-card border border-border text-subtext hover:text-text'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => {
+                    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                    window.scrollTo({ top: 150, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === totalPages}
+                  className="px-3.5 py-2 rounded-2xl bg-surface hover:bg-card border border-border text-text font-bold text-xs disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all flex items-center gap-1 shrink-0"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
