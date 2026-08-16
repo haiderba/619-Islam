@@ -32,32 +32,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Safety watchdog: ensure loading never hangs past 2 seconds
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+
     const initAuth = async () => {
       try {
         const storedUser = await StorageService.getAuthSession();
         if (storedUser) {
-          // Immediately set user from persistent storage so app loads offline with 0 delay
+          // Immediately unblock app with cached user profile (0ms instant startup)
           setUser(storedUser);
+          setLoading(false);
+          clearTimeout(safetyTimer);
 
-          // Try refreshing profile in background if network is available
+          // Asynchronously refresh user profile in background without blocking UI
           if (navigator.onLine) {
-            try {
-              const profile = await AuthService.getUserProfile();
-              setUser(profile);
-              await StorageService.saveAuthSession(profile);
-            } catch (networkErr: any) {
-              // If unauthorized 401, clear session; otherwise if offline/network error, keep session!
-              if (networkErr?.response?.status === 401) {
-                setUser(null);
-                await StorageService.clearAuthSession();
-              }
-            }
+            AuthService.getUserProfile()
+              .then(async (profile) => {
+                if (profile) {
+                  setUser(profile);
+                  await StorageService.saveAuthSession(profile);
+                }
+              })
+              .catch(async (networkErr: any) => {
+                if (networkErr?.response?.status === 401) {
+                  setUser(null);
+                  await StorageService.clearAuthSession();
+                }
+              });
           }
+        } else {
+          setLoading(false);
+          clearTimeout(safetyTimer);
         }
       } catch (error) {
         console.error('Auth initialization error', error);
-      } finally {
         setLoading(false);
+        clearTimeout(safetyTimer);
       }
     };
     initAuth();
@@ -66,7 +78,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
     };
     window.addEventListener('auth-unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('auth-unauthorized', handleUnauthorized);
+    return () => {
+      clearTimeout(safetyTimer);
+      window.removeEventListener('auth-unauthorized', handleUnauthorized);
+    };
   }, []);
 
   const signIn = async (username: string, pass: string) => {
