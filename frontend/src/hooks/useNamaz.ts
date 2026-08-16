@@ -28,12 +28,21 @@ interface HijriDate {
   };
 }
 
+let cachedCoordinates: { lat: number; lng: number } | null = null;
+let cachedTimingsData: {
+  timings: PrayerTimes;
+  hijriDate: HijriDate;
+  locationName: string;
+  dateKey: string;
+  fiqhKey: string;
+} | null = null;
+
 export function useNamaz() {
   const { user } = useAuth();
-  const [timings, setTimings] = useState<PrayerTimes | null>(null);
-  const [hijriDate, setHijriDate] = useState<HijriDate | null>(null);
-  const [locationName, setLocationName] = useState<string>('Detecting location...');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [timings, setTimings] = useState<PrayerTimes | null>(() => cachedTimingsData?.timings || null);
+  const [hijriDate, setHijriDate] = useState<HijriDate | null>(() => cachedTimingsData?.hijriDate || null);
+  const [locationName, setLocationName] = useState<string>(() => cachedTimingsData?.locationName || 'Detecting location...');
+  const [loading, setLoading] = useState<boolean>(() => !cachedTimingsData);
   const [error, setError] = useState<string>('');
   
   // Track which prayers are completed today (mapped to our Goal Completion backend)
@@ -41,7 +50,19 @@ export function useNamaz() {
 
   useEffect(() => {
     if (!user) return;
-    
+    const today = getTodayDateString();
+    const fiqhKey = `${user.fiqh}_${user.latitude || ''}_${user.longitude || ''}`;
+
+    // Return instant cached timings if already loaded for today
+    if (cachedTimingsData && cachedTimingsData.dateKey === today && cachedTimingsData.fiqhKey === fiqhKey) {
+      setTimings(cachedTimingsData.timings);
+      setHijriDate(cachedTimingsData.hijriDate);
+      setLocationName(cachedTimingsData.locationName);
+      setLoading(false);
+      loadCompletedPrayers();
+      return;
+    }
+
     const fetchTimings = async (lat: number, lng: number) => {
       try {
         setLoading(true);
@@ -65,22 +86,32 @@ export function useNamaz() {
           axios.get(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`).catch(() => null)
         ]);
         
-        setTimings(aladhanRes.data.data.timings);
-        setHijriDate(aladhanRes.data.data.date.hijri);
-
+        let locName = 'Local Timings';
         if (geoRes?.data) {
           const city = geoRes.data.city || geoRes.data.locality || geoRes.data.principalSubdivision;
           const country = geoRes.data.countryName;
           if (city && country) {
-            setLocationName(`${city}, ${country}`);
+            locName = `${city}, ${country}`;
           } else if (city || country) {
-            setLocationName(city || country);
-          } else {
-            setLocationName('Local Timings');
+            locName = city || country;
           }
-        } else {
-          setLocationName('Local Timings');
         }
+
+        const newTimings = aladhanRes.data.data.timings;
+        const newHijri = aladhanRes.data.data.date.hijri;
+
+        setTimings(newTimings);
+        setHijriDate(newHijri);
+        setLocationName(locName);
+
+        // Cache in memory
+        cachedTimingsData = {
+          timings: newTimings,
+          hijriDate: newHijri,
+          locationName: locName,
+          dateKey: today,
+          fiqhKey
+        };
 
         await loadCompletedPrayers();
       } catch (err) {
@@ -91,27 +122,52 @@ export function useNamaz() {
       }
     };
 
-    // If user provided manual coordinates in Settings, use them!
+    // 1. Manual user coordinates take first priority
     if (user.latitude && user.longitude) {
       fetchTimings(parseFloat(user.latitude), parseFloat(user.longitude));
-    } else {
-      // Otherwise, use geolocation to get accurate local timings
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            fetchTimings(position.coords.latitude, position.coords.longitude);
-          },
-          (err) => {
-            console.warn("Geolocation blocked, defaulting to London coords", err);
-            // Fallback to London if blocked
-            fetchTimings(51.508515, -0.1254872);
-          }
-        );
-      } else {
-        fetchTimings(51.508515, -0.1254872);
+      return;
+    }
+
+    // 2. Check memory / sessionStorage cache to prevent repeated geolocation popups
+    if (!cachedCoordinates) {
+      try {
+        const stored = sessionStorage.getItem('619_cached_geo');
+        if (stored) {
+          cachedCoordinates = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.error(e);
       }
     }
-  }, [user]);
+
+    if (cachedCoordinates) {
+      fetchTimings(cachedCoordinates.lat, cachedCoordinates.lng);
+      return;
+    }
+
+    // 3. Fallback: Request geolocation ONCE per session
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+          cachedCoordinates = coords;
+          try {
+            sessionStorage.setItem('619_cached_geo', JSON.stringify(coords));
+          } catch (e) {}
+          fetchTimings(coords.lat, coords.lng);
+        },
+        (err) => {
+          console.warn("Geolocation unavailable or blocked, defaulting to default coords", err);
+          const fallbackCoords = { lat: 31.5204, lng: 74.3587 }; // Default Lahore
+          cachedCoordinates = fallbackCoords;
+          fetchTimings(fallbackCoords.lat, fallbackCoords.lng);
+        },
+        { timeout: 8000, maximumAge: 1000 * 60 * 60 * 24 } // Accept 24h cached position
+      );
+    } else {
+      fetchTimings(31.5204, 74.3587);
+    }
+  }, [user?.fiqh, user?.latitude, user?.longitude]);
 
   const loadCompletedPrayers = async () => {
     try {

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGoals } from '../hooks/useGoals';
 import { useStreak } from '../hooks/useStreak';
 import { getTodayDateString } from '../utils/dateUtils';
-import { Target, CheckCircle2, Circle, Flame, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight } from 'lucide-react';
+import { Target, CheckCircle2, Circle, Flame, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNamaz } from '../hooks/useNamaz';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -20,6 +20,12 @@ const Dashboard: React.FC = () => {
   
   const desiDate = getDesiDate();
   const today = getTodayDateString();
+  const gregorianFormatted = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  }).format(new Date());
   const todayCompletions = completions.filter(c => c.date === today && c.completed);
   
   const isCompleted = (goalId: string) => {
@@ -106,25 +112,45 @@ const Dashboard: React.FC = () => {
           <img src="/logo.png" alt="619 Islam" className="w-11 h-11 object-contain drop-shadow-md hover:scale-105 transition-transform" />
         </div>
 
-        {/* Multi-Calendar Dates (Hijri Islamic, Desi Bikrami, Location) */}
-        <div className="flex flex-wrap items-center gap-2 mt-2.5 text-xs">
-          {hijriDate && (
-            <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/25 flex items-center gap-1.5 shadow-sm">
-              <span className="text-xs">🌙</span>
-              <span>{hijriDate.day} {hijriDate.month.en} {hijriDate.year} {hijriDate.designation.abbreviated}</span>
-            </span>
-          )}
+        {/* 🌟 Master Multi-Date & Location Banner */}
+        <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-sm space-y-2 mt-3">
+          {/* Top Row: Gregorian Normal Date & Location */}
+          <div className="flex items-center justify-between text-xs border-b border-border/50 pb-2">
+            <div className="flex items-center gap-1.5 font-bold text-text">
+              <Calendar size={14} className="text-primary shrink-0" />
+              <span>{gregorianFormatted}</span>
+            </div>
 
-          {/* Desi Month & Date (Sawan, Bhadon, etc.) */}
-          <span className="font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/25 flex items-center gap-1.5 shadow-sm" title="Desi Bikrami Solar Date">
-            <span className="text-xs">🌾</span>
-            <span>{desiDate.day} {desiDate.monthEn} ({desiDate.monthUr})</span>
-          </span>
+            <div className="flex items-center gap-1 font-medium text-subtext bg-surface px-2.5 py-0.5 rounded-full border border-border text-[11px] max-w-[170px] truncate">
+              <MapPin size={11} className="text-primary shrink-0" />
+              <span className="truncate">{locationName}</span>
+            </div>
+          </div>
 
-          <span className="flex items-center gap-1 font-medium text-text bg-surface px-2.5 py-1 rounded-xl border border-border">
-            <MapPin size={12} className="text-primary shrink-0" />
-            <span className="truncate max-w-[160px]">{locationName}</span>
-          </span>
+          {/* Bottom Row: Dual Islamic Hijri & Desi Solar Calendars */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Islamic Hijri */}
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 flex items-center gap-2">
+              <span className="text-base shrink-0">🌙</span>
+              <div className="min-w-0">
+                <span className="text-[9px] font-extrabold uppercase text-emerald-400/80 block leading-tight tracking-wider">Islamic Hijri</span>
+                <span className="text-xs font-bold text-emerald-300 truncate block">
+                  {hijriDate ? `${hijriDate.day} ${hijriDate.month.en} ${hijriDate.year} ${hijriDate.designation.abbreviated}` : 'Loading...'}
+                </span>
+              </div>
+            </div>
+
+            {/* Desi Calendar */}
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 flex items-center gap-2">
+              <span className="text-base shrink-0">🌾</span>
+              <div className="min-w-0">
+                <span className="text-[9px] font-extrabold uppercase text-amber-400/80 block leading-tight tracking-wider">Desi Solar</span>
+                <span className="text-xs font-bold text-amber-300 truncate block">
+                  {desiDate.day} {desiDate.monthEn} ({desiDate.monthUr})
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
