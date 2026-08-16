@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../config/api';
 import { User, Lock, MapPin, BookOpen, LogOut, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import WhatsNewModal from '../components/ui/WhatsNewModal';
 
 const FIQH_OPTIONS = [
   "Sunni (Hanafi)",
@@ -38,6 +39,7 @@ const Settings: React.FC = () => {
   
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
   
   const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -277,23 +279,36 @@ const Settings: React.FC = () => {
       {/* App Version & Cache Updates */}
       <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
         <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
-          <Sparkles size={16} className="text-amber-500" /> App Updates & Cache
+          <Sparkles size={16} className="text-amber-500" /> App Updates & Guide
         </h3>
         
         <div className="flex items-center justify-between text-xs text-subtext pt-1">
           <span>Installed Build</span>
-          <span className="font-bold text-text bg-surface px-2.5 py-1 rounded-lg border border-border">v1.2.0</span>
+          <span className="font-bold text-text bg-surface px-2.5 py-1 rounded-lg border border-border">v1.3.0 (Latest)</span>
         </div>
 
-        <button 
-          onClick={handleCheckUpdates}
-          disabled={checkingUpdate}
-          className="w-full bg-surface border border-border text-text py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-border transition-colors flex items-center justify-center gap-2 active:scale-95"
-        >
-          {checkingUpdate ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          <span>Check for Updates & Refresh App</span>
-        </button>
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <button
+            onClick={() => setShowWhatsNew(true)}
+            className="py-2.5 px-3 bg-primary/10 border border-primary/20 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5 active:scale-95"
+          >
+            <Sparkles size={14} />
+            <span>What's New Guide</span>
+          </button>
+
+          <button 
+            onClick={handleCheckUpdates}
+            disabled={checkingUpdate}
+            className="py-2.5 px-3 bg-surface border border-border text-text rounded-xl text-xs font-bold hover:bg-border transition-colors flex items-center justify-center gap-1.5 active:scale-95"
+          >
+            {checkingUpdate ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            <span>Refresh App</span>
+          </button>
+        </div>
       </section>
+
+      {/* What's New Modal */}
+      <WhatsNewModal isOpen={showWhatsNew} onClose={() => setShowWhatsNew(false)} />
 
       {/* Logout */}
       <button 
