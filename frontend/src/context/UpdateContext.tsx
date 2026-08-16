@@ -2,15 +2,28 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { CURRENT_APP_VERSION } from '../config/changelog';
 
+export interface UpdateCheckResult {
+  hasUpdate: boolean;
+  serverVersion?: string;
+  currentVersion: string;
+  requiresReinstall?: boolean;
+}
+
 interface UpdateContextType {
   updateAvailable: boolean;
   applyingUpdate: boolean;
+  isCheckingUpdates: boolean;
+  serverVersion: string | null;
+  requiresReinstall: boolean;
   applyUpdate: () => Promise<void>;
+  reinstallApp: () => Promise<void>;
   dismissUpdate: () => void;
-  checkForUpdates: () => Promise<boolean>;
+  checkForUpdates: (manual?: boolean) => Promise<UpdateCheckResult>;
   showWhatsNew: boolean;
   setShowWhatsNew: (show: boolean) => void;
   currentVersion: string;
+  notificationPermission: NotificationPermission | 'unsupported';
+  requestNotificationPermission: () => Promise<boolean>;
 }
 
 const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
@@ -18,7 +31,20 @@ const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
 export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [applyingUpdate, setApplyingUpdate] = useState(false);
+  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [manualUpdateAvailable, setManualUpdateAvailable] = useState(false);
+  const [serverVersion, setServerVersion] = useState<string | null>(null);
+  const [requiresReinstall, setRequiresReinstall] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
+
+  // Check notification permission support
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    } else {
+      setNotificationPermission('unsupported');
+    }
+  }, []);
 
   useRegisterSW({
     onRegistered(r) {
@@ -35,8 +61,43 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     },
   });
 
+  // Send a rich native mobile push notification when a new update arrives
+  const sendUpdateNotification = async (newVersion: string) => {
+    try {
+      if (typeof window === 'undefined' || !('Notification' in window)) return;
+      if (Notification.permission !== 'granted') return;
+
+      const lastNotified = localStorage.getItem('619_last_notified_update');
+      if (lastNotified === newVersion) return; // Prevent duplicate notifications
+
+      const title = `✨ 619 Islam Update Available (v${newVersion})`;
+      const options: any = {
+        body: 'A fresh update is ready! Tap to update and experience the latest features.',
+        icon: '/logo.png',
+        badge: '/favicon.png',
+        tag: '619-app-update',
+        renotify: true,
+        data: { url: '/' }
+      };
+
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && 'showNotification' in reg) {
+          await reg.showNotification(title, options);
+          localStorage.setItem('619_last_notified_update', newVersion);
+          return;
+        }
+      }
+
+      new Notification(title, options);
+      localStorage.setItem('619_last_notified_update', newVersion);
+    } catch (e) {
+      console.warn('Failed to dispatch update notification', e);
+    }
+  };
+
   // Active Live Version Check function
-  const checkLiveVersion = async (): Promise<boolean> => {
+  const checkLiveVersion = async (): Promise<UpdateCheckResult> => {
     try {
       const res = await fetch(`/version.json?_t=${Date.now()}`, {
         cache: 'no-store',
@@ -47,25 +108,38 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
       if (res.ok) {
         const data = await res.json();
-        const serverVersion = data.version;
-        const dismissedVersion = sessionStorage.getItem('dismissed_update_version');
-        const appliedVersion = localStorage.getItem('applied_update_version');
+        const ver = data.version;
+        const needsReinstall = !!data.requiresReinstall;
 
-        // Only trigger update prompt if server has a newer version AND user hasn't already dismissed/applied it in this session
-        if (serverVersion && serverVersion !== CURRENT_APP_VERSION && serverVersion !== dismissedVersion && serverVersion !== appliedVersion) {
-          console.log(`[UpdateContext] New version detected: ${serverVersion} (current: ${CURRENT_APP_VERSION})`);
+        if (ver && ver !== CURRENT_APP_VERSION) {
+          setServerVersion(ver);
           setManualUpdateAvailable(true);
-          
+          setRequiresReinstall(needsReinstall);
+
+          // Dispatch background push notification if permission is allowed
+          sendUpdateNotification(ver);
+
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistration().then(reg => reg?.update());
           }
-          return true;
+
+          return {
+            hasUpdate: true,
+            serverVersion: ver,
+            currentVersion: CURRENT_APP_VERSION,
+            requiresReinstall: needsReinstall
+          };
         }
       }
     } catch (e) {
-      // Network offline or failed
+      // Offline / network failure
     }
-    return false;
+
+    return {
+      hasUpdate: false,
+      currentVersion: CURRENT_APP_VERSION,
+      requiresReinstall: false
+    };
   };
 
   // Poll for updates on load, focus, and every 60s
@@ -117,9 +191,9 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setManualUpdateAvailable(false);
     try {
       localStorage.setItem('show_whats_new_after_update', 'true');
-      localStorage.setItem('last_seen_app_version', CURRENT_APP_VERSION);
-      localStorage.setItem('applied_update_version', CURRENT_APP_VERSION);
-      sessionStorage.setItem('dismissed_update_version', CURRENT_APP_VERSION);
+      localStorage.setItem('last_seen_app_version', serverVersion || CURRENT_APP_VERSION);
+      localStorage.setItem('applied_update_version', serverVersion || CURRENT_APP_VERSION);
+      sessionStorage.setItem('dismissed_update_version', serverVersion || CURRENT_APP_VERSION);
       
       // Clear caches and reload
       if ('caches' in window) {
@@ -144,23 +218,70 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const dismissUpdate = () => {
-    setManualUpdateAvailable(false);
-    sessionStorage.setItem('dismissed_update_version', CURRENT_APP_VERSION);
-    localStorage.setItem('applied_update_version', CURRENT_APP_VERSION);
+  // Clean Reinstall / Purge Stale Caches
+  const reinstallApp = async () => {
+    setApplyingUpdate(true);
+    try {
+      // 1. Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+
+      // 2. Delete all caches
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map(k => caches.delete(k)));
+      }
+
+      // 3. Clear version markers
+      localStorage.removeItem('applied_update_version');
+      sessionStorage.removeItem('dismissed_update_version');
+      localStorage.setItem('show_whats_new_after_update', 'true');
+
+      // 4. Force hard reload with timestamp
+      window.location.href = '/?_clean_reinstall=' + Date.now();
+    } catch (err) {
+      window.location.reload();
+    }
   };
 
-  const checkForUpdates = async (): Promise<boolean> => {
-    const isNew = await checkLiveVersion();
-    if ('serviceWorker' in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (reg) await reg.update();
-      } catch (e) {
-        console.error(e);
+  const dismissUpdate = () => {
+    setManualUpdateAvailable(false);
+    sessionStorage.setItem('dismissed_update_version', serverVersion || CURRENT_APP_VERSION);
+    localStorage.setItem('applied_update_version', serverVersion || CURRENT_APP_VERSION);
+  };
+
+  const checkForUpdates = async (_manual: boolean = false): Promise<UpdateCheckResult> => {
+    setIsCheckingUpdates(true);
+    try {
+      const result = await checkLiveVersion();
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) await reg.update();
+        } catch (e) {}
       }
+      return result;
+    } finally {
+      setIsCheckingUpdates(false);
     }
-    return isNew;
+  };
+
+  const requestNotificationPermission = async (): Promise<boolean> => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      alert('Push notifications are not supported on this browser/platform.');
+      return false;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      return permission === 'granted';
+    } catch (e) {
+      console.warn(e);
+      return false;
+    }
   };
 
   return (
@@ -168,12 +289,18 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         updateAvailable: manualUpdateAvailable,
         applyingUpdate,
+        isCheckingUpdates,
+        serverVersion,
+        requiresReinstall,
         applyUpdate,
+        reinstallApp,
         dismissUpdate,
         checkForUpdates,
         showWhatsNew,
         setShowWhatsNew,
         currentVersion: CURRENT_APP_VERSION,
+        notificationPermission,
+        requestNotificationPermission,
       }}
     >
       {children}

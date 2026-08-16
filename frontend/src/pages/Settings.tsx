@@ -1,7 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../config/api';
-import { User, Lock, MapPin, BookOpen, LogOut, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
+import { 
+  User, 
+  Lock, 
+  MapPin, 
+  BookOpen, 
+  LogOut, 
+  Loader2, 
+  CheckCircle2, 
+  AlertCircle, 
+  Sparkles, 
+  RefreshCw, 
+  Bell, 
+  RotateCcw, 
+  Download
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppUpdate } from '../context/UpdateContext';
 
@@ -28,7 +42,20 @@ const QURAN_TRANSLATIONS = [
 const Settings: React.FC = () => {
   const { user, signOut, updateUser } = useAuth();
   const navigate = useNavigate();
-  const { updateAvailable, applyingUpdate, applyUpdate, currentVersion, setShowWhatsNew } = useAppUpdate();
+  const { 
+    updateAvailable, 
+    applyingUpdate, 
+    applyUpdate, 
+    currentVersion, 
+    setShowWhatsNew,
+    checkForUpdates,
+    isCheckingUpdates,
+    serverVersion,
+    requiresReinstall,
+    reinstallApp,
+    notificationPermission,
+    requestNotificationPermission
+  } = useAppUpdate();
   
   const [fiqh, setFiqh] = useState(user?.fiqh || FIQH_OPTIONS[0]);
   const [quranTranslation, setQuranTranslation] = useState(user?.quran_translation || QURAN_TRANSLATIONS[0].id);
@@ -42,6 +69,7 @@ const Settings: React.FC = () => {
   const [locationLoading, setLocationLoading] = useState(false);
   
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [updateFeedback, setUpdateFeedback] = useState<string | null>(null);
 
   // Update local state if user context updates late
   useEffect(() => {
@@ -115,6 +143,24 @@ const Settings: React.FC = () => {
     );
   };
 
+  const handleManualCheckUpdates = async () => {
+    setUpdateFeedback(null);
+    const res = await checkForUpdates(true);
+    if (res.hasUpdate) {
+      setUpdateFeedback(`✨ New update found: v${res.serverVersion}! Ready to apply.`);
+    } else {
+      setUpdateFeedback(`✅ You're up to date! 619 Islam is on the latest version (v${currentVersion}).`);
+      setTimeout(() => setUpdateFeedback(null), 5000);
+    }
+  };
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      setMessage({ text: '🔔 Automatic update notifications enabled!', type: 'success' });
+    }
+  };
+
   const handleLogout = () => {
     signOut();
     navigate('/login');
@@ -124,7 +170,7 @@ const Settings: React.FC = () => {
     <div className="p-4 sm:p-6 pb-36 max-w-lg mx-auto space-y-4 sm:space-y-5">
       <header className="pt-2">
         <h1 className="text-2xl sm:text-3xl font-black text-text tracking-tight">Profile & Settings</h1>
-        <p className="text-subtext text-xs sm:text-sm mt-0.5">Manage your account, preferences, and location.</p>
+        <p className="text-subtext text-xs sm:text-sm mt-0.5">Manage your account, preferences, updates, and notifications.</p>
       </header>
 
       {message.text && (
@@ -220,6 +266,126 @@ const Settings: React.FC = () => {
         </button>
       </section>
 
+      {/* 🔔 Mobile Push Notifications for Updates */}
+      <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
+            <Bell size={16} className="text-amber-500" /> Update Alerts
+          </h3>
+          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+            notificationPermission === 'granted'
+              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
+              : 'bg-surface text-muted border-border'
+          }`}>
+            {notificationPermission === 'granted' ? '🔔 Enabled' : 'Off'}
+          </span>
+        </div>
+
+        <p className="text-xs text-subtext leading-relaxed">
+          Receive automatic push notifications on your mobile whenever new Islamic features or app updates arrive.
+        </p>
+
+        {notificationPermission !== 'granted' && (
+          <button
+            onClick={handleEnableNotifications}
+            className="w-full py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+          >
+            <Bell size={14} />
+            <span>Enable Update Push Notifications</span>
+          </button>
+        )}
+      </section>
+
+      {/* 🚀 App Version, Update Checker & Reinstall */}
+      <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3.5">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
+            <Sparkles size={16} className="text-amber-500" /> App Version & Updates
+          </h3>
+          <span className="font-bold text-xs text-text bg-surface px-2.5 py-1 rounded-lg border border-border">
+            v{currentVersion}
+          </span>
+        </div>
+
+        {/* Dynamic Update Feedback message */}
+        {updateFeedback && (
+          <div className="p-3 bg-surface rounded-xl border border-border text-xs text-text flex items-start gap-2 animate-in fade-in">
+            <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{updateFeedback}</span>
+          </div>
+        )}
+
+        {/* If an update is available -> show prominent update / reinstall button */}
+        {updateAvailable ? (
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3 animate-in fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-text">New Version Available: v{serverVersion}</span>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500 text-black shadow-sm">
+                Update Ready
+              </span>
+            </div>
+            
+            <p className="text-[11px] text-subtext leading-relaxed">
+              {requiresReinstall 
+                ? 'This update includes major core database changes. A clean app reinstall/refresh is recommended.'
+                : 'A fresh update for 619 Islam is ready to install with latest enhancements.'}
+            </p>
+
+            {requiresReinstall ? (
+              <button
+                onClick={reinstallApp}
+                disabled={applyingUpdate}
+                className="w-full bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white py-3 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
+              >
+                <RotateCcw size={14} className={applyingUpdate ? "animate-spin" : ""} />
+                <span>{applyingUpdate ? 'Reinstalling...' : 'Reinstall & Update App'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={applyUpdate}
+                disabled={applyingUpdate}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black py-3 rounded-xl text-xs font-black shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
+              >
+                <Download size={14} className={applyingUpdate ? "animate-spin" : ""} />
+                <span>{applyingUpdate ? 'Applying Update...' : 'Install Update Now'}</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-muted">You are on the latest version.</span>
+            <button
+              onClick={() => setShowWhatsNew(true)}
+              className="text-xs font-bold text-amber-500 hover:underline transition-colors"
+            >
+              What's New in v{currentVersion}
+            </button>
+          </div>
+        )}
+
+        {/* Action Buttons: Check for Updates & Reinstall App */}
+        <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-border/60">
+          <button
+            onClick={handleManualCheckUpdates}
+            disabled={isCheckingUpdates}
+            className="w-full py-2.5 px-3 bg-surface hover:bg-card border border-border text-text rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+          >
+            <RefreshCw size={13} className={isCheckingUpdates ? "animate-spin text-amber-400" : ""} />
+            <span>{isCheckingUpdates ? 'Checking Server...' : 'Check for Updates'}</span>
+          </button>
+
+          <button
+            onClick={reinstallApp}
+            disabled={applyingUpdate}
+            className="w-full py-2.5 px-3 bg-surface hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-400 border border-border text-subtext rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+            title="Purges stale cached files and reloads clean app from server"
+          >
+            <RotateCcw size={13} />
+            <span>Reinstall / Reset Cache</span>
+          </button>
+        </div>
+      </section>
+
       {/* Security */}
       <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
         <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
@@ -248,52 +414,6 @@ const Settings: React.FC = () => {
         >
           Update Password
         </button>
-      </section>
-
-      {/* App Version & Updates */}
-      <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
-            <Sparkles size={16} className="text-amber-500" /> App Version
-          </h3>
-          <span className="font-bold text-xs text-text bg-surface px-2.5 py-1 rounded-lg border border-border">
-            v{currentVersion}
-          </span>
-        </div>
-
-        {/* If an update is available -> show the prominent Update section */}
-        {updateAvailable ? (
-          <div className="p-3.5 bg-primary/10 border border-primary/30 rounded-2xl space-y-2.5 animate-in fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-text">New Version Available!</span>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Update Ready
-              </span>
-            </div>
-            <p className="text-[11px] text-subtext leading-relaxed">
-              A new update for 619 Islam is ready to install with latest improvements.
-            </p>
-            <button
-              onClick={applyUpdate}
-              disabled={applyingUpdate}
-              className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-xl text-xs font-bold shadow-md hover:shadow-primary/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
-            >
-              <RefreshCw size={14} className={applyingUpdate ? "animate-spin" : ""} />
-              <span>{applyingUpdate ? 'Updating...' : 'Update App'}</span>
-            </button>
-          </div>
-        ) : (
-          /* When up to date -> Hide the update button completely and show guide link */
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-muted">You are on the latest version.</span>
-            <button
-              onClick={() => setShowWhatsNew(true)}
-              className="text-xs font-bold text-primary hover:underline transition-colors"
-            >
-              What's New in v{currentVersion}
-            </button>
-          </div>
-        )}
       </section>
 
       {/* Logout */}
