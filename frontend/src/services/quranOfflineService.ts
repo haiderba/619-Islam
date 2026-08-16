@@ -7,9 +7,7 @@ const DB_VERSION = 1;
 const STORE_SURAHS = 'surahs';
 const STORE_META = 'metadata';
 
-const QURAN_API_KEY = "umh_3735a3840b623bfb7996743833802a9fc509cf0f";
 const QURAN_API_HEADERS = {
-  "x-auth-token": QURAN_API_KEY,
   "Accept": "application/json"
 };
 

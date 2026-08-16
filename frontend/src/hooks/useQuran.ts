@@ -61,24 +61,27 @@ export interface QuranSearchResult {
 
 export const QARI_OPTIONS = [
   { id: '7', name: 'Mishary Rashid Alafasy' },
-  { id: '2', name: 'Abdul Basit (Murattal)' },
-  { id: '3', name: 'Abdur-Rahman as-Sudais' },
+  { id: '2', name: 'AbdulBaset AbdulSamad (Murattal)' },
+  { id: '1', name: 'AbdulBaset AbdulSamad (Mujawwad)' },
   { id: '6', name: 'Mahmoud Khalil Al-Husary' },
-  { id: '9', name: 'Mohamed Siddiq al-Minshawi' },
+  { id: '9', name: 'Mohamed Siddiq al-Minshawi (Murattal)' },
+  { id: '8', name: 'Mohamed Siddiq al-Minshawi (Mujawwad)' },
+  { id: '3', name: 'Abdur-Rahman as-Sudais' },
   { id: '4', name: 'Abu Bakr Al-Shatri' },
   { id: '12', name: 'Maher Al-Muaiqly' },
+  { id: '5', name: 'Saad Al-Ghamdi' },
+  { id: '11', name: 'Yasser Ad-Dussary' },
 ];
 
 export const TAFSIR_OPTIONS = [
   { id: 169, name: 'Tafsir Ibn Kathir (English)', lang: 'en' },
   { id: 16, name: 'Tafsir Muyassar (Arabic)', lang: 'ar' },
-  { id: 160, name: 'Tafsir Ahsanul Bayaan (Urdu)', lang: 'ur' },
   { id: 171, name: 'Tafsir Al-Jalalayn (Arabic)', lang: 'ar' },
+  { id: 170, name: 'Tafsir As-Saadi (Arabic)', lang: 'ar' },
+  { id: 160, name: 'Tafsir Ahsanul Bayaan (Urdu)', lang: 'ur' },
 ];
 
-const QURAN_API_KEY = "umh_3735a3840b623bfb7996743833802a9fc509cf0f";
 const QURAN_API_HEADERS = {
-  "x-auth-token": QURAN_API_KEY,
   "Accept": "application/json"
 };
 

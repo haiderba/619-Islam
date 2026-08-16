@@ -6,7 +6,7 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { api } from '../config/api';
 import axios from 'axios';
 
-const QURAN_API_HEADERS = { 'x-auth-token': 'umh_3735a3840b623bfb7996743833802a9fc509cf0f' };
+const QURAN_API_HEADERS = { 'Accept': 'application/json' };
 
 type BrowseMode = 'surah' | 'juz' | 'revelation' | 'search';
 
