@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { UpdateProvider } from './context/UpdateContext';
 
 // Pages (to be created)
 import Login from './pages/Login';
@@ -69,11 +70,13 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <PWAUpdatePrompt />
-        <InstallPrompt />
-        <AppRoutes />
-      </BrowserRouter>
+      <UpdateProvider>
+        <BrowserRouter>
+          <PWAUpdatePrompt />
+          <InstallPrompt />
+          <AppRoutes />
+        </BrowserRouter>
+      </UpdateProvider>
     </AuthProvider>
   );
 }

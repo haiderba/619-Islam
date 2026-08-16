@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../config/api';
 import { User, Lock, MapPin, BookOpen, LogOut, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import WhatsNewModal from '../components/ui/WhatsNewModal';
+import { useAppUpdate } from '../context/UpdateContext';
 
 const FIQH_OPTIONS = [
   "Sunni (Hanafi)",
@@ -28,6 +28,7 @@ const QURAN_TRANSLATIONS = [
 const Settings: React.FC = () => {
   const { user, signOut, updateUser } = useAuth();
   const navigate = useNavigate();
+  const { updateAvailable, applyingUpdate, applyUpdate, currentVersion, setShowWhatsNew } = useAppUpdate();
   
   const [fiqh, setFiqh] = useState(user?.fiqh || FIQH_OPTIONS[0]);
   const [quranTranslation, setQuranTranslation] = useState(user?.quran_translation || QURAN_TRANSLATIONS[0].id);
@@ -39,7 +40,6 @@ const Settings: React.FC = () => {
   
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [showWhatsNew, setShowWhatsNew] = useState(false);
   
   const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -113,28 +113,6 @@ const Settings: React.FC = () => {
         setMessage({ text: 'Could not fetch location. Please ensure permissions are granted.', type: 'error' });
       }
     );
-  };
-
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-
-  const handleCheckUpdates = async () => {
-    setCheckingUpdate(true);
-    try {
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const reg of registrations) {
-          await reg.update();
-        }
-      }
-      setMessage({ text: 'Checking for updates and refreshing...', type: 'success' });
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    } catch (err) {
-      window.location.reload();
-    } finally {
-      setCheckingUpdate(false);
-    }
   };
 
   const handleLogout = () => {
@@ -272,39 +250,51 @@ const Settings: React.FC = () => {
         </button>
       </section>
 
-      {/* App Version & Cache Updates */}
+      {/* App Version & Updates */}
       <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
-        <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
-          <Sparkles size={16} className="text-amber-500" /> App Updates & Guide
-        </h3>
-        
-        <div className="flex items-center justify-between text-xs text-subtext pt-1">
-          <span>Installed Build</span>
-          <span className="font-bold text-text bg-surface px-2.5 py-1 rounded-lg border border-border">v1.3.0 (Latest)</span>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
+            <Sparkles size={16} className="text-amber-500" /> App Version
+          </h3>
+          <span className="font-bold text-xs text-text bg-surface px-2.5 py-1 rounded-lg border border-border">
+            v{currentVersion}
+          </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <button
-            onClick={() => setShowWhatsNew(true)}
-            className="py-2.5 px-3 bg-primary/10 border border-primary/20 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5 active:scale-95"
-          >
-            <Sparkles size={14} />
-            <span>What's New Guide</span>
-          </button>
-
-          <button 
-            onClick={handleCheckUpdates}
-            disabled={checkingUpdate}
-            className="py-2.5 px-3 bg-surface border border-border text-text rounded-xl text-xs font-bold hover:bg-border transition-colors flex items-center justify-center gap-1.5 active:scale-95"
-          >
-            {checkingUpdate ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            <span>Refresh App</span>
-          </button>
-        </div>
+        {/* If an update is available -> show the prominent Update section */}
+        {updateAvailable ? (
+          <div className="p-3.5 bg-primary/10 border border-primary/30 rounded-2xl space-y-2.5 animate-in fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-text">New Version Available!</span>
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Update Ready
+              </span>
+            </div>
+            <p className="text-[11px] text-subtext leading-relaxed">
+              A new update for 619 Islam is ready to install with latest improvements.
+            </p>
+            <button
+              onClick={applyUpdate}
+              disabled={applyingUpdate}
+              className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-xl text-xs font-bold shadow-md hover:shadow-primary/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
+            >
+              <RefreshCw size={14} className={applyingUpdate ? "animate-spin" : ""} />
+              <span>{applyingUpdate ? 'Updating...' : 'Update App'}</span>
+            </button>
+          </div>
+        ) : (
+          /* When up to date -> Hide the update button completely and show guide link */
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-muted">You are on the latest version.</span>
+            <button
+              onClick={() => setShowWhatsNew(true)}
+              className="text-xs font-bold text-primary hover:underline transition-colors"
+            >
+              What's New in v{currentVersion}
+            </button>
+          </div>
+        )}
       </section>
-
-      {/* What's New Modal */}
-      <WhatsNewModal isOpen={showWhatsNew} onClose={() => setShowWhatsNew(false)} />
 
       {/* Logout */}
       <button 
