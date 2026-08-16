@@ -76,10 +76,19 @@ const Login: React.FC = () => {
             </div>
           </div>
 
+          <div className="flex justify-end pt-0.5">
+            <Link 
+              to="/forgot-password" 
+              className="text-xs font-bold text-primary hover:underline transition-colors"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 mt-6 disabled:opacity-70"
+            className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-70"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

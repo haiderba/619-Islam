@@ -34,6 +34,15 @@ class VerifyOtpRequest(BaseModel):
 class ResendOtpRequest(BaseModel):
     email: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+    origin_url: Optional[str] = None
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    token: str
+    new_password: str
+
 class AuthTokenResponse(BaseModel):
     access_token: str
     token_type: str

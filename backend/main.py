@@ -6,6 +6,7 @@ from datetime import timedelta
 from jose import JWTError, jwt
 from typing import List
 
+import secrets
 import models, schemas, auth, email_service
 from database import engine, get_db
 import datetime
@@ -32,10 +33,10 @@ def init_db():
             db.commit()
             print("Successfully initialized default admin user (admin / admin123)")
         else:
-            admin_user.hashed_password = auth.get_password_hash("admin123")
-            admin_user.is_verified = True
-            admin_user.onboarding_completed = True
-            db.commit()
+            # Preserve existing custom password, only ensure verified & active
+            if not admin_user.is_verified:
+                admin_user.is_verified = True
+                db.commit()
     except Exception as e:
         print(f"Error during db init: {e}")
     finally:
@@ -251,6 +252,106 @@ def debug_email(to: str = "uhaider695@gmail.com"):
         "api_key_configured": bool(api_key),
         "api_key_snippet": (api_key[:8] + "...") if api_key else "NOT_SET",
         "sender_email": os.getenv("BREVO_SENDER_EMAIL", "uhaider695@gmail.com")
+    }
+
+@app.post("/forgot-password")
+def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == req.email.strip().lower()).first()
+    if not user:
+        return {
+            "status": "success",
+            "message": "If an account with this email exists, a password reset link has been sent."
+        }
+
+    # Invalidate previous unused reset tokens for this email
+    db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.email == user.email,
+        models.PasswordResetToken.is_used == False
+    ).update({"is_used": True})
+
+    # Generate cryptographically secure 32-byte token
+    reset_token = secrets.token_urlsafe(32)
+    expires_at = datetime.datetime.utcnow() + timedelta(minutes=5)
+
+    token_entry = models.PasswordResetToken(
+        email=user.email,
+        token=reset_token,
+        expires_at=expires_at,
+        is_used=False
+    )
+    db.add(token_entry)
+    db.commit()
+
+    base_origin = req.origin_url.rstrip("/") if req.origin_url else "https://619-islam.bsf1802210.workers.dev"
+    reset_link = f"{base_origin}/reset-password?token={reset_token}&email={user.email}"
+
+    email_sent, email_msg = email_service.send_password_reset_email(
+        recipient_email=user.email,
+        recipient_name=user.name or user.username,
+        reset_link=reset_link,
+        expire_minutes=5
+    )
+
+    return {
+        "status": "success",
+        "message": "A password reset link (valid for 5 minutes) has been sent to your email.",
+        "email_sent": email_sent,
+        "email_msg": email_msg
+    }
+
+@app.get("/verify-reset-token")
+def verify_reset_token(token: str, email: str, db: Session = Depends(get_db)):
+    record = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.email == email.strip().lower(),
+        models.PasswordResetToken.token == token.strip(),
+        models.PasswordResetToken.is_used == False
+    ).first()
+
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid or already used password reset link.")
+
+    if record.expires_at < datetime.datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Password reset link has expired (5-minute limit). Please request a new one.")
+
+    return {"status": "valid", "email": email}
+
+@app.post("/reset-password", response_model=schemas.AuthTokenResponse)
+def reset_password(req: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    record = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.email == req.email.strip().lower(),
+        models.PasswordResetToken.token == req.token.strip(),
+        models.PasswordResetToken.is_used == False
+    ).first()
+
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid or already used reset link.")
+
+    if record.expires_at < datetime.datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Reset link has expired (5-minute limit). Please request a new link.")
+
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+
+    user = db.query(models.User).filter(models.User.email == req.email.strip().lower()).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    # Update password and mark token as used
+    record.is_used = True
+    user.hashed_password = auth.get_password_hash(req.new_password)
+    user.is_verified = True
+    db.commit()
+    db.refresh(user)
+
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
     }
 
 @app.post("/login", response_model=schemas.Token)

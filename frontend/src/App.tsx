@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 // Pages (to be created)
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Namaz from './pages/Namaz';
 import Tasbeeh from './pages/Tasbeeh';
 import Quran from './pages/Quran';
@@ -40,6 +42,8 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       
       {/* Protected App Routes inside a Layout */}
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
