@@ -3,8 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuran, SurahDetail, QARI_OPTIONS, TAFSIR_OPTIONS, ChapterInfo, TafsirData } from '../hooks/useQuran';
 import { 
   ArrowLeft, Play, Pause, CheckCircle2, SkipBack, SkipForward,
-  Volume2, ChevronUp, Info, BookText, X, Sparkles, Mic, Check
+  Volume2, ChevronUp, Info, BookText, X, Sparkles, Mic, Check, Gauge
 } from 'lucide-react';
+
+const SPEED_OPTIONS = [
+  { value: 0.75, label: '0.75x', desc: 'Slow' },
+  { value: 1.0, label: '1.0x', desc: 'Normal' },
+  { value: 1.25, label: '1.25x', desc: 'Quick' },
+  { value: 1.5, label: '1.5x', desc: 'Fast' },
+  { value: 2.0, label: '2.0x', desc: 'Max' },
+];
+
+const cleanArabic = (text: string): string => {
+  if (!text) return '';
+  return text.replace(/<[^>]*>?/gm, '').trim();
+};
 
 const SurahReader: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +29,10 @@ const SurahReader: React.FC = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [readMode, setReadMode] = useState<'translation' | 'wordByWord' | 'reading'>('translation');
   const [showQariMenu, setShowQariMenu] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(() => {
+    return Number(localStorage.getItem('quran_playback_speed')) || 1.0;
+  });
 
   // Surah Info Modal State
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -118,17 +135,18 @@ const SurahReader: React.FC = () => {
     return `https://everyayah.com/data/${folder}/${s3}${a3}.mp3`;
   };
 
-  const togglePlay = (ayahNumber: number, explicitUrl?: string) => {
+  const togglePlay = (ayahNumber: number, explicitUrl?: string, overrideQari?: string) => {
     if (!surah) return;
 
-    // Toggle pause if currently playing
-    if (playingAyah === ayahNumber && audioRef.current && !audioRef.current.paused) {
+    // Toggle pause if currently playing the exact same ayah
+    if (playingAyah === ayahNumber && !overrideQari && audioRef.current && !audioRef.current.paused) {
       audioRef.current.pause();
       setPlayingAyah(null);
       return;
     }
 
-    const targetUrl = getAyahAudioUrl(surah.number, ayahNumber, selectedQari, explicitUrl);
+    const qariToUse = overrideQari || selectedQari;
+    const targetUrl = getAyahAudioUrl(surah.number, ayahNumber, qariToUse, explicitUrl);
 
     if (audioRef.current) {
       audioRef.current.pause();
@@ -136,6 +154,7 @@ const SurahReader: React.FC = () => {
     }
 
     const newAudio = new Audio(targetUrl);
+    newAudio.playbackRate = playbackSpeed;
     audioRef.current = newAudio;
     setPlayingAyah(ayahNumber);
     setMushafSelectedAyah(ayahNumber);
@@ -143,7 +162,7 @@ const SurahReader: React.FC = () => {
     newAudio.onended = () => {
       const nextAyah = surah.ayahs.find(a => a.numberInSurah === ayahNumber + 1);
       if (nextAyah) {
-        togglePlay(nextAyah.numberInSurah, nextAyah.audio);
+        togglePlay(nextAyah.numberInSurah, nextAyah.audio, qariToUse);
       } else {
         setPlayingAyah(null);
       }
@@ -154,6 +173,7 @@ const SurahReader: React.FC = () => {
       const fallbackUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surah.number).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
       if (targetUrl !== fallbackUrl) {
         const fallbackAudio = new Audio(fallbackUrl);
+        fallbackAudio.playbackRate = playbackSpeed;
         audioRef.current = fallbackAudio;
         fallbackAudio.onended = newAudio.onended;
         fallbackAudio.play().catch(() => setPlayingAyah(null));
@@ -172,6 +192,34 @@ const SurahReader: React.FC = () => {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+  };
+
+  const handleSelectQari = (qariId: string) => {
+    setSelectedQari(qariId);
+    setShowQariMenu(false);
+
+    // Stop current audio and start playing from the beginning of the Surah (Ayah 1)
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+
+    if (surah && surah.ayahs.length > 0) {
+      const firstAyah = surah.ayahs[0];
+      setTimeout(() => {
+        togglePlay(firstAyah.numberInSurah, firstAyah.audio, qariId);
+      }, 50);
+    }
+  };
+
+  const handleSpeedChange = (speed: number) => {
+    setPlaybackSpeed(speed);
+    localStorage.setItem('quran_playback_speed', String(speed));
+    if (audioRef.current) {
+      audioRef.current.playbackRate = speed;
+    }
+    setShowSpeedMenu(false);
   };
 
   const playNext = () => {
@@ -291,6 +339,7 @@ const SurahReader: React.FC = () => {
               {surah.ayahs.map((ayah) => {
                 const isPlaying = playingAyah === ayah.numberInSurah;
                 const isSelected = mushafSelectedAyah === ayah.numberInSurah;
+                const cleanText = cleanArabic(ayah.text);
 
                 return (
                   <span 
@@ -308,7 +357,7 @@ const SurahReader: React.FC = () => {
                         : 'text-text hover:bg-surface hover:text-primary active:scale-95'
                     }`}
                   >
-                    <span>{ayah.text}</span>
+                    <span>{cleanText}</span>
                     <span className="inline-flex items-center justify-center w-7 h-7 mx-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-sm font-sans font-bold align-middle">
                       {ayah.numberInSurah}
                     </span>
@@ -400,91 +449,88 @@ const SurahReader: React.FC = () => {
                 {/* Word by Word Flow Chips */}
                 <div className="flex flex-wrap gap-2.5 justify-end mb-4" dir="rtl">
                   {ayah.words && ayah.words.length > 0 ? (
-                    ayah.words.map((w) => {
-                      const isWordPlaying = playingWordId === w.id;
+                    ayah.words.map((word) => {
+                      const isWordPlaying = playingWordId === word.id;
                       return (
                         <div
-                          key={w.id}
-                          onClick={() => handlePlayWordAudio(w.id, w.audioUrl)}
-                          className={`flex flex-col items-center justify-center p-2 rounded-2xl border transition-all cursor-pointer select-none active:scale-95 ${
+                          key={word.id}
+                          onClick={() => handlePlayWordAudio(word.id, word.audioUrl)}
+                          className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border transition-all cursor-pointer ${
                             isWordPlaying
-                              ? 'bg-amber-500/20 border-amber-500 text-amber-300 scale-105 shadow-md'
-                              : 'bg-surface/60 hover:bg-surface border-border/70 hover:border-amber-500/40'
+                              ? 'bg-amber-500/20 border-amber-500 text-amber-300 ring-2 ring-amber-500 shadow-md scale-105'
+                              : 'bg-surface/80 border-border/70 hover:border-primary/40 hover:bg-surface'
                           }`}
                         >
-                          <span className="font-arabic text-2xl text-text leading-relaxed font-medium">
-                            {w.textUthmani}
+                          <span className="font-arabic text-2xl mb-1 text-text">
+                            {cleanArabic(word.textUthmani)}
                           </span>
-                          <span className="text-[11px] text-subtext font-sans mt-0.5" dir="ltr">
-                            {w.translation}
+                          <span className="text-[11px] font-sans text-subtext text-center dir-ltr max-w-[80px] truncate">
+                            {cleanArabic(word.translation)}
                           </span>
                         </div>
                       );
                     })
                   ) : (
-                    <div 
-                      className="text-right text-3xl font-arabic leading-[2.2] text-text" 
-                      dangerouslySetInnerHTML={{ __html: ayah.text }}
-                    />
+                    <p className="text-right text-2xl font-arabic leading-[2.6] text-text">
+                      {cleanArabic(ayah.text)}
+                    </p>
                   )}
                 </div>
 
-                {/* Verse Translation */}
-                <div className="border-t border-border/40 pt-3">
-                  <p className="text-sm text-text/90 italic leading-relaxed">
-                    "{ayah.translation}"
+                {/* Full Ayah Translation */}
+                <div className="pt-3 border-t border-border/60">
+                  <p className="text-xs sm:text-sm text-subtext leading-relaxed font-normal">
+                    {ayah.translation}
                   </p>
                 </div>
               </div>
             );
           })
         ) : (
-          /* 3. VERSES WITH TRANSLATION MODE */
+          /* 3. VERSE BY VERSE TRANSLATION MODE */
           surah.ayahs.map((ayah) => {
             const isPlaying = playingAyah === ayah.numberInSurah;
-
             return (
-              <div 
-                key={ayah.number} 
+              <div
+                key={ayah.number}
                 id={`ayah-${ayah.numberInSurah}`}
                 className={`p-5 rounded-3xl border transition-all duration-300 shadow-sm ${
-                  isPlaying ? 'bg-primary/5 border-primary/50 ring-1 ring-primary/30 scale-[1.005]' : 'bg-card border-border hover:border-primary/20'
+                  isPlaying ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/30' : 'bg-card border-border'
                 }`}
               >
-                <div className="flex justify-between items-start mb-4 gap-4">
-                  <div className="flex flex-col items-center gap-2 shrink-0 mt-1">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-primary/10 text-primary border border-primary/20 font-bold text-xs">
+                {/* Header row */}
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-border/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 flex items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-xs">
                       {ayah.numberInSurah}
-                    </div>
-
-                    <button 
-                      onClick={() => togglePlay(ayah.numberInSurah, ayah.audio)}
-                      className={`flex items-center justify-center w-9 h-9 rounded-2xl transition-all active:scale-90 ${
-                        isPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface text-text hover:bg-border'
-                      }`}
-                      title="Play Ayah Recitation"
-                    >
-                      {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
-                    </button>
-
-                    <button 
+                    </span>
+                    <button
                       onClick={() => handleOpenTafsir(ayah.verseKey)}
-                      className="flex items-center justify-center w-9 h-9 rounded-2xl bg-surface hover:bg-amber-500/10 text-subtext hover:text-amber-500 transition-colors active:scale-90"
-                      title="Read Tafsir"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-border text-xs font-semibold text-subtext hover:text-text transition-colors"
                     >
-                      <BookText size={16} />
+                      <BookText size={13} className="text-amber-500" />
+                      <span>Tafsir</span>
                     </button>
                   </div>
-                  
-                  <div 
-                    className="text-right text-3xl sm:text-4xl font-arabic leading-[2.2] flex-1 text-text" 
-                    dir="rtl"
-                    dangerouslySetInnerHTML={{ __html: ayah.text }}
-                  />
+
+                  <button
+                    onClick={() => togglePlay(ayah.numberInSurah, ayah.audio)}
+                    className={`p-2.5 rounded-xl transition-all active:scale-90 ${
+                      isPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface hover:bg-border text-text'
+                    }`}
+                  >
+                    {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                  </button>
                 </div>
-                
-                <div className="pl-11 border-t border-border/50 pt-3">
-                  <p className="text-text text-sm sm:text-base leading-relaxed font-normal">
+
+                {/* Clean Arabic Verse */}
+                <p className="text-right text-2xl sm:text-3xl font-arabic leading-[2.6] text-text mb-4" dir="rtl">
+                  {cleanArabic(ayah.text)}
+                </p>
+
+                {/* Translation */}
+                <div className="pt-3 border-t border-border/60">
+                  <p className="text-xs sm:text-sm text-subtext leading-relaxed font-normal">
                     {ayah.translation}
                   </p>
                 </div>
@@ -529,10 +575,7 @@ const SurahReader: React.FC = () => {
               {QARI_OPTIONS.map(qari => (
                 <button 
                   key={qari.id}
-                  onClick={() => {
-                    setSelectedQari(qari.id);
-                    setShowQariMenu(false);
-                  }}
+                  onClick={() => handleSelectQari(qari.id)}
                   className={`w-full text-left p-3 rounded-2xl flex items-center justify-between transition-all ${
                     selectedQari === qari.id 
                       ? 'bg-primary/10 border border-primary text-primary font-bold shadow-sm' 
@@ -547,27 +590,78 @@ const SurahReader: React.FC = () => {
           </div>
         )}
 
+        {/* Speed Controls Picker Sheet */}
+        {showSpeedMenu && (
+          <div className="absolute bottom-full left-0 right-0 mb-3 bg-card border border-border rounded-3xl shadow-2xl p-4 animate-in slide-in-from-bottom-4">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
+              <h3 className="text-sm font-bold text-text flex items-center gap-1.5">
+                <Gauge size={16} className="text-primary" />
+                <span>Playback Speed</span>
+              </h3>
+              <button onClick={() => setShowSpeedMenu(false)} className="p-1.5 bg-surface rounded-full text-subtext hover:text-text">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {SPEED_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleSpeedChange(opt.value)}
+                  className={`p-2.5 rounded-2xl border text-center transition-all ${
+                    playbackSpeed === opt.value
+                      ? 'bg-primary text-white border-primary shadow-md font-bold'
+                      : 'bg-surface border-border text-text hover:border-primary/40'
+                  }`}
+                >
+                  <span className="text-xs font-bold block">{opt.label}</span>
+                  <span className="text-[9px] opacity-80 block">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Player Controls Bar */}
         <div className="flex items-center justify-between gap-2">
           
           {/* Reciter Selector Pill */}
           <button 
-            onClick={() => setShowQariMenu(!showQariMenu)}
-            className="flex items-center gap-1.5 py-1.5 px-3 bg-surface hover:bg-border/60 rounded-2xl text-[11px] font-bold text-text border border-border/60 transition-colors max-w-[135px] truncate"
+            onClick={() => {
+              setShowQariMenu(!showQariMenu);
+              setShowSpeedMenu(false);
+            }}
+            className="flex items-center gap-1.5 py-1.5 px-2.5 bg-surface hover:bg-border/60 rounded-2xl text-[11px] font-bold text-text border border-border/60 transition-colors max-w-[125px] truncate shrink-0"
           >
-            <Volume2 size={14} className="text-primary shrink-0" />
-            <span className="truncate">{currentQariName}</span>
-            <ChevronUp size={12} className={`text-muted shrink-0 transition-transform ${showQariMenu ? 'rotate-180' : ''}`} />
+            <Volume2 size={13} className="text-primary shrink-0" />
+            <span className="truncate">{currentQariName.split(' ')[0]}</span>
+            <ChevronUp size={11} className={`text-muted shrink-0 transition-transform ${showQariMenu ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* Controls & Active Ayah */}
-          <div className="flex items-center gap-3">
+          {/* Speed Selector Button */}
+          <button
+            onClick={() => {
+              setShowSpeedMenu(!showSpeedMenu);
+              setShowQariMenu(false);
+            }}
+            className={`py-1.5 px-2.5 rounded-2xl text-[11px] font-bold border transition-colors flex items-center gap-1 shrink-0 ${
+              playbackSpeed !== 1.0
+                ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                : 'bg-surface border-border text-subtext hover:text-text'
+            }`}
+            title="Audio Playback Speed"
+          >
+            <Gauge size={13} />
+            <span>{playbackSpeed}x</span>
+          </button>
+
+          {/* Play/Pause & Skip Controls */}
+          <div className="flex items-center gap-2">
             <button 
               onClick={playPrev}
               className="p-2 rounded-xl bg-surface hover:bg-border text-subtext hover:text-text active:scale-90 transition-all"
               title="Previous Ayah"
             >
-              <SkipBack size={18} />
+              <SkipBack size={16} />
             </button>
 
             <button 
@@ -578,9 +672,9 @@ const SurahReader: React.FC = () => {
                   togglePlay(surah.ayahs[0].numberInSurah, surah.ayahs[0].audio);
                 }
               }}
-              className="w-11 h-11 flex items-center justify-center bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-90 transition-all"
+              className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-90 transition-all"
             >
-              {playingAyah !== null ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+              {playingAyah !== null ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
             </button>
 
             <button 
@@ -588,15 +682,15 @@ const SurahReader: React.FC = () => {
               className="p-2 rounded-xl bg-surface hover:bg-border text-subtext hover:text-text active:scale-90 transition-all"
               title="Next Ayah"
             >
-              <SkipForward size={18} />
+              <SkipForward size={16} />
             </button>
           </div>
 
           {/* Ayah Indicator */}
-          <div className="text-right pr-1">
-            <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">Ayah</span>
+          <div className="text-right pr-1 shrink-0">
+            <span className="text-[9px] font-bold text-muted uppercase tracking-wider block">Ayah</span>
             <span className="text-xs font-black text-text">
-              {playingAyah || 1} / {surah.numberOfAyahs}
+              {playingAyah || 1}/{surah.numberOfAyahs}
             </span>
           </div>
         </div>

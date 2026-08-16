@@ -161,7 +161,7 @@ export function useQuran() {
             word_fields: includeWords ? 'text_uthmani,audio_url,translation' : undefined,
             translations: translationId,
             audio: selectedQari,
-            fields: 'text_uthmani_tajweed,text_uthmani',
+            fields: 'text_uthmani',
             per_page: 300
           }
         }),
@@ -182,17 +182,21 @@ export function useQuran() {
             .map((w: any) => ({
               id: w.id,
               position: w.position,
-              textUthmani: w.text_uthmani,
-              translation: w.translation?.text || '',
+              textUthmani: (w.text_uthmani || '').replace(/<[^>]*>?/gm, ''),
+              translation: (w.translation?.text || '').replace(/<[^>]*>?/gm, ''),
               audioUrl: w.audio_url ? `https://audio.qurancdn.com/${w.audio_url}` : undefined
             }));
         }
+
+        // Clean Uthmani Arabic text without broken XML/HTML tags
+        let arabicText = verse.text_uthmani || verse.text_uthmani_simple || '';
+        arabicText = arabicText.replace(/<[^>]*>?/gm, '').trim();
 
         return {
           number: verse.id,
           numberInSurah: verse.verse_number,
           verseKey: verse.verse_key || `${surahNumber}:${verse.verse_number}`,
-          text: verse.text_uthmani_tajweed || verse.text_uthmani,
+          text: arabicText,
           translation: translationText,
           audio: verse.audio?.url ? `https://verses.quran.com/${verse.audio.url}` : undefined,
           words,
