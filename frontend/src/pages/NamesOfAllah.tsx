@@ -9,12 +9,17 @@ import {
   CheckCircle2, 
   ChevronLeft, 
   ChevronRight, 
-  X
+  X,
+  Gauge
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 type ViewMode = 'grid' | 'flashcard';
 type CategoryFilter = 'all' | 'mercy' | 'majesty' | 'forgiveness' | 'creator' | 'protection';
+
+// Exact continuous audio timing parameters
+const INTRO_OFFSET = 17.0;
+const DURATION_PER_NAME = 1.894; // (205s - 17s) / 99 names
 
 export const NamesOfAllah: React.FC = () => {
   const navigate = useNavigate();
@@ -27,9 +32,14 @@ export const NamesOfAllah: React.FC = () => {
   const ITEMS_PER_PAGE = 10;
 
   // Audio State
-  const [isPlayingAll, setIsPlayingAll] = useState(false);
+  const [isPlayingContinuous, setIsPlayingContinuous] = useState(false);
   const [currentPlayingIndex, setCurrentPlayingIndex] = useState<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [audioCurrentTime, setAudioCurrentTime] = useState<number>(0);
+  const [audioTotalDuration, setAudioTotalDuration] = useState<number>(215.5);
+  
+  const continuousAudioRef = useRef<HTMLAudioElement | null>(null);
+  const individualAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Flashcard Memorization State
   const [currentCardIdx, setCurrentCardIdx] = useState(0);
@@ -71,66 +81,102 @@ export const NamesOfAllah: React.FC = () => {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Handle Play Individual Name Audio
-  const playNameAudio = (name: NameOfAllah, index?: number) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
+  // Initialize Continuous Audio
+  useEffect(() => {
+    const audio = new Audio('/audio/asma_ul_husna.mp3');
+    continuousAudioRef.current = audio;
 
-    const audio = new Audio(name.audioUrl);
-    audioRef.current = audio;
-    
-    const trueIndex = index !== undefined ? index : ALLAH_NAMES.findIndex(n => n.id === name.id);
-    setCurrentPlayingIndex(trueIndex >= 0 ? trueIndex : null);
+    const handleLoadedMetadata = () => {
+      if (audio.duration) {
+        setAudioTotalDuration(audio.duration);
+      }
+    };
 
-    audio.onended = () => {
-      if (isPlayingAll) {
-        // Move to next name & switch page if necessary
-        const nextIdx = ((trueIndex >= 0 ? trueIndex : 0) + 1) % ALLAH_NAMES.length;
-        const targetPage = Math.floor(nextIdx / ITEMS_PER_PAGE) + 1;
+    const handleTimeUpdate = () => {
+      const time = audio.currentTime;
+      setAudioCurrentTime(time);
+
+      if (time >= INTRO_OFFSET && time <= 206.0) {
+        const nameIdx = Math.min(98, Math.max(0, Math.floor((time - INTRO_OFFSET) / DURATION_PER_NAME)));
+        setCurrentPlayingIndex(nameIdx);
+
+        // Auto switch pagination page to keep the playing card visible
+        const targetPage = Math.floor(nameIdx / ITEMS_PER_PAGE) + 1;
         setCurrentPage(targetPage);
-        playNameAudio(ALLAH_NAMES[nextIdx], nextIdx);
-        
-        setTimeout(() => {
-          const el = document.getElementById(`name-card-${ALLAH_NAMES[nextIdx].id}`);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-      } else {
+
+        // Smooth scroll active element into view
+        const activeCard = document.getElementById(`name-card-${ALLAH_NAMES[nameIdx].id}`);
+        if (activeCard) {
+          activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } else if (time < INTRO_OFFSET) {
         setCurrentPlayingIndex(null);
       }
     };
 
-    audio.onerror = () => {
-      if (isPlayingAll) {
-        const nextIdx = ((trueIndex >= 0 ? trueIndex : 0) + 1) % ALLAH_NAMES.length;
-        const targetPage = Math.floor(nextIdx / ITEMS_PER_PAGE) + 1;
-        setCurrentPage(targetPage);
-        playNameAudio(ALLAH_NAMES[nextIdx], nextIdx);
-      } else {
-        setCurrentPlayingIndex(null);
-      }
-    };
-
-    audio.play().catch(err => {
-      console.warn('Audio playback error', err);
+    const handleEnded = () => {
+      setIsPlayingContinuous(false);
       setCurrentPlayingIndex(null);
-      setIsPlayingAll(false);
-    });
+      setAudioCurrentTime(0);
+    };
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.pause();
+      continuousAudioRef.current = null;
+    };
+  }, []);
+
+  // Play / Pause Master Continuous Recitation
+  const toggleContinuousPlay = () => {
+    if (!continuousAudioRef.current) return;
+
+    if (isPlayingContinuous) {
+      continuousAudioRef.current.pause();
+      setIsPlayingContinuous(false);
+    } else {
+      if (individualAudioRef.current) {
+        individualAudioRef.current.pause();
+      }
+      continuousAudioRef.current.playbackRate = playbackSpeed;
+      continuousAudioRef.current.play()
+        .then(() => setIsPlayingContinuous(true))
+        .catch(err => {
+          console.warn('Audio playback error', err);
+          setIsPlayingContinuous(false);
+        });
+    }
   };
 
-  // Toggle Continuous Playlist Mode
-  const togglePlayAll = () => {
-    if (isPlayingAll) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      setIsPlayingAll(false);
-      setCurrentPlayingIndex(null);
-    } else {
-      setIsPlayingAll(true);
-      const startIdx = currentPlayingIndex ?? 0;
-      playNameAudio(ALLAH_NAMES[startIdx], startIdx);
+  // Jump Continuous Player to a Specific Name
+  const jumpToNameInContinuous = (index: number) => {
+    if (!continuousAudioRef.current) return;
+
+    const targetTime = Math.max(0, INTRO_OFFSET + (index * DURATION_PER_NAME));
+    continuousAudioRef.current.currentTime = targetTime;
+    continuousAudioRef.current.playbackRate = playbackSpeed;
+    
+    if (!isPlayingContinuous) {
+      continuousAudioRef.current.play()
+        .then(() => setIsPlayingContinuous(true))
+        .catch(err => console.warn(err));
+    }
+    setCurrentPlayingIndex(index);
+  };
+
+  // Change Playback Speed
+  const cyclePlaybackSpeed = () => {
+    const speeds = [0.75, 1.0, 1.25, 1.5];
+    const nextSpeed = speeds[(speeds.indexOf(playbackSpeed) + 1) % speeds.length];
+    setPlaybackSpeed(nextSpeed);
+    if (continuousAudioRef.current) {
+      continuousAudioRef.current.playbackRate = nextSpeed;
     }
   };
 
@@ -143,17 +189,14 @@ export const NamesOfAllah: React.FC = () => {
     });
   };
 
-  // Cleanup on Unmount
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, []);
+  const formatSeconds = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
   const progressPercent = Math.round((memorizedIds.length / 99) * 100);
+  const activePlayingName = currentPlayingIndex !== null ? ALLAH_NAMES[currentPlayingIndex] : null;
 
   return (
     <div className="p-4 sm:p-6 pb-28 max-w-lg mx-auto">
@@ -207,7 +250,7 @@ export const NamesOfAllah: React.FC = () => {
             <h1 className="text-2xl font-black font-arabic text-amber-300 mt-1">
               أَسْمَاءُ اللَّهِ الْحُسْنَىٰ
             </h1>
-            <p className="text-xs text-white/80 mt-1 font-medium max-w-[280px]">
+            <p className="text-xs text-white/80 mt-1 font-medium max-w-[260px]">
               "To Allah belong the most beautiful names, so call on Him by them." (7:180)
             </p>
           </div>
@@ -222,92 +265,145 @@ export const NamesOfAllah: React.FC = () => {
           </div>
         </div>
 
-        {/* Master Play All Audio Bar */}
-        <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between relative z-10">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={togglePlayAll}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all"
-            >
-              {isPlayingAll ? (
-                <>
-                  <Pause size={14} className="fill-black" />
-                  <span>Pause Recitation</span>
-                </>
-              ) : (
-                <>
-                  <Play size={14} className="fill-black" />
-                  <span>Play All 99 Names</span>
-                </>
-              )}
-            </button>
+        {/* 🌟 Currently Reciting Name Highlight Banner */}
+        {activePlayingName && (
+          <div className="mt-4 p-3 bg-black/40 border border-amber-500/40 rounded-2xl flex items-center justify-between backdrop-blur-md animate-in fade-in-50">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-black text-[10px] font-black flex items-center justify-center">
+                  {activePlayingName.id}
+                </span>
+                <h2 className="text-sm font-black text-amber-300">
+                  {activePlayingName.transliteration}
+                </h2>
+              </div>
+              <p className="text-[11px] text-white/80 mt-0.5 font-medium">
+                {activePlayingName.meaningEn} • <span className="font-urdu text-amber-300 font-semibold">{activePlayingName.meaningUr}</span>
+              </p>
+            </div>
+
+            <span className="text-2xl font-black font-arabic text-amber-400 pl-2">
+              {activePlayingName.arabic}
+            </span>
+          </div>
+        )}
+
+        {/* 🎙️ Master Melodic Continuous Player Bar */}
+        <div className="mt-4 pt-3 border-t border-white/10 relative z-10 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleContinuousPlay}
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all"
+              >
+                {isPlayingContinuous ? (
+                  <>
+                    <Pause size={14} className="fill-black" />
+                    <span>Pause Flow</span>
+                  </>
+                ) : (
+                  <>
+                    <Play size={14} className="fill-black" />
+                    <span>Play Melodic Flow (99 Names)</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={cyclePlaybackSpeed}
+                className="px-2.5 py-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-amber-500/30 text-amber-300 text-xs font-black active:scale-95 transition-all flex items-center gap-1"
+                title="Change Speed"
+              >
+                <Gauge size={13} />
+                <span>{playbackSpeed}x</span>
+              </button>
+            </div>
+
+            <div className="text-[11px] font-mono text-amber-300 font-bold">
+              {formatSeconds(audioCurrentTime)} / {formatSeconds(audioTotalDuration)}
+            </div>
           </div>
 
-          {currentPlayingIndex !== null && (
-            <div className="flex items-center gap-1.5 text-xs text-amber-300 font-bold animate-pulse">
-              <Volume2 size={14} />
-              <span>#{ALLAH_NAMES[currentPlayingIndex].id} {ALLAH_NAMES[currentPlayingIndex].transliteration}</span>
-            </div>
-          )}
+          {/* Audio Progress Scrubber */}
+          <div className="w-full bg-white/20 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="bg-amber-400 h-full rounded-full transition-all duration-200"
+              style={{ width: `${(audioCurrentTime / (audioTotalDuration || 1)) * 100}%` }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* ── MODE 1: FLASHCARD MEMORIZATION MODE ── */}
       {viewMode === 'flashcard' ? (
+        /* ── MODE 1: MEMORIZATION FLASHCARD MODE ── */
         <div className="space-y-4">
-          {/* Card View */}
-          {ALLAH_NAMES[currentCardIdx] && (
-            <div
-              onClick={() => setIsFlipped(!isFlipped)}
-              className="bg-card/75 dark:bg-[#062426]/75 backdrop-blur-xl border-2 border-amber-500/30 rounded-3xl p-8 min-h-[300px] flex flex-col items-center justify-center text-center cursor-pointer shadow-lg hover:border-amber-500/60 transition-all relative group"
-            >
-              <span className="absolute top-4 left-4 text-xs font-black text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                #{ALLAH_NAMES[currentCardIdx].id} of 99
+          <div className="bg-card/75 dark:bg-[#062426]/75 backdrop-blur-xl border border-border/80 dark:border-amber-500/20 rounded-3xl p-6 text-center shadow-lg relative min-h-[300px] flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-subtext font-bold">
+              <span className="bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20">
+                Card {currentCardIdx + 1} of 99
               </span>
-
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  playNameAudio(ALLAH_NAMES[currentCardIdx]);
-                }}
-                className="absolute top-4 right-4 p-2 rounded-full bg-surface border border-border text-amber-500 hover:scale-110 active:scale-95 transition-transform"
-                title="Pronounce Name"
+                onClick={() => toggleMemorized(ALLAH_NAMES[currentCardIdx].id)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  memorizedIds.includes(ALLAH_NAMES[currentCardIdx].id)
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-surface border border-border text-subtext hover:text-text'
+                }`}
               >
-                <Volume2 size={18} />
+                <CheckCircle2 size={14} />
+                <span>{memorizedIds.includes(ALLAH_NAMES[currentCardIdx].id) ? 'Memorized' : 'Mark Learned'}</span>
               </button>
+            </div>
+
+            {/* Flashcard Body */}
+            <div 
+              onClick={() => setIsFlipped(!isFlipped)} 
+              className="my-6 cursor-pointer select-none space-y-4 transition-all transform active:scale-95"
+            >
+              <div className="w-12 h-12 rounded-full bg-amber-500/15 text-amber-500 font-black text-sm flex items-center justify-center mx-auto border border-amber-500/30">
+                #{ALLAH_NAMES[currentCardIdx].id}
+              </div>
 
               {!isFlipped ? (
-                <div className="space-y-3">
-                  <h2 className="text-4xl sm:text-5xl font-black font-arabic text-amber-400 leading-relaxed py-2">
+                <div className="space-y-2">
+                  <h2 className="text-4xl sm:text-5xl font-black font-arabic text-amber-400 py-2">
                     {ALLAH_NAMES[currentCardIdx].arabic}
                   </h2>
-                  <h3 className="text-xl font-black text-text">
-                    {ALLAH_NAMES[currentCardIdx].transliteration}
-                  </h3>
-                  <p className="text-xs text-muted font-bold uppercase tracking-wider">
-                    👉 Tap card to reveal meaning & Urdu
+                  <p className="text-sm font-bold text-subtext">
+                    (Tap to reveal meaning & transliteration)
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3 animate-in fade-in zoom-in-95">
-                  <h3 className="text-2xl font-black text-amber-500">
+                <div className="space-y-3 animate-in fade-in-50">
+                  <h2 className="text-2xl font-black text-text">
+                    {ALLAH_NAMES[currentCardIdx].transliteration}
+                  </h2>
+                  <p className="text-base font-bold text-amber-500">
                     "{ALLAH_NAMES[currentCardIdx].meaningEn}"
-                  </h3>
-                  <p className="text-xl font-urdu font-bold text-emerald-400">
+                  </p>
+                  <p className="text-lg font-urdu text-emerald-600 dark:text-emerald-400 font-bold">
                     {ALLAH_NAMES[currentCardIdx].meaningUr}
                   </p>
-                  <p className="text-xs text-subtext max-w-sm pt-2 leading-relaxed">
+                  <p className="text-xs text-subtext max-w-xs mx-auto leading-relaxed pt-2">
                     {ALLAH_NAMES[currentCardIdx].explanation}
-                  </p>
-                  <p className="text-[11px] text-muted font-bold">
-                    Tap to flip back
                   </p>
                 </div>
               )}
             </div>
-          )}
 
-          {/* Flashcard Controls & Mark Memorized */}
+            {/* Audio Button */}
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => jumpToNameInContinuous(currentCardIdx)}
+                className="px-4 py-2 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all"
+              >
+                <Volume2 size={15} />
+                <span>Hear Pronunciation</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Flashcard Navigation */}
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={() => {
@@ -319,18 +415,6 @@ export const NamesOfAllah: React.FC = () => {
             >
               <ChevronLeft size={16} />
               <span>Previous</span>
-            </button>
-
-            <button
-              onClick={() => toggleMemorized(ALLAH_NAMES[currentCardIdx].id)}
-              className={`flex-1 py-3 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all ${
-                memorizedIds.includes(ALLAH_NAMES[currentCardIdx].id)
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-amber-500/15 border border-amber-500/30 text-amber-500'
-              }`}
-            >
-              <CheckCircle2 size={16} />
-              <span>{memorizedIds.includes(ALLAH_NAMES[currentCardIdx].id) ? 'Memorized ✓' : 'Mark Learned'}</span>
             </button>
 
             <button
@@ -390,12 +474,12 @@ export const NamesOfAllah: React.FC = () => {
             ))}
           </div>
 
-          {/* 99 Names Grid List (10 per Page) */}
+          {/* 99 Names Grid List (10 per Page) with Real-Time Synchronized Highlighting */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {paginatedNames.map((name) => {
-              const isCurrentlyPlaying = currentPlayingIndex !== null && ALLAH_NAMES[currentPlayingIndex]?.id === name.id;
-              const isMemorized = memorizedIds.includes(name.id);
               const trueIndex = ALLAH_NAMES.findIndex(n => n.id === name.id);
+              const isCurrentlyPlaying = currentPlayingIndex === trueIndex;
+              const isMemorized = memorizedIds.includes(name.id);
 
               return (
                 <div
@@ -404,7 +488,7 @@ export const NamesOfAllah: React.FC = () => {
                   onClick={() => setActiveModalName(name)}
                   className={`p-3.5 rounded-2xl border text-left transition-all relative cursor-pointer group ${
                     isCurrentlyPlaying
-                      ? 'bg-amber-500/15 border-amber-500 shadow-md ring-2 ring-amber-500/30'
+                      ? 'bg-amber-500/20 border-amber-500 shadow-lg ring-2 ring-amber-500 scale-[1.02]'
                       : 'bg-card/75 dark:bg-[#062426]/75 backdrop-blur-xl border-border/80 dark:border-amber-500/20 hover:border-amber-500/40 shadow-sm'
                   }`}
                 >
@@ -412,10 +496,18 @@ export const NamesOfAllah: React.FC = () => {
                     {/* Left: Number & Transliteration */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-full bg-amber-500/15 text-amber-500 text-[10px] font-black flex items-center justify-center shrink-0">
+                        <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 ${
+                          isCurrentlyPlaying 
+                            ? 'bg-amber-500 text-black' 
+                            : 'bg-amber-500/15 text-amber-500'
+                        }`}>
                           {name.id}
                         </span>
-                        <h3 className="text-xs font-black text-text truncate group-hover:text-amber-500 transition-colors">
+                        <h3 className={`text-xs font-black truncate transition-colors ${
+                          isCurrentlyPlaying 
+                            ? 'text-amber-400' 
+                            : 'text-text group-hover:text-amber-500'
+                        }`}>
                           {name.transliteration}
                         </h3>
                         {isMemorized && (
@@ -440,14 +532,14 @@ export const NamesOfAllah: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          playNameAudio(name, trueIndex);
+                          jumpToNameInContinuous(trueIndex);
                         }}
                         className={`p-1.5 rounded-xl border text-xs mt-1.5 transition-all ${
                           isCurrentlyPlaying
-                            ? 'bg-amber-500 text-black border-amber-500 animate-bounce'
+                            ? 'bg-amber-500 text-black border-amber-500 animate-pulse'
                             : 'bg-surface hover:bg-card border-border text-subtext hover:text-amber-500'
                         }`}
-                        title="Listen Audio"
+                        title="Jump & Listen from this Name"
                       >
                         <Volume2 size={13} />
                       </button>
@@ -564,45 +656,52 @@ export const NamesOfAllah: React.FC = () => {
               </button>
             </div>
 
-            <div className="py-2">
-              <h2 className="text-4xl font-black font-arabic text-amber-400 leading-relaxed">
+            <div className="space-y-2">
+              <h2 className="text-4xl font-black font-arabic text-amber-400">
                 {activeModalName.arabic}
               </h2>
-              <h3 className="text-xl font-black text-text mt-1">
+              <h3 className="text-lg font-black text-text">
                 {activeModalName.transliteration}
               </h3>
-              <p className="text-sm font-bold text-amber-500 mt-0.5">
+              <p className="text-sm font-bold text-amber-500">
                 "{activeModalName.meaningEn}"
               </p>
-              <p className="text-base font-urdu font-bold text-emerald-400 mt-1">
+              <p className="text-base font-urdu text-emerald-600 dark:text-emerald-400 font-bold">
                 {activeModalName.meaningUr}
               </p>
             </div>
 
-            <div className="bg-surface/70 dark:bg-black/30 border border-border/80 dark:border-white/10 rounded-2xl p-3.5 text-xs text-subtext text-left leading-relaxed">
-              <strong className="text-text block mb-1">Spiritual Meaning & Benefit:</strong>
-              {activeModalName.explanation}
+            <div className="p-3.5 bg-surface/70 dark:bg-black/40 rounded-2xl border border-border text-left">
+              <h4 className="text-[10px] font-black uppercase text-amber-500 tracking-wider mb-1">
+                Spiritual Explanation & Benefit
+              </h4>
+              <p className="text-xs text-subtext leading-relaxed">
+                {activeModalName.explanation}
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2">
+            <div className="flex items-center justify-between gap-2 pt-2">
               <button
-                onClick={() => playNameAudio(activeModalName)}
-                className="py-2.5 rounded-2xl bg-amber-500 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+                onClick={() => {
+                  const idx = ALLAH_NAMES.findIndex(n => n.id === activeModalName.id);
+                  jumpToNameInContinuous(idx);
+                }}
+                className="flex-1 py-2.5 rounded-2xl bg-surface hover:bg-card border border-border text-xs font-bold text-text flex items-center justify-center gap-1.5 active:scale-95 transition-all"
               >
-                <Volume2 size={16} />
+                <Volume2 size={15} />
                 <span>Listen Audio</span>
               </button>
 
               <button
                 onClick={() => toggleMemorized(activeModalName.id)}
-                className={`py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 border active:scale-95 transition-all ${
+                className={`flex-1 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all ${
                   memorizedIds.includes(activeModalName.id)
-                    ? 'bg-emerald-500 text-white border-emerald-500'
-                    : 'bg-card border-border text-text hover:bg-surface'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-amber-500 text-black'
                 }`}
               >
-                <CheckCircle2 size={16} />
-                <span>{memorizedIds.includes(activeModalName.id) ? 'Memorized ✓' : 'Mark Learned'}</span>
+                <CheckCircle2 size={15} />
+                <span>{memorizedIds.includes(activeModalName.id) ? 'Memorized' : 'Mark Learned'}</span>
               </button>
             </div>
           </div>
