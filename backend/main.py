@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from jose import JWTError, jwt
-from typing import List
+from typing import List, Optional
 
 import secrets
 import models, schemas, auth, email_service
@@ -68,6 +68,7 @@ def root():
     return {"status": "ok", "service": "619 Islam API", "version": "1.0.0"}
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -86,6 +87,18 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)):
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        return db.query(models.User).filter(models.User.username == username).first()
+    except Exception:
+        return None
 
 @app.post("/signup")
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -569,3 +582,360 @@ def leave_global_habit(habit_id: str, db: Session = Depends(get_db), current_use
         db.commit()
         
     return {"message": "Successfully left"}
+
+# ==================== ISLAMIC BOOKS / DIGITAL LIBRARY ENDPOINTS ====================
+
+@app.get("/books/traditions", response_model=List[schemas.TraditionResponse])
+def get_traditions(db: Session = Depends(get_db)):
+    return db.query(models.Tradition).filter(models.Tradition.is_active == True).order_by(models.Tradition.sort_order).all()
+
+@app.get("/books/categories", response_model=List[schemas.CategoryResponse])
+def get_categories(db: Session = Depends(get_db)):
+    return db.query(models.Category).filter(models.Category.is_active == True).order_by(models.Category.sort_order).all()
+
+@app.get("/books", response_model=List[schemas.BookSummaryResponse])
+def list_books(
+    tradition: Optional[str] = None,
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    language: Optional[str] = None,
+    featured: Optional[bool] = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
+):
+    query = db.query(models.Book).filter(models.Book.is_active == True)
+
+    if tradition and tradition.lower() != "all":
+        trad = db.query(models.Tradition).filter(models.Tradition.slug == tradition.lower()).first()
+        if trad:
+            child_ids = [t.id for t in db.query(models.Tradition).filter(models.Tradition.parent_id == trad.id).all()]
+            trad_ids = [trad.id] + child_ids
+            # Include specific tradition + general books (id 11)
+            query = query.filter((models.Book.tradition_id.in_(trad_ids)) | (models.Book.tradition_id == 11) | (models.Book.tradition_id == None))
+
+    if category and category.lower() != "all":
+        cat = db.query(models.Category).filter(models.Category.slug == category.lower()).first()
+        if cat:
+            query = query.filter(models.Book.category_id == cat.id)
+
+    if featured is not None:
+        query = query.filter(models.Book.featured == featured)
+
+    if search:
+        s = f"%{search.strip().lower()}%"
+        query = query.join(models.Author, isouter=True).filter(
+            (models.Book.title.ilike(s)) |
+            (models.Book.title_ar.ilike(s)) |
+            (models.Book.title_ur.ilike(s)) |
+            (models.Book.description.ilike(s)) |
+            (models.Author.name.ilike(s))
+        )
+
+    books = query.all()
+
+    user_interactions = {}
+    if current_user:
+        user_books = db.query(models.UserBook).filter(models.UserBook.user_id == current_user.id).all()
+        for ub in user_books:
+            user_interactions[ub.book_id] = ub
+
+    results = []
+    for b in books:
+        ub = user_interactions.get(b.id)
+        results.append({
+            "id": b.id,
+            "title": b.title,
+            "title_ar": b.title_ar,
+            "title_ur": b.title_ur,
+            "slug": b.slug,
+            "description": b.description,
+            "language": b.language,
+            "publication_year": b.publication_year,
+            "cover_url": b.cover_url,
+            "copyright_status": b.copyright_status,
+            "is_readable": b.is_readable,
+            "is_downloadable": b.is_downloadable,
+            "featured": b.featured,
+            "total_chapters": b.total_chapters,
+            "author": b.author,
+            "tradition": b.tradition,
+            "category": b.category,
+            "is_favorite": ub.is_favorite if ub else False,
+            "progress_percent": ub.progress_percent if ub else 0,
+            "last_chapter": ub.last_chapter if ub else 1
+        })
+
+    return results
+
+@app.get("/books/{book_id}", response_model=schemas.BookDetailResponse)
+def get_book_detail(
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
+):
+    b = db.query(models.Book).filter(models.Book.id == book_id, models.Book.is_active == True).first()
+    if not b:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    ub = None
+    if current_user:
+        ub = db.query(models.UserBook).filter(
+            models.UserBook.user_id == current_user.id,
+            models.UserBook.book_id == book_id
+        ).first()
+
+    return {
+        "id": b.id,
+        "title": b.title,
+        "title_ar": b.title_ar,
+        "title_ur": b.title_ur,
+        "slug": b.slug,
+        "description": b.description,
+        "language": b.language,
+        "publication_year": b.publication_year,
+        "cover_url": b.cover_url,
+        "copyright_status": b.copyright_status,
+        "is_readable": b.is_readable,
+        "is_downloadable": b.is_downloadable,
+        "featured": b.featured,
+        "total_chapters": b.total_chapters,
+        "author": b.author,
+        "tradition": b.tradition,
+        "category": b.category,
+        "chapters": b.chapters,
+        "sources": b.sources,
+        "is_favorite": ub.is_favorite if ub else False,
+        "progress_percent": ub.progress_percent if ub else 0,
+        "last_chapter": ub.last_chapter if ub else 1
+    }
+
+@app.get("/books/{book_id}/chapters/{chapter_number}", response_model=schemas.BookChapterDetail)
+def get_book_chapter(
+    book_id: int,
+    chapter_number: int,
+    db: Session = Depends(get_db)
+):
+    chap = db.query(models.BookChapter).filter(
+        models.BookChapter.book_id == book_id,
+        models.BookChapter.chapter_number == chapter_number
+    ).first()
+    if not chap:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    return chap
+
+@app.get("/user/library")
+def get_user_library(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    user_books = db.query(models.UserBook).filter(
+        models.UserBook.user_id == current_user.id
+    ).order_by(models.UserBook.last_read_at.desc()).all()
+
+    continue_reading = []
+    favorites = []
+
+    for ub in user_books:
+        b = ub.book
+        if not b or not b.is_active:
+            continue
+        book_data = {
+            "id": b.id,
+            "title": b.title,
+            "title_ar": b.title_ar,
+            "title_ur": b.title_ur,
+            "slug": b.slug,
+            "author": b.author.name if b.author else "Classical",
+            "cover_url": b.cover_url,
+            "last_chapter": ub.last_chapter,
+            "last_position": ub.last_position,
+            "progress_percent": ub.progress_percent,
+            "last_read_at": ub.last_read_at,
+            "is_favorite": ub.is_favorite
+        }
+        if ub.progress_percent > 0:
+            continue_reading.append(book_data)
+        if ub.is_favorite:
+            favorites.append(book_data)
+
+    bmarks = db.query(models.BookBookmark).filter(
+        models.BookBookmark.user_id == current_user.id
+    ).order_by(models.BookBookmark.created_at.desc()).all()
+
+    bookmarks_list = []
+    for bm in bmarks:
+        bk = db.query(models.Book).filter(models.Book.id == bm.book_id).first()
+        bookmarks_list.append({
+            "id": bm.id,
+            "book_id": bm.book_id,
+            "book_title": bk.title if bk else "Book",
+            "chapter_number": bm.chapter_number,
+            "title": bm.title,
+            "selected_text": bm.selected_text,
+            "note": bm.note,
+            "created_at": bm.created_at
+        })
+
+    return {
+        "continue_reading": continue_reading,
+        "favorites": favorites,
+        "bookmarks": bookmarks_list
+    }
+
+@app.post("/user/books/{book_id}/favorite")
+def toggle_book_favorite(
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    ub = db.query(models.UserBook).filter(
+        models.UserBook.user_id == current_user.id,
+        models.UserBook.book_id == book_id
+    ).first()
+
+    if not ub:
+        ub = models.UserBook(
+            user_id=current_user.id,
+            book_id=book_id,
+            is_favorite=True
+        )
+        db.add(ub)
+    else:
+        ub.is_favorite = not ub.is_favorite
+
+    db.commit()
+    return {"status": "success", "is_favorite": ub.is_favorite}
+
+@app.post("/user/books/{book_id}/progress")
+def update_book_progress(
+    book_id: int,
+    prog: schemas.BookProgressUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    ub = db.query(models.UserBook).filter(
+        models.UserBook.user_id == current_user.id,
+        models.UserBook.book_id == book_id
+    ).first()
+
+    if not ub:
+        ub = models.UserBook(
+            user_id=current_user.id,
+            book_id=book_id,
+            last_chapter=prog.chapter_number,
+            last_position=prog.position or "0",
+            progress_percent=prog.progress_percent,
+            last_read_at=datetime.datetime.utcnow()
+        )
+        db.add(ub)
+    else:
+        ub.last_chapter = prog.chapter_number
+        ub.last_position = prog.position or ub.last_position
+        ub.progress_percent = prog.progress_percent
+        ub.last_read_at = datetime.datetime.utcnow()
+
+    db.commit()
+    return {"status": "success", "progress_percent": ub.progress_percent}
+
+@app.get("/user/preferences/books", response_model=schemas.UserBookPreferenceResponse)
+def get_user_book_preference(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    pref = db.query(models.UserBookPreference).filter(
+        models.UserBookPreference.user_id == current_user.id
+    ).first()
+
+    if not pref:
+        default_slug = "all"
+        if current_user.fiqh:
+            f = current_user.fiqh.lower()
+            if "shia" in f or "jafari" in f: default_slug = "shia"
+            elif "hanafi" in f: default_slug = "hanafi"
+            elif "shafi" in f: default_slug = "shafii"
+            elif "maliki" in f: default_slug = "maliki"
+            elif "hanbali" in f: default_slug = "hanbali"
+            elif "sunni" in f: default_slug = "sunni"
+
+        pref = models.UserBookPreference(
+            user_id=current_user.id,
+            preferred_tradition_slug=default_slug
+        )
+        db.add(pref)
+        db.commit()
+        db.refresh(pref)
+
+    return pref
+
+@app.put("/user/preferences/books", response_model=schemas.UserBookPreferenceResponse)
+def update_user_book_preference(
+    pref_update: schemas.UserBookPreferenceUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    pref = db.query(models.UserBookPreference).filter(
+        models.UserBookPreference.user_id == current_user.id
+    ).first()
+
+    if not pref:
+        pref = models.UserBookPreference(
+            user_id=current_user.id,
+            preferred_tradition_slug=pref_update.preferred_tradition_slug,
+            reader_font_size=pref_update.reader_font_size or 18,
+            reader_theme=pref_update.reader_theme or "dark"
+        )
+        db.add(pref)
+    else:
+        pref.preferred_tradition_slug = pref_update.preferred_tradition_slug
+        if pref_update.reader_font_size:
+            pref.reader_font_size = pref_update.reader_font_size
+        if pref_update.reader_theme:
+            pref.reader_theme = pref_update.reader_theme
+
+    db.commit()
+    db.refresh(pref)
+    return pref
+
+@app.post("/user/bookmarks", response_model=schemas.BookmarkResponse)
+def create_bookmark(
+    bm: schemas.BookmarkCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    obj = models.BookBookmark(
+        user_id=current_user.id,
+        book_id=bm.book_id,
+        chapter_number=bm.chapter_number,
+        title=bm.title,
+        selected_text=bm.selected_text,
+        note=bm.note
+    )
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    bk = db.query(models.Book).filter(models.Book.id == obj.book_id).first()
+    return {
+        "id": obj.id,
+        "book_id": obj.book_id,
+        "book_title": bk.title if bk else "Book",
+        "chapter_number": obj.chapter_number,
+        "title": obj.title,
+        "selected_text": obj.selected_text,
+        "note": obj.note,
+        "created_at": obj.created_at
+    }
+
+@app.delete("/user/bookmarks/{bookmark_id}")
+def delete_bookmark(
+    bookmark_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    bm = db.query(models.BookBookmark).filter(
+        models.BookBookmark.id == bookmark_id,
+        models.BookBookmark.user_id == current_user.id
+    ).first()
+    if bm:
+        db.delete(bm)
+        db.commit()
+    return {"status": "success", "message": "Bookmark deleted"}

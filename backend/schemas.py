@@ -143,3 +143,137 @@ class GlobalHabitResponse(GlobalHabitBase):
 
     class Config:
         from_attributes = True
+
+# ==================== ISLAMIC BOOKS / LIBRARY SCHEMAS ====================
+
+class TraditionResponse(BaseModel):
+    id: int
+    name: str
+    name_ar: Optional[str] = None
+    name_ur: Optional[str] = None
+    slug: str
+    parent_id: Optional[int] = None
+    description: Optional[str] = None
+    sort_order: int = 0
+
+    class Config:
+        from_attributes = True
+
+class CategoryResponse(BaseModel):
+    id: int
+    name: str
+    name_ar: Optional[str] = None
+    name_ur: Optional[str] = None
+    slug: str
+    icon_name: str
+    description: Optional[str] = None
+    sort_order: int = 0
+
+    class Config:
+        from_attributes = True
+
+class AuthorResponse(BaseModel):
+    id: int
+    name: str
+    name_ar: Optional[str] = None
+    name_ur: Optional[str] = None
+    death_year_hijri: Optional[str] = None
+    bio: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class BookSourceResponse(BaseModel):
+    id: int
+    provider: str
+    web_url: Optional[str] = None
+    pdf_url: Optional[str] = None
+    can_host: bool = True
+    can_download: bool = True
+
+    class Config:
+        from_attributes = True
+
+class BookChapterSummary(BaseModel):
+    id: int
+    chapter_number: int
+    title: str
+    title_ar: Optional[str] = None
+    title_ur: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class BookChapterDetail(BookChapterSummary):
+    content_ar: Optional[str] = None
+    content_en: Optional[str] = None
+    content_ur: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class BookSummaryResponse(BaseModel):
+    id: int
+    title: str
+    title_ar: Optional[str] = None
+    title_ur: Optional[str] = None
+    slug: str
+    description: Optional[str] = None
+    language: str
+    publication_year: Optional[str] = None
+    cover_url: Optional[str] = None
+    copyright_status: str
+    is_readable: bool = True
+    is_downloadable: bool = True
+    featured: bool = False
+    total_chapters: int = 1
+    author: Optional[AuthorResponse] = None
+    tradition: Optional[TraditionResponse] = None
+    category: Optional[CategoryResponse] = None
+    is_favorite: bool = False
+    progress_percent: int = 0
+    last_chapter: int = 1
+
+    class Config:
+        from_attributes = True
+
+class BookDetailResponse(BookSummaryResponse):
+    chapters: List[BookChapterSummary] = []
+    sources: List[BookSourceResponse] = []
+
+    class Config:
+        from_attributes = True
+
+class BookProgressUpdate(BaseModel):
+    chapter_number: int
+    position: Optional[str] = "0"
+    progress_percent: int
+
+class BookmarkCreate(BaseModel):
+    book_id: int
+    chapter_number: int
+    title: str
+    selected_text: Optional[str] = None
+    note: Optional[str] = None
+
+class BookmarkResponse(BookmarkCreate):
+    id: int
+    created_at: datetime
+    book_title: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserBookPreferenceUpdate(BaseModel):
+    preferred_tradition_slug: str
+    reader_font_size: Optional[int] = 18
+    reader_theme: Optional[str] = "dark"
+
+class UserBookPreferenceResponse(BaseModel):
+    preferred_tradition_slug: str
+    reader_font_size: int = 18
+    reader_theme: str = "dark"
+
+    class Config:
+        from_attributes = True
+

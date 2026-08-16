@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGoals } from '../hooks/useGoals';
 import { useStreak } from '../hooks/useStreak';
 import { getTodayDateString } from '../utils/dateUtils';
-import { Target, CheckCircle2, Circle, Flame, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight, Calendar } from 'lucide-react';
+import { Target, CheckCircle2, Circle, Flame, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight, Calendar, Library } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNamaz } from '../hooks/useNamaz';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -26,14 +26,17 @@ const Dashboard: React.FC = () => {
     month: 'short',
     year: 'numeric'
   }).format(new Date());
-  const todayCompletions = completions.filter(c => c.date === today && c.completed);
   
+  const todayCompletions = completions.filter(c => c.date === today && c.completed);
+
   const isCompleted = (goalId: string) => {
-    return todayCompletions.some(c => c.goalId === goalId);
+    return completions.some(c => c.goalId === goalId && c.date === today && c.completed);
   };
   
-  const progressPercentage = goals.length > 0 
-    ? Math.round((todayCompletions.length / goals.length) * 100) 
+  const activeGoals = goals.filter(g => !g.archived);
+  const completedCount = activeGoals.filter(g => isCompleted(g.id)).length;
+  const progressPercentage = activeGoals.length > 0 
+    ? Math.round((completedCount / activeGoals.length) * 100) 
     : 0;
 
   const QUICK_FEATURES = [
@@ -42,9 +45,9 @@ const Dashboard: React.FC = () => {
       title: 'Namaz',
       subtitle: 'Prayer Times',
       to: '/namaz',
-      icon: <Clock size={24} className="text-orange-500" />,
-      bg: 'bg-orange-500/10 hover:border-orange-500/30',
-      iconBg: 'bg-orange-500/15',
+      icon: <Clock size={24} className="text-primary" />,
+      bg: 'bg-primary/10 hover:border-primary/30',
+      iconBg: 'bg-primary/15',
       requiresOnline: false,
     },
     {
@@ -55,6 +58,16 @@ const Dashboard: React.FC = () => {
       icon: <Book size={24} className="text-emerald-500" />,
       bg: 'bg-emerald-500/10 hover:border-emerald-500/30',
       iconBg: 'bg-emerald-500/15',
+      requiresOnline: false,
+    },
+    {
+      id: 'books',
+      title: 'Library',
+      subtitle: 'Hadith & Books',
+      to: '/books',
+      icon: <Library size={24} className="text-amber-500" />,
+      bg: 'bg-amber-500/10 hover:border-amber-500/30',
+      iconBg: 'bg-amber-500/15',
       requiresOnline: false,
     },
     {

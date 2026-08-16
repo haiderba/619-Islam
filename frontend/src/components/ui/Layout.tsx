@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, Book, Settings, WifiOff, CheckCircle2 } from 'lucide-react';
+import { Home, Book, Settings, WifiOff, CheckCircle2, Library } from 'lucide-react';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 const Layout: React.FC = () => {
@@ -30,11 +30,12 @@ const Layout: React.FC = () => {
       </main>
 
       {/* Clean Streamlined Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 w-full bg-card/95 backdrop-blur-md border-t border-border px-8 py-3 safe-area-pb z-50">
+      <nav className="fixed bottom-0 w-full bg-card/95 backdrop-blur-md border-t border-border px-4 py-2.5 safe-area-pb z-50">
         <div className="flex justify-around items-center max-w-md mx-auto">
-          <NavItem to="/" icon={<Home size={22} />} label="Today" />
-          <NavItem to="/quran" icon={<Book size={22} />} label="Quran" />
-          <NavItem to="/settings" icon={<Settings size={22} />} label="Settings" />
+          <NavItem to="/" icon={<Home size={21} />} label="Today" />
+          <NavItem to="/quran" icon={<Book size={21} />} label="Quran" />
+          <NavItem to="/books" icon={<Library size={21} />} label="Books" />
+          <NavItem to="/settings" icon={<Settings size={21} />} label="Settings" />
         </div>
       </nav>
     </div>

@@ -18,6 +18,10 @@ import Duas from './pages/Duas';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
+import Books from './pages/Books';
+import BookDetail from './pages/BookDetail';
+import BookReader from './pages/BookReader';
+import MyLibrary from './pages/MyLibrary';
 import Layout from './components/ui/Layout';
 import InstallPrompt from './components/ui/InstallPrompt';
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt';
@@ -46,6 +50,9 @@ const AppRoutes = () => {
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Full screen reader */}
+      <Route path="/books/:id/read" element={<ProtectedRoute><BookReader /></ProtectedRoute>} />
       
       {/* Protected App Routes inside a Layout */}
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -54,12 +61,14 @@ const AppRoutes = () => {
         <Route path="tasbeeh" element={<Tasbeeh />} />
         <Route path="quran" element={<Quran />} />
         <Route path="quran/:id" element={<SurahReader />} />
+        <Route path="books" element={<Books />} />
+        <Route path="books/:id" element={<BookDetail />} />
+        <Route path="library" element={<MyLibrary />} />
         <Route path="habits" element={<Habits />} />
         <Route path="qibla" element={<Qibla />} />
         <Route path="duas" element={<Duas />} />
         <Route path="settings" element={<Settings />} />
         <Route path="admin" element={<Admin />} />
-        {/* Add more routes here later */}
       </Route>
       
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -24,4 +24,9 @@ backend/sql_app.db
 /ios/
 /android/
 
+# Environment secrets
+.env
+backend/.env
+*.env
+
 expo-env.d.ts

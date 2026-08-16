@@ -12,36 +12,36 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '1.3.0';
+export const CURRENT_APP_VERSION = '1.4.0';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
   releaseDate: 'August 2026',
-  headline: "What's New in Update v1.3.0",
+  headline: "What's New in Update v1.4.0",
   features: [
     {
-      icon: 'Sun',
-      title: 'Desi Solar Calendar (Sawan, Bhadon)',
-      description: 'Track traditional Punjabi/Bikrami Desi months and dates directly on your Dashboard and Prayer Times screens.',
+      icon: 'Library',
+      title: 'Islamic Digital Library & Books',
+      description: 'Explore classical Islamic texts, hadith anthologies, and jurisprudence with multi-tradition filtering (Sunni, Shia, Hanafi, General).',
+      badge: 'Major'
+    },
+    {
+      icon: 'BookOpen',
+      title: 'Integrated Multi-Language Reader',
+      description: 'Read in authentic Arabic (RTL), Urdu, and English with custom text size, Sepia / Dark / Light themes, and Table of Contents.',
       badge: 'New'
     },
     {
-      icon: 'KeyRound',
-      title: '5-Minute Password Reset',
-      description: 'Quickly recover and reset your password with branded 5-minute security verification emails sent directly to your inbox.',
+      icon: 'Bookmark',
+      title: 'My Library & Offline Downloads',
+      description: 'Save favorites, track your reading progress %, add bookmarks with notes, and download permitted books for 100% offline reading.',
       badge: 'New'
     },
     {
-      icon: 'Volume2',
-      title: 'Continuous Mushaf & Audio Player',
-      description: 'Tap any verse in Mushaf mode to highlight and listen with 7 master reciters on the new floating player bar.',
+      icon: 'Calendar',
+      title: 'Unified Multi-Date Header',
+      description: 'Gregorian, Islamic Hijri, and traditional Desi solar calendars beautifully consolidated on Dashboard and Prayer Times.',
       badge: 'Improved'
-    },
-    {
-      icon: 'Sparkles',
-      title: 'Instant In-App Updates',
-      description: 'Seamless 1-click update experience without ever having to delete or reinstall the app.',
-      badge: 'Enhanced'
     }
   ]
 };

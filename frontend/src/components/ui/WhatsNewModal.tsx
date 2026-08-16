@@ -2,7 +2,7 @@ import React from 'react';
 import { LATEST_RELEASE } from '../../config/changelog';
 import { 
   Sparkles, X, Check, KeyRound, Volume2, 
-  DownloadCloud, Zap, ShieldCheck 
+  DownloadCloud, Zap, ShieldCheck, Library, BookOpen, Bookmark, Calendar, Sun
 } from 'lucide-react';
 
 interface WhatsNewModalProps {
@@ -17,6 +17,11 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Sparkles: <Sparkles size={20} className="text-emerald-400" />,
   Zap: <Zap size={20} className="text-amber-400" />,
   ShieldCheck: <ShieldCheck size={20} className="text-primary" />,
+  Library: <Library size={20} className="text-amber-400" />,
+  BookOpen: <BookOpen size={20} className="text-primary" />,
+  Bookmark: <Bookmark size={20} className="text-emerald-400" />,
+  Calendar: <Calendar size={20} className="text-sky-400" />,
+  Sun: <Sun size={20} className="text-amber-400" />,
 };
 
 const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose }) => {
