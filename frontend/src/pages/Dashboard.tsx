@@ -9,8 +9,10 @@ import { useNamaz } from '../hooks/useNamaz';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import DailyAyahCard from '../components/dashboard/DailyAyahCard';
 import IslamicEventsModal from '../components/dashboard/IslamicEventsModal';
+import MoonSightingModal from '../components/dashboard/MoonSightingModal';
 import { getDesiDate } from '../utils/desiDateUtils';
 import { getUpcomingIslamicEvent, ISLAMIC_MONTHS } from '../utils/islamicEvents';
+import { getMoonPhase } from '../utils/lunarEngine';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -21,6 +23,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const [showEventsModal, setShowEventsModal] = useState<boolean>(false);
+  const [showMoonModal, setShowMoonModal] = useState<boolean>(false);
   
   const desiDate = getDesiDate();
   const today = getTodayDateString();
@@ -49,6 +52,16 @@ const Dashboard: React.FC = () => {
   const currentHijriMonthNum = matchedMonth ? matchedMonth.number : 3; // Default Rabi' al-Awwal = 3
   const currentHijriDayNum = parseInt(hijriDate?.day || '3') || 3;
   const upcomingIslamicEvent = getUpcomingIslamicEvent(currentHijriMonthNum, currentHijriDayNum);
+
+  // Compute Live Moon Phase
+  const todayMoon = getMoonPhase(new Date());
+  const moonEmoji = todayMoon.phase < 0.03 || todayMoon.phase > 0.97 ? '🌑' :
+    todayMoon.phase < 0.22 ? '🌒' :
+    todayMoon.phase < 0.28 ? '🌓' :
+    todayMoon.phase < 0.47 ? '🌔' :
+    todayMoon.phase < 0.53 ? '🌕' :
+    todayMoon.phase < 0.72 ? '🌖' :
+    todayMoon.phase < 0.78 ? '🌗' : '🌘';
 
   const QUICK_FEATURES = [
     {
@@ -143,25 +156,36 @@ const Dashboard: React.FC = () => {
 
           {/* Bottom Row: Dual Islamic Hijri & Desi Solar Calendars */}
           <div className="grid grid-cols-2 gap-2">
-            {/* Islamic Hijri (Clickable to open Events Calendar Modal) */}
-            <div 
-              onClick={() => setShowEventsModal(true)}
-              className="bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-2 flex items-center justify-between cursor-pointer transition-all group active:scale-[0.98]"
-              title="Click to view Islamic Events Calendar"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-base shrink-0">🌙</span>
+            {/* Islamic Hijri (Clickable with Little Moon Observatory Button) */}
+            <div className="bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-2 flex items-center justify-between transition-all">
+              <div 
+                onClick={() => setShowEventsModal(true)}
+                className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer group"
+                title="Click to view Islamic Events Calendar"
+              >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
                     <span className="text-[9px] font-extrabold uppercase text-emerald-400/80 block leading-tight tracking-wider">Islamic Hijri</span>
-                    <span className="text-[8px] bg-emerald-500/20 text-emerald-300 font-bold px-1 rounded">Events</span>
+                    <span className="text-[8px] bg-emerald-500/20 text-emerald-300 font-bold px-1 rounded group-hover:bg-emerald-500/30">Events</span>
                   </div>
                   <span className="text-xs font-bold text-emerald-300 truncate block group-hover:text-emerald-200">
                     {hijriDate ? `${hijriDate.day} ${hijriDate.month.en} ${hijriDate.year}` : 'Loading...'}
                   </span>
                 </div>
               </div>
-              <ChevronRight size={13} className="text-emerald-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+
+              {/* 🌙 Interactive Little Moon Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMoonModal(true);
+                }}
+                className="p-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-amber-300 ml-1 shrink-0"
+                title="Moon Sighting & Astronomy Observatory"
+              >
+                <span className="text-sm leading-none">{moonEmoji}</span>
+                <span className="text-[9px] font-bold text-white/90">{todayMoon.illumination}%</span>
+              </button>
             </div>
 
             {/* Desi Calendar */}
@@ -233,13 +257,22 @@ const Dashboard: React.FC = () => {
       {/* 🌟 Daily Quran Ayah Banner (Compact Pill & Immersive Modal) */}
       <DailyAyahCard />
 
-      {/* Islamic Events Modal Popup */}
+      {/* 🗓️ Islamic Events Calendar Modal Popup */}
       <IslamicEventsModal
         isOpen={showEventsModal}
         onClose={() => setShowEventsModal(false)}
         currentMonthNumber={currentHijriMonthNum}
         currentDayNumber={currentHijriDayNum}
         hijriYear={hijriDate?.year || 1448}
+      />
+
+      {/* 🌙 Moon Sighting & Astronomy Observatory Modal Popup */}
+      <MoonSightingModal
+        isOpen={showMoonModal}
+        onClose={() => setShowMoonModal(false)}
+        initialHijriDay={currentHijriDayNum}
+        initialHijriMonth={matchedMonth ? matchedMonth.nameEn : "Rabi' al-Awwal"}
+        initialHijriYear={hijriDate?.year || 1448}
       />
 
       {/* Islamic Features - Quick Access Grid (Same Size, Clean Icons) */}
