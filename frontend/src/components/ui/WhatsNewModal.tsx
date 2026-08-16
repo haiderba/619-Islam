@@ -2,7 +2,8 @@ import React from 'react';
 import { LATEST_RELEASE } from '../../config/changelog';
 import { 
   Sparkles, X, Check, KeyRound, Volume2, 
-  DownloadCloud, Zap, ShieldCheck, Library, BookOpen, Bookmark, Calendar, Sun
+  DownloadCloud, Zap, ShieldCheck, Library, BookOpen, Bookmark, Calendar, Sun,
+  Smartphone, RefreshCw, Play, Bell
 } from 'lucide-react';
 
 interface WhatsNewModalProps {
@@ -11,6 +12,10 @@ interface WhatsNewModalProps {
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
+  Play: <Play size={20} className="text-amber-400 fill-amber-400/30" />,
+  Smartphone: <Smartphone size={20} className="text-emerald-400" />,
+  RefreshCw: <RefreshCw size={20} className="text-amber-400" />,
+  Bell: <Bell size={20} className="text-sky-400" />,
   KeyRound: <KeyRound size={20} className="text-amber-400" />,
   Volume2: <Volume2 size={20} className="text-primary" />,
   DownloadCloud: <DownloadCloud size={20} className="text-sky-400" />,
@@ -18,7 +23,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Zap: <Zap size={20} className="text-amber-400" />,
   ShieldCheck: <ShieldCheck size={20} className="text-primary" />,
   Library: <Library size={20} className="text-amber-400" />,
-  BookOpen: <BookOpen size={20} className="text-primary" />,
+  BookOpen: <BookOpen size={20} className="text-emerald-400" />,
   Bookmark: <Bookmark size={20} className="text-emerald-400" />,
   Calendar: <Calendar size={20} className="text-sky-400" />,
   Sun: <Sun size={20} className="text-amber-400" />,

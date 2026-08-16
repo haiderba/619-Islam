@@ -12,36 +12,42 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '1.7.2';
+export const CURRENT_APP_VERSION = '1.7.3';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
   releaseDate: 'August 2026',
-  headline: "What's New in Update v1.7.2",
+  headline: "What's New in Update v1.7.3",
   features: [
     {
-      icon: 'Library',
-      title: 'Islamic Digital Library & Books',
-      description: 'Explore classical Islamic texts, hadith anthologies, and jurisprudence with multi-tradition filtering (Sunni, Shia, Hanafi, General).',
+      icon: 'Play',
+      title: 'Grand Mosque Video Splash Screen',
+      description: 'Startup animation centered in the illuminated mosque archway with audio playback, sound controls, and fast skip.',
+      badge: 'Visual'
+    },
+    {
+      icon: 'Smartphone',
+      title: 'Universal Multi-Device Responsiveness',
+      description: 'Adaptive 12-column layouts and responsive multi-column cards across Mobile, Tablets, Laptops & Desktop monitors.',
       badge: 'Major'
     },
     {
+      icon: 'Zap',
+      title: 'Smart Pull-to-Refresh & Session Resume',
+      description: 'Pulling down to refresh or switching apps now opens instantly with zero splash delay and remembers where you left off.',
+      badge: 'New'
+    },
+    {
       icon: 'BookOpen',
-      title: 'Integrated Multi-Language Reader',
-      description: 'Read in authentic Arabic (RTL), Urdu, and English with custom text size, Sepia / Dark / Light themes, and Table of Contents.',
+      title: 'Pashto & Regional Quran Translations',
+      description: 'Official Pashto (Zakaria Abulsalam), Sindhi, Dr. Israr Ahmad (Bayan-ul-Quran), and Roman Urdu translations available.',
       badge: 'New'
     },
     {
-      icon: 'Bookmark',
-      title: 'My Library & Offline Downloads',
-      description: 'Save favorites, track your reading progress %, add bookmarks with notes, and download permitted books for 100% offline reading.',
+      icon: 'RefreshCw',
+      title: 'In-App Update Checker & Reinstall Tool',
+      description: 'Check live server updates in real-time, receive mobile push alerts, and easily troubleshoot or reset cache from Settings.',
       badge: 'New'
-    },
-    {
-      icon: 'Calendar',
-      title: 'Unified Multi-Date Header',
-      description: 'Gregorian, Islamic Hijri, and traditional Desi solar calendars beautifully consolidated on Dashboard and Prayer Times.',
-      badge: 'Improved'
     }
   ]
 };
