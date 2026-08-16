@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGoals } from '../hooks/useGoals';
 import { useStreak } from '../hooks/useStreak';
 import { getTodayDateString } from '../utils/dateUtils';
-import { Target, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight, Calendar, Flame, Sparkles, CheckCircle2, Circle } from 'lucide-react';
+import { Target, Clock, Book, BookOpen, Activity, Users, MapPin, ChevronRight, Calendar, Flame, Sparkles, CheckCircle2, Circle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNamaz } from '../hooks/useNamaz';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -89,14 +89,6 @@ const Dashboard: React.FC = () => {
       requiresOnline: false,
     },
     {
-      id: 'qibla',
-      title: 'Qibla',
-      subtitle: 'Kaaba Compass',
-      to: '/qibla',
-      icon: <Compass size={22} className="text-amber-400" />,
-      requiresOnline: false,
-    },
-    {
       id: 'tasbeeh',
       title: 'Tasbeeh',
       subtitle: 'Digital Counter',
@@ -111,6 +103,14 @@ const Dashboard: React.FC = () => {
       to: '/habits',
       icon: <Users size={22} className="text-amber-400" />,
       requiresOnline: true,
+    },
+    {
+      id: 'all-features',
+      title: 'View All',
+      subtitle: 'All Features ➔',
+      to: '/features',
+      icon: <Sparkles size={22} className="text-amber-400" />,
+      requiresOnline: false,
     },
   ];
 

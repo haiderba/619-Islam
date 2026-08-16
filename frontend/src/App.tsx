@@ -23,6 +23,8 @@ import BookDetail from './pages/BookDetail';
 import BookReader from './pages/BookReader';
 import PdfReader from './pages/PdfReader';
 import MyLibrary from './pages/MyLibrary';
+import { NamesOfAllah } from './pages/NamesOfAllah';
+import { AllFeatures } from './pages/AllFeatures';
 import Layout from './components/ui/Layout';
 import InstallPrompt from './components/ui/InstallPrompt';
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt';
@@ -63,6 +65,8 @@ const AppRoutes = () => {
         <Route path="tasbeeh" element={<Tasbeeh />} />
         <Route path="quran" element={<Quran />} />
         <Route path="quran/:id" element={<SurahReader />} />
+        <Route path="names-of-allah" element={<NamesOfAllah />} />
+        <Route path="features" element={<AllFeatures />} />
         <Route path="books" element={<Books />} />
         <Route path="books/:id" element={<BookDetail />} />
         <Route path="library" element={<MyLibrary />} />
