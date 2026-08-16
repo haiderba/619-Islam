@@ -11,7 +11,13 @@ import {
   Moon, 
   Calendar, 
   ChevronLeft, 
-  ChevronRight
+  ChevronRight,
+  ShieldCheck,
+  Calculator,
+  HelpCircle,
+  MapPin,
+  Target,
+  FileText
 } from 'lucide-react';
 import IslamicEventsModal from '../components/dashboard/IslamicEventsModal';
 import MoonSightingModal from '../components/dashboard/MoonSightingModal';
@@ -62,6 +68,14 @@ export const AllFeatures: React.FC = () => {
           badge: 'New ✨',
         },
         {
+          id: 'ruqyah',
+          title: 'Ruqyah Shariah & Healing',
+          subtitle: 'Protection verses & audio streams',
+          icon: <ShieldCheck size={22} className="text-amber-400" />,
+          to: '/ruqyah',
+          badge: 'New ✨',
+        },
+        {
           id: 'duas',
           title: 'Duas & Daily Azkar',
           subtitle: 'Morning, Evening & Occasion Duas',
@@ -97,11 +111,57 @@ export const AllFeatures: React.FC = () => {
           badge: 'Accurate',
         },
         {
+          id: 'khatam',
+          title: 'Khatam-ul-Quran Planner',
+          subtitle: '30-day, 60-day reading schedules',
+          icon: <Target size={22} className="text-amber-400" />,
+          to: '/khatam',
+          badge: 'New ✨',
+        },
+        {
           id: 'habits',
           title: 'Ummah Habits',
           subtitle: 'Track streaks & spiritual routine',
           icon: <Users size={22} className="text-amber-400" />,
           to: '/habits',
+        },
+      ],
+    },
+    {
+      title: 'Knowledge, Pillars & Community',
+      description: 'Hadith, Zakat calculation, trivia, and locator',
+      items: [
+        {
+          id: 'zakat',
+          title: 'Smart Zakat Calculator',
+          subtitle: 'Gold & Silver Nisab across multi-assets',
+          icon: <Calculator size={22} className="text-amber-400" />,
+          to: '/zakat',
+          badge: 'New ✨',
+        },
+        {
+          id: 'hadith',
+          title: 'Authentic Hadith Explorer',
+          subtitle: 'Bukhari, Muslim, Nawawi & Sanad grades',
+          icon: <FileText size={22} className="text-amber-400" />,
+          to: '/hadith',
+          badge: 'New ✨',
+        },
+        {
+          id: 'quiz',
+          title: 'Daily Islamic Quiz',
+          subtitle: '5-question trivia with explanations',
+          icon: <HelpCircle size={22} className="text-amber-400" />,
+          to: '/quiz',
+          badge: 'New ✨',
+        },
+        {
+          id: 'masjid-finder',
+          title: 'Nearby Masajid & Halal',
+          subtitle: 'Live GPS discovery & directions',
+          icon: <MapPin size={22} className="text-amber-400" />,
+          to: '/masjid-finder',
+          badge: 'New ✨',
         },
       ],
     },

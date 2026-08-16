@@ -25,6 +25,12 @@ import PdfReader from './pages/PdfReader';
 import MyLibrary from './pages/MyLibrary';
 import { NamesOfAllah } from './pages/NamesOfAllah';
 import { AllFeatures } from './pages/AllFeatures';
+import { ZakatCalculator } from './pages/ZakatCalculator';
+import { HadithExplorer } from './pages/HadithExplorer';
+import { KhatamPlanner } from './pages/KhatamPlanner';
+import { MasjidFinder } from './pages/MasjidFinder';
+import { RuqyahStation } from './pages/RuqyahStation';
+import { IslamicQuiz } from './pages/IslamicQuiz';
 import Layout from './components/ui/Layout';
 import InstallPrompt from './components/ui/InstallPrompt';
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt';
@@ -67,6 +73,12 @@ const AppRoutes = () => {
         <Route path="quran/:id" element={<SurahReader />} />
         <Route path="names-of-allah" element={<NamesOfAllah />} />
         <Route path="features" element={<AllFeatures />} />
+        <Route path="zakat" element={<ZakatCalculator />} />
+        <Route path="hadith" element={<HadithExplorer />} />
+        <Route path="khatam" element={<KhatamPlanner />} />
+        <Route path="masjid-finder" element={<MasjidFinder />} />
+        <Route path="ruqyah" element={<RuqyahStation />} />
+        <Route path="quiz" element={<IslamicQuiz />} />
         <Route path="books" element={<Books />} />
         <Route path="books/:id" element={<BookDetail />} />
         <Route path="library" element={<MyLibrary />} />
