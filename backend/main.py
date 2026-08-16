@@ -15,6 +15,7 @@ models.Base.metadata.create_all(bind=engine)
 
 def init_db():
     from database import SessionLocal
+    import books_seed
     db = SessionLocal()
     try:
         admin_user = db.query(models.User).filter(
@@ -37,6 +38,9 @@ def init_db():
             if not admin_user.is_verified:
                 admin_user.is_verified = True
                 db.commit()
+        
+        # Seed and update Islamic books catalog
+        books_seed.seed_books_catalog()
     except Exception as e:
         print(f"Error during db init: {e}")
     finally:
@@ -610,8 +614,7 @@ def list_books(
         if trad:
             child_ids = [t.id for t in db.query(models.Tradition).filter(models.Tradition.parent_id == trad.id).all()]
             trad_ids = [trad.id] + child_ids
-            # Include specific tradition + general books (id 11)
-            query = query.filter((models.Book.tradition_id.in_(trad_ids)) | (models.Book.tradition_id == 11) | (models.Book.tradition_id == None))
+            query = query.filter(models.Book.tradition_id.in_(trad_ids))
 
     if category and category.lower() != "all":
         cat = db.query(models.Category).filter(models.Category.slug == category.lower()).first()

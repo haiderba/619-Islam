@@ -4,42 +4,45 @@ from database import SessionLocal
 def seed_books_catalog():
     db = SessionLocal()
     try:
-        # Check if already seeded
-        if db.query(models.Tradition).first():
-            print("Books catalog already seeded.")
-            return
-
-        print("Seeding Islamic Books Catalog (Traditions, Categories, Authors, Books & Chapters)...")
+        print("Seeding/Updating Islamic Books Catalog...")
 
         # 1. TRADITIONS
         traditions_data = [
             {"id": 1, "name": "All Traditions", "name_ar": "جميع المذاهب", "name_ur": "تمام مکاتب فکر", "slug": "all", "parent_id": None, "sort_order": 0, "description": "Browse Islamic literature across all traditions and schools of thought."},
-            {"id": 2, "name": "Sunni", "name_ar": "أهل السنة والجماعة", "name_ur": "اہل سنت و جماعت", "slug": "sunni", "parent_id": None, "sort_order": 1, "description": "Works authored within mainstream Sunni scholarship."},
-            {"id": 3, "name": "Hanafi", "name_ar": "المذهب الحنفي", "name_ur": "فقہ حنفی", "slug": "hanafi", "parent_id": 2, "sort_order": 2, "description": "Jurisprudence and theology of the Hanafi tradition founded by Imam Abu Hanifah."},
+            {"id": 2, "name": "Sunni", "name_ar": "أهل السنة والجماعة", "name_ur": "اہل سنت و جماعت", "slug": "sunni", "parent_id": None, "sort_order": 1, "description": "Classical and contemporary Sunni scholarship across all schools."},
+            {"id": 3, "name": "Hanafi", "name_ar": "المذهب الحنفي", "name_ur": "فقہ حنفی", "slug": "hanafi", "parent_id": 2, "sort_order": 2, "description": "Jurisprudence and theology founded by Imam Abu Hanifah."},
             {"id": 4, "name": "Shafi'i", "name_ar": "المذهب الشافعي", "name_ur": "فقہ شافعی", "slug": "shafii", "parent_id": 2, "sort_order": 3, "description": "Works of the Shafi'i legal school founded by Imam Muhammad ibn Idris al-Shafi'i."},
-            {"id": 5, "name": "Maliki", "name_ar": "المذهب المالكي", "name_ur": "فقہ مالکی", "slug": "maliki", "parent_id": 2, "sort_order": 4, "description": "Tradition of Imam Malik ibn Anas and the scholars of Madinah."},
+            {"id": 5, "name": "Maliki", "name_ar": "المذهب المالكي", "name_ur": "فقہ مالکی", "slug": "maliki", "parent_id": 2, "sort_order": 4, "description": "Tradition of Imam Malik ibn Anas and scholars of Madinah."},
             {"id": 6, "name": "Hanbali", "name_ar": "المذهب الحنبلي", "name_ur": "فقہ حنبلی", "slug": "hanbali", "parent_id": 2, "sort_order": 5, "description": "Jurisprudence founded by Imam Ahmad ibn Hanbal."},
-            {"id": 7, "name": "Shia", "name_ar": "الشيعة الإمامية", "name_ur": "اہل تشیع", "slug": "shia", "parent_id": None, "sort_order": 6, "description": "Classical and contemporary Shia scholarship centered on the teachings of the Ahl al-Bayt."},
+            {"id": 7, "name": "Shia", "name_ar": "الشيعة الإمامية", "name_ur": "اہل تشیع", "slug": "shia", "parent_id": None, "sort_order": 6, "description": "Classical and contemporary Shia scholarship centered on the Ahl al-Bayt."},
             {"id": 8, "name": "Ja'fari", "name_ar": "المذهب الجعفري", "name_ur": "فقہ جعفری", "slug": "jafari", "parent_id": 7, "sort_order": 7, "description": "Jurisprudence and theology following Imam Ja'far al-Sadiq and the Twelve Imams."},
             {"id": 9, "name": "Ibadi", "name_ar": "المذهب الإباضي", "name_ur": "اباضی", "slug": "ibadi", "parent_id": None, "sort_order": 8, "description": "Classical scholarship of the Ibadi school of thought."},
-            {"id": 10, "name": "Comparative & Academic", "name_ar": "الفقه المقارن", "name_ur": "مقارن و تحقیقی", "slug": "comparative", "parent_id": None, "sort_order": 9, "description": "Comparative jurisprudence, inter-school dialogue, and unified Islamic heritage."},
-            {"id": 11, "name": "General Islamic", "name_ar": "إسلاميات عامة", "name_ur": "عمومی اسلامی", "slug": "general", "parent_id": None, "sort_order": 10, "description": "Foundational spirituality, Quranic studies, and universally accepted moral works."}
+            {"id": 10, "name": "Comparative", "name_ar": "الفقه المقارن", "name_ur": "مقارن و تحقیقی", "slug": "comparative", "parent_id": None, "sort_order": 9, "description": "Comparative jurisprudence, inter-school dialogue, and unified Islamic heritage."},
+            {"id": 11, "name": "General Islamic", "name_ar": "إسلاميات عامة", "name_ur": "عمومی اسلامی", "slug": "general", "parent_id": None, "sort_order": 10, "description": "Foundational spirituality, Quranic reflections, and universally shared classics."}
         ]
 
-        tradition_objs = {}
         for t in traditions_data:
-            obj = models.Tradition(
-                id=t["id"],
-                name=t["name"],
-                name_ar=t["name_ar"],
-                name_ur=t["name_ur"],
-                slug=t["slug"],
-                parent_id=t["parent_id"],
-                sort_order=t["sort_order"],
-                description=t["description"]
-            )
-            db.add(obj)
-            tradition_objs[t["slug"]] = obj
+            existing = db.query(models.Tradition).filter(models.Tradition.id == t["id"]).first()
+            if not existing:
+                obj = models.Tradition(
+                    id=t["id"],
+                    name=t["name"],
+                    name_ar=t["name_ar"],
+                    name_ur=t["name_ur"],
+                    slug=t["slug"],
+                    parent_id=t["parent_id"],
+                    sort_order=t["sort_order"],
+                    description=t["description"]
+                )
+                db.add(obj)
+            else:
+                existing.name = t["name"]
+                existing.name_ar = t["name_ar"]
+                existing.name_ur = t["name_ur"]
+                existing.slug = t["slug"]
+                existing.parent_id = t["parent_id"]
+                existing.sort_order = t["sort_order"]
+                existing.description = t["description"]
         db.commit()
 
         # 2. CATEGORIES
@@ -54,183 +57,104 @@ def seed_books_catalog():
             {"id": 8, "name": "Ahl al-Bayt", "name_ar": "أهل البيت عليهم السلام", "name_ur": "اہل بیت علیہم السلام", "slug": "ahl-al-bayt", "icon_name": "Crown", "sort_order": 8, "description": "Sermons, letters, and biographies of the Prophet's household."},
         ]
 
-        category_objs = {}
         for c in categories_data:
-            obj = models.Category(
-                id=c["id"],
-                name=c["name"],
-                name_ar=c["name_ar"],
-                name_ur=c["name_ur"],
-                slug=c["slug"],
-                icon_name=c["icon_name"],
-                sort_order=c["sort_order"],
-                description=c["description"]
-            )
-            db.add(obj)
-            category_objs[c["slug"]] = obj
+            existing = db.query(models.Category).filter(models.Category.id == c["id"]).first()
+            if not existing:
+                obj = models.Category(
+                    id=c["id"],
+                    name=c["name"],
+                    name_ar=c["name_ar"],
+                    name_ur=c["name_ur"],
+                    slug=c["slug"],
+                    icon_name=c["icon_name"],
+                    sort_order=c["sort_order"],
+                    description=c["description"]
+                )
+                db.add(obj)
+            else:
+                existing.name = c["name"]
+                existing.name_ar = c["name_ar"]
+                existing.name_ur = c["name_ur"]
+                existing.slug = c["slug"]
+                existing.icon_name = c["icon_name"]
+                existing.sort_order = c["sort_order"]
+                existing.description = c["description"]
         db.commit()
 
         # 3. AUTHORS
         authors_data = [
-            {"id": 1, "name": "Imam Ali ibn Abi Talib (compiled by Sharif al-Radi)", "name_ar": "الإمام علي بن أبي طالب (جمع الشريف الرضي)", "name_ur": "امام علی ابن ابی طالب (جامع: شریف الرضی)", "death_year_hijri": "40 AH / 406 AH", "bio": "The fourth Rightly Guided Caliph and first Shia Imam, known as the Gateway of Knowledge."},
-            {"id": 2, "name": "Imam Yahya ibn Sharaf al-Nawawi", "name_ar": "الإمام يحيى بن شرف النووي", "name_ur": "امام یحییٰ بن شرف النووی", "death_year_hijri": "676 AH", "bio": "Celebrated Syrian Shafi'i scholar of Hadith, Fiqh, and author of the Forty Hadith and Riyad as-Salihin."},
-            {"id": 3, "name": "Imam Ali Zayn al-Abidin (al-Sajjad)", "name_ar": "الإمام علي بن الحسين زين العابدين", "name_ur": "امام علی زین العابدین علیہ السلام", "death_year_hijri": "95 AH", "bio": "Fourth Shia Imam, renowned for his profound spiritual supplications in Al-Sahifa al-Sajjadiyya."},
-            {"id": 4, "name": "Shaykh Muhammad ibn Ya'qub al-Kulayni", "name_ar": "الشيخ محمد بن يعقوب الكليني", "name_ur": "شیخ محمد بن یعقوب الکلینی", "death_year_hijri": "329 AH", "bio": "Prominent Shia hadith compiler, author of the monumental Kitab al-Kafi."},
-            {"id": 5, "name": "Imam Abu al-Husayn Ahmad al-Quduri", "name_ar": "الإمام أحمد بن محمد القدوري", "name_ur": "امام احمد بن محمد القدوری", "death_year_hijri": "428 AH", "bio": "Famous Iraqi Hanafi jurist and author of the foundational manual Mukhtasar al-Quduri."},
-            {"id": 6, "name": "Imam Abu Hamid al-Ghazali", "name_ar": "حجة الإسلام أبو حامد الغزالي", "name_ur": "امام ابو حامد الغزالی", "death_year_hijri": "505 AH", "bio": "Hujjat al-Islam, one of Islam's greatest philosophers, theologians, and spiritual masters."},
-            {"id": 7, "name": "Shaykh Safiur Rahman Mubarakpuri", "name_ar": "الشيخ صفي الرحمن المباركفوري", "name_ur": "مولانا صفی الرحمن مبارکپوری", "death_year_hijri": "1427 AH", "bio": "Acclaimed Islamic historian and author of the award-winning biography of Prophet Muhammad ﷺ, Ar-Raheeq Al-Makhtum."}
+            {"id": 1, "name": "Imam Ali ibn Abi Talib (compiled by Sharif al-Radi)", "name_ar": "الإمام علي بن أبي طالب (جامع: الشريف الرضي)", "name_ur": "امام علی ابن ابی طالب (جامع: شریف الرضی)", "death_year_hijri": "40 AH / 406 AH", "bio": "The Gateway of Knowledge and fourth Caliph."},
+            {"id": 2, "name": "Imam Yahya ibn Sharaf al-Nawawi", "name_ar": "الإمام يحيى بن شرف النووي", "name_ur": "امام یحییٰ بن شرف النووی", "death_year_hijri": "676 AH", "bio": "Master hadith scholar and jurist."},
+            {"id": 3, "name": "Imam Ali Zayn al-Abidin (al-Sajjad)", "name_ar": "الإمام علي بن الحسين زين العابدين", "name_ur": "امام علی زین العابدین علیہ السلام", "death_year_hijri": "95 AH", "bio": "Fourth Shia Imam, composer of Al-Sahifa al-Sajjadiyya and Risalat al-Huquq."},
+            {"id": 4, "name": "Shaykh Muhammad ibn Ya'qub al-Kulayni", "name_ar": "الشيخ محمد بن يعقوب الكليني", "name_ur": "شیخ محمد بن یعقوب الکلینی", "death_year_hijri": "329 AH", "bio": "Premier Shia hadith compiler, author of Kitab al-Kafi."},
+            {"id": 5, "name": "Imam Abu al-Husayn Ahmad al-Quduri", "name_ar": "الإمام أحمد بن محمد القدوري", "name_ur": "امام احمد بن محمد القدوری", "death_year_hijri": "428 AH", "bio": "Iraqi Hanafi jurist, author of Mukhtasar al-Quduri."},
+            {"id": 6, "name": "Imam Abu Hamid al-Ghazali", "name_ar": "حجة الإسلام أبو حامد الغزالي", "name_ur": "امام ابو حامد الغزالی", "death_year_hijri": "505 AH", "bio": "Hujjat al-Islam, master of ethics, philosophy, and spirituality."},
+            {"id": 7, "name": "Shaykh Safiur Rahman Mubarakpuri", "name_ar": "الشيخ صفي الرحمن المباركفوري", "name_ur": "مولانا صفی الرحمن مبارکپوری", "death_year_hijri": "1427 AH", "bio": "Award-winning biographer of the Prophet ﷺ."},
+            {"id": 8, "name": "Imam Muhammad ibn Ismail al-Bukhari", "name_ar": "الإمام محمد بن إسماعيل البخاري", "name_ur": "امام محمد بن اسماعیل البخاری", "death_year_hijri": "256 AH", "bio": "Compiler of Sahih al-Bukhari, the most revered Sunni Hadith anthology."},
+            {"id": 9, "name": "Imam Muslim ibn al-Hajjaj al-Naysaburi", "name_ar": "الإمام مسلم بن الحجاج النيسابوري", "name_ur": "امام مسلم بن الحجاج النیسابوری", "death_year_hijri": "261 AH", "bio": "Compiler of Sahih Muslim, famous for thematic hadith arrangement."},
+            {"id": 10, "name": "Imam Abu Hanifah an-Nu'man", "name_ar": "الإمام الأعظم أبو حنيفة النعمان", "name_ur": "امام اعظم ابو حنیفہ", "death_year_hijri": "150 AH", "bio": "Founder of the Hanafi school of jurisprudence."},
+            {"id": 11, "name": "Imam Malik ibn Anas", "name_ar": "إمام دار الهجرة مالك بن أنس", "name_ur": "امام مالک بن انس", "death_year_hijri": "179 AH", "bio": "Imam of Madinah and author of Al-Muwatta."},
+            {"id": 12, "name": "Imam Muhammad ibn Idris al-Shafi'i", "name_ar": "الإمام محمد بن إدريس الشافعي", "name_ur": "امام محمد بن ادریس الشافعی", "death_year_hijri": "204 AH", "bio": "Founder of the Shafi'i legal school and father of Usul al-Fiqh."},
+            {"id": 13, "name": "Imam Ahmad ibn Hanbal", "name_ar": "الإمام أحمد بن حنبل", "name_ur": "امام احمد بن حنبل", "death_year_hijri": "241 AH", "bio": "Imam of Ahl al-Sunnah, compiler of Musnad Ahmad and Kitab az-Zuhd."},
+            {"id": 14, "name": "Shaykh al-Saduq (Muhammad ibn Ali ibn Babawayh)", "name_ar": "الشيخ الصدوق ابن بابويه القمي", "name_ur": "شیخ صدوق ابن بابویہ قمی", "death_year_hijri": "381 AH", "bio": "Great classical Shia scholar and compiler of Man La Yahduruhu al-Faqih and Al-Khisal."},
+            {"id": 15, "name": "Mawlana Ashraf Ali Thanvi", "name_ar": "الشيخ أشرف علي التهانوي", "name_ur": "مولانا اشرف علی تھانوی", "death_year_hijri": "1362 AH", "bio": "Prominent South Asian Hanafi jurist and author of Bihashti Zewar."}
         ]
 
-        author_objs = {}
         for a in authors_data:
-            obj = models.Author(
-                id=a["id"],
-                name=a["name"],
-                name_ar=a["name_ar"],
-                name_ur=a["name_ur"],
-                death_year_hijri=a["death_year_hijri"],
-                bio=a["bio"]
-            )
-            db.add(obj)
-            author_objs[a["id"]] = obj
+            existing = db.query(models.Author).filter(models.Author.id == a["id"]).first()
+            if not existing:
+                obj = models.Author(
+                    id=a["id"],
+                    name=a["name"],
+                    name_ar=a["name_ar"],
+                    name_ur=a["name_ur"],
+                    death_year_hijri=a["death_year_hijri"],
+                    bio=a["bio"]
+                )
+                db.add(obj)
+            else:
+                existing.name = a["name"]
+                existing.name_ar = a["name_ar"]
+                existing.name_ur = a["name_ur"]
+                existing.death_year_hijri = a["death_year_hijri"]
+                existing.bio = a["bio"]
         db.commit()
 
-        # 4. BOOKS & CHAPTER CONTENT
+        # 4. COMPREHENSIVE SEEDED BOOKS ACROSS TRADITIONS
         books_data = [
+            # ----- SHIA TRADITION -----
             {
                 "id": 1,
                 "title": "Nahj al-Balagha (Peak of Eloquence)",
                 "title_ar": "نهج البلاغة",
                 "title_ur": "نہج البلاغہ",
                 "slug": "nahj-al-balagha",
-                "description": "The monumental collection of sermons, letters, and wisdoms of Imam Ali ibn Abi Talib, celebrated across the Islamic world for its unmatched spiritual depth, literary brilliance, and universal principles of justice.",
+                "description": "The celebrated collection of sermons, letters, and wisdoms of Imam Ali ibn Abi Talib on spiritual purification, statecraft, and divine justice.",
                 "author_id": 1,
                 "tradition_id": 7, # Shia
                 "category_id": 8, # Ahl al-Bayt
                 "language": "Arabic • English • Urdu",
-                "publication_year": "Classical (4th Century AH)",
+                "publication_year": "400 AH",
                 "cover_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80",
                 "featured": True,
-                "total_chapters": 3,
                 "chapters": [
                     {
                         "chapter_number": 1,
                         "title": "Khutbah al-Muttaqin (The Sermon on the Pious)",
                         "title_ar": "خطبة المتقين (همام)",
                         "title_ur": "خطبہ متقین (پرہیزگاروں کے اوصاف)",
-                        "content_ar": """بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-أَمَّا بَعْدُ، فَإِنَّ اللَّهَ سُبْحَانَهُ وَتَعَالَى خَلَقَ الْخَلْقَ حِينَ خَلَقَهُمْ غَنِيّاً عَنْ طَاعَتِهِمْ، آمِناً مِنْ مَعْصِيَتِهِمْ، لِأَنَّهُ لَا تَضُرُّهُ مَعْصِيَةُ مَنْ عَصَاهُ، وَلَا تَنْفَعُهُ طَاعَةُ مَنْ أَطَاعَهُ.
-فَالْمُتَّقُونَ فِيهَا هُمْ أَهْلُ الْفَضَائِلِ: مَنْطِقُهُمُ الصَّوَابُ، وَمَلْبَسُهُمُ الِاقْتِصَادُ، وَمَشْيُهُمُ التَّوَاضُعُ.
-غَضُّوا أَبْصَارَهُمْ عَمَّا حَرَّمَ اللَّهُ عَلَيْهِمْ، وَوَقَفُوا أَسْمَاعَهُمْ عَلَى الْعِلْمِ النَّافِعِ لَهُمْ.
-نُزِّلَتْ أَنْفُسُهُمْ مِنْهُمْ فِي الْبَلَاءِ كَالَّتِي نُزِّلَتْ فِي الرَّخَاءِ.""",
-                        "content_en": """In the name of Allah, the Most Compassionate, the Most Merciful.
-Now then, Allah the Glorified created creation when He created them without any need for their obedience or fear of their disobedience, for the disobedience of the sinner harms Him not, nor does the obedience of the obedient benefit Him.
-The God-conscious (Muttaqun) in this world are people of distinction: their speech is truthful, their dress is modest, and their walk is humble.
-They lower their gaze from what Allah has forbidden them, and dedicate their ears to knowledge that benefits them.
-In hardship, their souls remain as composed and steadfast as in times of ease and prosperity.""",
-                        "content_ur": """شروع اللہ کے نام سے جو بڑا مہربان نہایت رحم والا ہے۔
-اما بعد! اللہ سبحانہ و تعالیٰ نے مخلوقات کو اس وقت پیدا کیا جب وہ ان کی اطاعت سے بے نیاز اور ان کی نافرمانی سے بے خوف تھا، کیونکہ کسی گنہگار کی نافرمانی اسے نقصان نہیں پہنچا سکتی اور نہ کسی فرمانبردار کی اطاعت اسے فائدہ پہنچاتی ہے۔
-دنیا میں متقی اور پرہیزگار لوگ ہی فضیلت والے ہیں: ان کی گفتگو سچی، ان کا لباس میانہ روی پر مبنی اور ان کی چال عاجزانہ ہے۔
-انہوں نے اپنی نگاہوں کو ان چیزوں سے ہٹا لیا ہے جو اللہ نے ان پر حرام کی ہیں اور اپنے کانوں کو اسی علم پر لگا رکھا ہے جو ان کے لیے نفع بخش ہے۔
-آزمائش اور مصیبت میں ان کا دل ایسا ہی مطمئن رہتا ہے جیسا کہ خوشحالی و فراخی میں رہتا ہے۔"""
+                        "content_ar": "أَمَّا بَعْدُ، فَإِنَّ اللَّهَ سُبْحَانَهُ خَلَقَ الْخَلْقَ غَنِيّاً عَنْ طَاعَتِهِمْ، آمِناً مِنْ مَعْصِيَتِهِمْ. فَالْمُتَّقُونَ فِيهَا هُمْ أَهْلُ الْفَضَائِلِ: مَنْطِقُهُمُ الصَّوَابُ، وَمَلْبَسُهُمُ الِاقْتِصَادُ، وَمَشْيُهُمُ التَّوَاضُعُ.",
+                        "content_en": "Now then, Allah the Glorified created creation without any need for their obedience. The God-conscious (Muttaqun) in this world are people of virtue: their speech is truthful, their dress modest, and their walk humble.",
+                        "content_ur": "اما بعد! اللہ سبحانہ و تعالیٰ نے مخلوق کو پیدا کیا جبکہ وہ ان کی اطاعت سے بے نیاز تھا۔ دنیا میں متقی لوگ ہی فضیلت والے ہیں: ان کی گفتگو سچی، ان کا لباس میانہ اور ان کی چال عاجزانہ ہے۔"
                     },
                     {
                         "chapter_number": 2,
-                        "title": "Letter to Malik al-Ashtar on Governance & Justice",
-                        "title_ar": "عهده لمالك الأشتر حين ولاه مصر",
+                        "title": "Letter to Malik al-Ashtar on Justice & Governance",
+                        "title_ar": "عهده لمالك الأشتر في العدل والإنصاف",
                         "title_ur": "مالک اشتر کے نام تاریخی عہد نامہ و اصولِ حکمرانی",
-                        "content_ar": """وَأَشْعِرْ قَلْبَكَ الرَّحْمَةَ لِلرَّعِيَّةِ، وَالْمَحَبَّةَ لَهُمْ، وَاللُّطْفَ بِهِمْ، وَلَا تَكُونَنَّ عَلَيْهِمْ سَبُعاً ضَارِياً تَغْتَنِمُ أَكْلَهُمْ، فَإِنَّهُمْ صِنْفَانِ: إِمَّا أَخٌ لَكَ فِي الدِّينِ، وَإِمَّا نَظِيرٌ لَكَ فِي الْخَلْقِ.
-يَفْرُطُ مِنْهُمُ الزَّلَلُ، وَتَعْرِضُ لَهُمُ الْعِلَلُ، وَيُؤْتَى عَلَى أَيْدِيهِمْ فِي الْعَمْدِ وَالْخَطَإِ، فَأَعْطِهِمْ مِنْ عَفْوِكَ وَصَفْحِكَ مِثْلَ الَّذِي تُحِبُّ وَتَرْضَى أَنْ يُعْطِيَكَ اللَّهُ مِنْ عَفْوِهِ وَصَفْحِهِ.""",
-                        "content_en": """Habituate your heart to mercy for the subjects and to affection and kindness for them. Do not behave towards them as a ravenous beast that considers their destruction as its spoil, for they are of two kinds: either your brother in religion, or your equal in creation.
-Mistakes are committed by them, lapses occur from them, and errors are done intentionally and accidentally. Therefore, grant them your pardon and forgiveness in the same way you would love Allah to grant you His pardon and forgiveness.""",
-                        "content_ur": """اپنے دل میں عوام کے لیے رحمت، محبت اور مہربانی کا احساس بیدار رکھو۔ ان پر پھاڑ کھانے والے درندے کی طرح نہ بنو جو ان کے شکار کو غنیمت سمجھے، کیونکہ انسان دو ہی قسم کے ہیں: یا تو وہ دین میں تمہارے بھائی ہیں، یا پھر خلقت و انسانیت میں تمہارے جیسے انسان ہیں۔
-ان سے لغزشیں بھی سرزد ہوں گی، کوتاہیاں بھی ہوں گی، اور دانستہ یا نادانستہ خطائیں بھی واقع ہوں گی۔ لہٰذا تم انہیں اپنی طرف سے اسی طرح معافی اور درگزر عطا کرو جس طرح تم خود اللہ سے اپنے لیے عفو و مغفرت کی امید رکھتے ہو۔"""
-                    },
-                    {
-                        "chapter_number": 3,
-                        "title": "Short Maxims of Wisdom",
-                        "title_ar": "قصار الحكم والمواعظ",
-                        "title_ur": "حکمت و دانائی کے منتخب ارشادات",
-                        "content_ar": """١. صَدْرُ الْعَاقِلِ صُنْدُوقُ سِرِّهِ، وَالْبَشَاشَةُ حِبَالَةُ الْمَوَدَّةِ، وَالِاحْتِمَالُ قَبْرُ الْعُيُوبِ.
-٢. أَعْجَزُ النَّاسِ مَنْ عَجَزَ عَنِ اكْتِسَابِ الْإِخْوَانِ، وَأَعْجَزُ مِنْهُ مَنْ ضَيَّعَ مَنْ ظَفِرَ بِهِ مِنْهُمْ.
-٣. الْعِلْمُ وِرَاثَةٌ كَرِيمَةٌ، وَالْآدَابُ حُلَلٌ مُجَدَّدَةٌ، وَالْفِكْرُ مِرْآةٌ صَافِيَةٌ.""",
-                        "content_en": """1. The heart of a wise person is the repository of his secrets. Cheerful countenance is the bond of friendship, and forbearance is the grave of shortcomings.
-2. The most helpless person is the one who is unable to make friends, and even more helpless is the one who loses those he has found.
-3. Knowledge is a noble legacy, good manners are ever-fresh garments, and contemplation is a polished mirror.""",
-                        "content_ur": """۱. عقلمند کا سینہ اس کے رازوں کا خزانہ ہے، کشادہ پیشانی محبت کا جال ہے، اور برداشت عیوب کا مدفن ہے۔
-۲. سب سے بے بس انسان وہ ہے جو دوست بنانے میں ناکام رہے، اور اس سے بھی زیادہ بے بس وہ ہے جو بنائے ہوئے دوستوں کو ضائع کر دے۔
-۳. علم ایک قیمتی میراث ہے، اچھے اخلاق ہمیشہ تازہ رہنے والے لباس ہیں، اور فکر و غور ایک صاف شفاف آئینہ ہے۔"""
-                    }
-                ]
-            },
-            {
-                "id": 2,
-                "title": "Al-Arba'in an-Nawawiyya (The 40 Hadith of Imam Nawawi)",
-                "title_ar": "الأربعون النووية",
-                "title_ur": "چالیس احادیثِ نبوی (اربعین نووی)",
-                "slug": "arbaeen-nawawi",
-                "description": "The quintessential collection of 42 comprehensive prophetic traditions compiled by Imam an-Nawawi that summarize the core principles, legal maxims, and spiritual foundations of Islam.",
-                "author_id": 2,
-                "tradition_id": 2, # Sunni
-                "category_id": 2, # Hadith
-                "language": "Arabic • English • Urdu",
-                "publication_year": "670 AH",
-                "cover_url": "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600&auto=format&fit=crop&q=80",
-                "featured": True,
-                "total_chapters": 3,
-                "chapters": [
-                    {
-                        "chapter_number": 1,
-                        "title": "Hadith 1: Actions are Judged by Intentions",
-                        "title_ar": "الحديث الأول: إنما الأعمال بالنيات",
-                        "title_ur": "حدیث ۱: اعمال کا دارومدار نیتوں پر ہے",
-                        "content_ar": """عَنْ أَمِيرِ الْمُؤْمِنِينَ أَبِي حَفْصٍ عُمَرَ بْنِ الْخَطَّابِ رَضِيَ اللَّهُ عَنْهُ قَالَ: سَمِعْتُ رَسُولَ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ يَقُولُ:
-«إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى، فَمَنْ كَانَتْ هِجْرَتُهُ إِلَى اللَّهِ وَرَسُولِهِ فَهِجْرَتُهُ إِلَى اللَّهِ وَرَسُولِهِ، وَمَنْ كَانَتْ هِجْرَتُهُ لِدُنْيَا يُصِيبُهَا أَوِ امْرَأَةٍ يَنْكِحُهَا فَهِجْرَتُهُ إِلَى مَا هَاجَرَ إِلَيْهِ».
-رَوَاهُ إِمَامَا الْمُحَدِّثِينَ: أَبُو عَبْدِ اللَّهِ مُحَمَّدُ بْنُ إِسْمَاعِيلَ بْنِ إِبْرَاهِيمَ بْنِ الْمُغِيرَةِ بْنِ بَرْدِزْبَهْ الْبُخَارِيُّ، وَأَبُو الْحُسَيْنِ مُسْلِمُ بْنُ الْحَجَّاجِ بْنِ مُسْلِمٍ الْقُشَيْرِيُّ النَّيْسَابُورِيُّ.""",
-                        "content_en": """It is narrated on the authority of the Leader of the Believers, Umar ibn al-Khattab (may Allah be pleased with him), who said: I heard the Messenger of Allah (peace be upon him) say:
-"Actions are only by intentions, and every person shall have only that which he intended. Thus, he whose migration was for Allah and His Messenger, his migration was for Allah and His Messenger; and he whose migration was to achieve some worldly gain or to marry a woman, his migration was for that which he migrated."
-[Narrated by Bukhari & Muslim]""",
-                        "content_ur": """امیر المؤمنین حضرت عمر بن خطاب رضی اللہ عنہ سے روایت ہے، فرماتے ہیں کہ میں نے رسول اللہ ﷺ کو فرماتے سنا:
-"اعمال کا دارومدار نیتوں پر ہے اور ہر انسان کو وہی ملے گا جس کی اس نے نیت کی۔ پس جس کی ہجرت اللہ اور اس کے رسول کے لیے ہو تو اس کی ہجرت اللہ اور اس کے رسول ہی کی طرف ہے، اور جس کی ہجرت دنیا حاصل کرنے یا کسی عورت سے نکاح کی غرض سے ہو تو اس کی ہجرت اسی مقصد کے لیے سمجھی جائے گی جس کے لیے اس نے ہجرت کی۔"
-[صحیح بخاری و صحیح مسلم]"""
-                    },
-                    {
-                        "chapter_number": 2,
-                        "title": "Hadith 2: Islam, Iman, and Ihsan (Hadith Jibril)",
-                        "title_ar": "الحديث الثاني: مراتب الدين (حديث جبريل)",
-                        "title_ur": "حدیث ۲: دین کے درجات - اسلام، ایمان اور احسان (حدیثِ جبریل)",
-                        "content_ar": """عَنْ عُمَرَ رَضِيَ اللَّهُ عَنْهُ أَيْضاً قَالَ: بَيْنَمَا نَحْنُ جُلُوسٌ عِنْدَ رَسُولِ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ ذَاتَ يَوْمٍ إِذْ طَلَعَ عَلَيْنَا رَجُلٌ شَدِيدُ بَيَاضِ الثِّيَابِ، شَدِيدُ سَوَادِ الشَّعْرِ، لا يُرَى عَلَيْهِ أَثَرُ السَّفَرِ، وَلا يَعْرِفُهُ مِنَّا أَحَدٌ...
-فَقَالَ: يَا مُحَمَّدُ أَخْبِرْنِي عَنِ الإِسْلامِ؟ فَقَالَ: «الإِسْلامُ أَنْ تَشْهَدَ أَنْ لا إِلَهَ إِلا اللَّهُ وَأَنَّ مُحَمَّداً رَسُولُ اللَّهِ، وَتُقِيمَ الصَّلاةَ، وَتُؤْتِيَ الزَّكَاةَ، وَتَصُومَ رَمَضَانَ، وَتَحُجَّ الْبَيْتَ إِنِ اسْتَطَعْتَ إِلَيْهِ سَبِيلاً».
-قَالَ: فَأَخْبِرْنِي عَنِ الإِيمَانِ؟ قَالَ: «أَنْ تُؤْمِنَ بِاللَّهِ، وَمَلائِكَتِهِ، وَكُتُبِهِ، وَرُسُلِهِ، وَالْيَوْمِ الآخِرِ، وَتُؤْمِنَ بِالْقَدَرِ خَيْرِهِ وَشَرِّهِ».
-قَالَ: فَأَخْبِرْنِي عَنِ الإِحْسَانِ؟ قَالَ: «أَنْ تَعْبُدَ اللَّهَ كَأَنَّكَ تَرَاهُ، فَإِنْ لَمْ تَكُنْ تَرَاهُ فَإِنَّهُ يَرَاكَ».
-ثُمَّ قَالَ: «يَا عُمَرُ، هَذَا جِبْرِيلُ أَتَاكُمْ يُعَلِّمُكُمْ دِينَكُمْ».""",
-                        "content_en": """Also on the authority of Umar (may Allah be pleased with him): One day while we were sitting with the Messenger of Allah (peace be upon him), there appeared before us a man whose clothes were exceedingly white and whose hair was exceedingly black. No signs of travel were visible upon him and none of us knew him...
-He said: "O Muhammad, tell me about Islam." The Messenger of Allah said: "Islam is to testify that there is no god but Allah and that Muhammad is the Messenger of Allah, to establish prayer, to give zakat, to fast during Ramadan, and to perform the pilgrimage to the House if you are able."
-He said: "Then tell me about Iman." He replied: "It is to believe in Allah, His angels, His books, His messengers, the Last Day, and to believe in destiny — its good and its bad."
-He said: "Then tell me about Ihsan." He replied: "It is to worship Allah as though you see Him, and if you cannot see Him, then truly He sees you."
-Then the Prophet said: "O Umar, that was Jibril who came to teach you your religion."
-[Narrated by Muslim]""",
-                        "content_ur": """حضرت عمر رضی اللہ عنہ سے روایت ہے کہ ایک دن ہم رسول اللہ ﷺ کے پاس بیٹھے تھے کہ اچانک ایک شخص ہمارے سامنے نمودار ہوا جس کے کپڑے انتہائی سفید اور بال گہرے سیاہ تھے۔ اس پر سفر کا کوئی نشان نہیں تھا اور ہم میں سے کوئی اسے جانتا بھی نہ تھا...
-اس نے کہا: "اے محمد! مجھے اسلام کے بارے میں بتائیے۔" آپ ﷺ نے فرمایا: "اسلام یہ ہے کہ تم گواہی دو کہ اللہ کے سوا کوئی معبود نہیں اور محمد ﷺ اللہ کے رسول ہیں، نماز قائم کرو، زکوٰۃ ادا کرو، رمضان کے روزے رکھو، اور اگر استطاعت ہو تو بیت اللہ کا حج کرو۔"
-اس نے کہا: "مجھے ایمان کے بارے میں بتائیے۔" آپ ﷺ نے فرمایا: "تم اللہ پر، اس کے فرشتوں پر، اس کی کتابوں پر، اس کے رسولوں پر، یومِ آخرت پر، اور تقدیر کی اچھائی اور برائی پر یقین رکھو۔"
-اس نے کہا: "مجھے احسان کے بارے میں بتائیے۔" آپ ﷺ نے فرمایا: "تم اللہ کی عبادت اس طرح کرو گویا تم اسے دیکھ رہے ہو، اور اگر تم اسے نہیں دیکھ رہے تو وہ تمہیں دیکھ رہا ہے۔"
-پھر آپ ﷺ نے فرمایا: "اے عمر! یہ جبرائیلؑ تھے جو تمہیں تمہارا دین سکھانے آئے تھے۔"
-[صحیح مسلم]"""
-                    },
-                    {
-                        "chapter_number": 3,
-                        "title": "Hadith 3: Leaving that which does not concern you",
-                        "title_ar": "الحديث الثاني عشر: من حسن إسلام المرء",
-                        "title_ur": "حدیث ۱۲: بے فائدہ باتوں کو چھوڑ دینا اچھے اسلام کی علامت ہے",
-                        "content_ar": """عَنْ أَبِي هُرَيْرَةَ رَضِيَ اللَّهُ عَنْهُ قَالَ: قَالَ رَسُولُ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ:
-«مِنْ حُسْنِ إِسْلَامِ الْمَرْءِ تَرْكُهُ مَا لَا يَعْنِيهِ».
-حَدِيثٌ حَسَنٌ، رَوَاهُ التِّرْمِذِيُّ وَغَيْرُهُ هَكَذَا.""",
-                        "content_en": """On the authority of Abu Hurayrah (may Allah be pleased with him) who said: The Messenger of Allah (peace be upon him) said:
-"Part of the excellence of one's Islam is his leaving that which does not concern him."
-[A sound hadith, narrated by At-Tirmidhi and others]""",
-                        "content_ur": """حضرت ابو ہریرہ رضی اللہ عنہ سے روایت ہے کہ رسول اللہ ﷺ نے ارشاد فرمایا:
-"انسان کے اسلام کا حسن اور کمال یہ ہے کہ وہ ان باتوں کو چھوڑ دے جو اس کے کام کی نہیں ہیں اور جن سے اس کا کوئی سروکار نہیں۔"
-[جامع ترمذی و دیگر]"""
+                        "content_ar": "وَأَشْعِرْ قَلْبَكَ الرَّحْمَةَ لِلرَّعِيَّةِ، وَالْمَحَبَّةَ لَهُمْ، فَإِنَّهُمْ صِنْفَانِ: إِمَّا أَخٌ لَكَ فِي الدِّينِ، وَإِمَّا نَظِيرٌ لَكَ فِي الْخَلْقِ.",
+                        "content_en": "Habituate your heart to mercy for the subjects and kindness for them, for they are of two kinds: either your brother in religion, or your equal in creation.",
+                        "content_ur": "اپنے دل میں رعایا کے لیے رحمت اور محبت کا جذبہ رکھو، کیونکہ انسان دو ہی طرح کے ہیں: یا تو وہ دین میں تمہارے بھائی ہیں یا خلقت میں تمہارے جیسے انسان ہیں۔"
                     }
                 ]
             },
@@ -240,39 +164,147 @@ Then the Prophet said: "O Umar, that was Jibril who came to teach you your relig
                 "title_ar": "الصحيفة السجادية الكاملة",
                 "title_ur": "صحیفہ سجادیہ (زبورِ آلِ محمد)",
                 "slug": "sahifa-sajjadiyya",
-                "description": "The timeless treasury of sublime supplications, whispered prayers, and spiritual meditations composed by Imam Ali ibn al-Husayn Zayn al-Abidin (al-Sajjad), revered as one of the greatest spiritual masterpieces in Islamic literature.",
+                "description": "Sublime supplications, whispered prayers, and spiritual meditations composed by Imam Ali ibn al-Husayn Zayn al-Abidin.",
                 "author_id": 3,
                 "tradition_id": 7, # Shia
                 "category_id": 7, # Spirituality & Duas
                 "language": "Arabic • English • Urdu",
-                "publication_year": "1st Century AH",
+                "publication_year": "95 AH",
                 "cover_url": "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=600&auto=format&fit=crop&q=80",
                 "featured": True,
-                "total_chapters": 2,
                 "chapters": [
                     {
                         "chapter_number": 1,
                         "title": "Dua in Praise of Allah Almighty",
                         "title_ar": "الدعاء الأول: في التحميد لله عز وجل",
                         "title_ur": "پہلی دعا: اللہ تعالیٰ کی حمد و ثناء",
-                        "content_ar": """الْحَمْدُ لِلَّهِ الْأَوَّلِ بِلَا أَوَّلٍ كَانَ قَبْلَهُ، وَالْآخِرِ بِلَا آخِرٍ يَكُونُ بَعْدَهُ، الَّذِي قَصُرَتْ عَنْ رُؤْيَتِهِ أَبْصَارُ النَّاظِرِينَ، وَعَجَزَتْ عَنْ نَعْتِهِ أَوْهَامُ الْوَاصِفِينَ.
-ابْتَدَعَ بِقُدْرَتِهِ الْخَلْقَ ابْتِدَاعاً، وَاخْتَرَعَهُمْ عَلَى مَشِيَّتِهِ اخْتِرَاعاً، ثُمَّ سَلَكَ بِهِمْ طَرِيقَ إِرَادَتِهِ، وَبَعَثَهُمْ فِي سَبِيلِ مَحَبَّتِهِ.""",
-                        "content_en": """Praise belongs to Allah, the First, without a first before Him, the Last, without a last after Him, whom the eyes of beholders fail to see, and whom the descriptions of describers fail to depict.
-He originated creation through His power, and produced them according to His sovereign will, then caused them to walk along the path of His intention, and sent them forth on the path of His love.""",
-                        "content_ur": """تمام تعریفیں اللہ کے لیے ہیں جو ایسا اول ہے جس سے پہلے کوئی اول نہ تھا، اور ایسا آخر ہے جس کے بعد کوئی آخر نہ ہوگا، جس کے دیدار سے دیکھنے والوں کی آنکھیں قاصر اور جس کی صفت بیان کرنے سے عقلیں عاجز ہیں۔
-اس نے اپنی قدرتِ کاملہ سے کائنات کو تخلیق کیا اور اپنی مشیت کے مطابق مخلوقات کو پیدا فرمایا، پھر انہیں اپنے ارادے کی راہ پر چلایا اور اپنی محبت کے راستے پر روانہ کیا۔"""
+                        "content_ar": "الْحَمْدُ لِلَّهِ الْأَوَّلِ بِلَا أَوَّلٍ كَانَ قَبْلَهُ، وَالْآخِرِ بِلَا آخِرٍ يَكُونُ بَعْدَهُ، الَّذِي قَصُرَتْ عَنْ رُؤْيَتِهِ أَبْصَارُ النَّاظِرِينَ.",
+                        "content_en": "Praise belongs to Allah, the First without a first before Him, the Last without a last after Him, whom the eyes of beholders fail to encompass.",
+                        "content_ur": "تمام تعریفیں اللہ کے لیے ہیں جو ایسا اول ہے جس سے پہلے کوئی اول نہ تھا، اور ایسا آخر ہے جس کے بعد کوئی آخر نہیں۔"
                     },
                     {
                         "chapter_number": 2,
-                        "title": "Dua for Parents (Righteousness & Respect)",
+                        "title": "Dua for Parents (Righteousness & Devotion)",
                         "title_ar": "الدعاء الرابع والعشرون: لأبويه عليهما السلام",
                         "title_ur": "چوبیسویں دعا: والدین کے لیے دعا و مغفرت",
-                        "content_ar": """اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ عَبْدِكَ وَرَسُولِكَ وَآلِهِ الطَّاهِرِينَ، وَاخْصُصْ أَبَوَيَّ بِأَفْضَلِ مَا خَصَصْتَ بِهِ آبَاءَ عِبَادِكَ الْمُؤْمِنِينَ وَأُمَّهَاتِهِمْ، يَا أَرْحَمَ الرَّاحِمِينَ.
-اللَّهُمَّ اجْعَلْنِي أَهَابُهُمَا هَيْبَةَ السُّلْطَانِ الْعَسُوفِ، وَأَبَرُّهُمَا بِرَّ الْأُمِّ الرَّءُوفِ، وَاجْعَلْ طَاعَتِي لِوَالِدَيَّ وَبِرِّي بِهِمَا أَقَرَّ لِعَيْنِي مِنْ رَقْدَةِ الْوَسْنَانِ، وَأَثْلَجَ لِصَدْرِي مِنْ شَرْبَةِ الظَّمْآنِ.""",
-                        "content_en": """O Allah, bless Muhammad, Your servant and Messenger, and his pure household, and single out my parents for the best of what You have singled out for the fathers and mothers of Your faithful servants, O Most Merciful of the merciful!
-O Allah, let me fear them with the awe of a powerful authority, and love them with the tenderness of an affectionate mother. Make my obedience to my parents and devotion to them more pleasing to my eyes than sleep to the drowsy, and more refreshing to my heart than cool water to the thirsty!""",
-                        "content_ur": """اے اللہ! اپنے بندے اور رسول محمد ﷺ اور ان کی پاکیزہ آل پر رحمت نازل فرما، اور میرے والدین کو ان بہترین برکتوں سے نواز جو تو نے اپنے مومن بندوں کے والدین کے لیے مخصوص فرمائی ہیں، اے سب سے بڑھ کر رحم فرمانے والے!
-اے اللہ! میرے دل میں ان کا احترام ایسا بنا دے جیسے کسی حاکم کا وقار ہوتا ہے، اور میرے برتاؤ کو ان کے ساتھ ایسا شفیق بنا دے جیسے مہربان ماں کا اپنے بچے کے ساتھ ہوتا ہے۔ میرے لیے والدین کی اطاعت اور ان کی خدمت کو نیند کے متلاشی کے لیے آرام سے زیادہ دلکش اور پیاسے کے لیے ٹھنڈے پانی سے زیادہ پرسکون بنا دے!"""
+                        "content_ar": "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَآلِهِ، وَاخْصُصْ أَبَوَيَّ بِأَفْضَلِ مَا خَصَصْتَ بِهِ آبَاءَ عِبَادِكَ الْمُؤْمِنِينَ، يَا أَرْحَمَ الرَّاحِمِينَ.",
+                        "content_en": "O Allah, bless Muhammad and his household, and single out my parents for the best blessings You have granted to the parents of the faithful!",
+                        "content_ur": "اے اللہ! محمد ﷺ اور ان کی آل پر رحمت نازل فرما اور میرے والدین کو ان بہترین برکتوں سے نواز جو تو نے مومنین کے والدین کے لیے رکھی ہیں۔"
+                    }
+                ]
+            },
+            {
+                "id": 7,
+                "title": "Risalat al-Huquq (The Treatise on Rights)",
+                "title_ar": "رسالة الحقوق للإمام السجاد",
+                "title_ur": "رسالۃ الحقوق (حقوق کا عظیم منشور)",
+                "slug": "risalat-al-huquq",
+                "description": "Imam Zayn al-Abidin's comprehensive ethical framework outlining 50 fundamental rights: rights of God, rights of oneself, family, teachers, neighbors, and society.",
+                "author_id": 3,
+                "tradition_id": 8, # Ja'fari
+                "category_id": 6, # Ethics
+                "language": "Arabic • English • Urdu",
+                "publication_year": "90 AH",
+                "cover_url": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&auto=format&fit=crop&q=80",
+                "featured": False,
+                "chapters": [
+                    {
+                        "chapter_number": 1,
+                        "title": "The Greatest Right: Rights of Allah & Self",
+                        "title_ar": "حق الله الأكبر وحق النفس والجوارح",
+                        "title_ur": "اللہ تعالیٰ کا سب سے بڑا حق اور اپنے اعضاء کے حقوق",
+                        "content_ar": "فَأَمَّا حَقُّ اللَّهِ الْأَكْبَرُ فَأَنْ تَعْبُدَهُ لَا تُشْرِكُ بِهِ شَيْئاً. وَأَمَّا حَقُّ نَفْسِكَ عَلَيْكَ فَأَنْ تَسْتَعْمِلَهَا فِي طَاعَةِ اللَّهِ. وَحَقُّ اللِّسَانِ إِكْرَامُهُ عَنِ الْخَنَى، وَتَعْوِيدُهُ عَلَى الْخَيْرِ.",
+                        "content_en": "The greatest right of Allah is that you worship Him without associating any partner with Him. The right of your self is that you employ it in obedience to Allah. The right of the tongue is to deem it noble above vulgarity and habituate it to speaking good.",
+                        "content_ur": "اللہ کا سب سے بڑا حق یہ ہے کہ تم اسی کی عبادت کرو اور کسی کو اس کا شریک نہ ٹھہراؤ۔ تمہاری جان کا تم پر یہ حق ہے کہ تم اسے اللہ کی اطاعت میں لگاؤ، اور زبان کا حق یہ ہے کہ اسے بیہودہ باتوں سے پاک رکھو اور بھلائی کا عادی بناؤ۔"
+                    }
+                ]
+            },
+            {
+                "id": 8,
+                "title": "Kitab al-Kafi (Selections from Usul al-Kafi)",
+                "title_ar": "أصول الكافي - كتاب العقل والجهل وفضل العلم",
+                "title_ur": "اصولِ کافی (کتاب العقل والجہل و فضیلتِ علم)",
+                "slug": "usul-al-kafi",
+                "description": "Foundational narrations compiled by Shaykh al-Kulayni on the primacy of intellect, theology, divine guidance, and virtues of seeking knowledge.",
+                "author_id": 4,
+                "tradition_id": 7, # Shia
+                "category_id": 2, # Hadith
+                "language": "Arabic • English • Urdu",
+                "publication_year": "329 AH",
+                "cover_url": "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=600&auto=format&fit=crop&q=80",
+                "featured": True,
+                "chapters": [
+                    {
+                        "chapter_number": 1,
+                        "title": "The Book of Intellect and Ignorance (Kitab al-Aql)",
+                        "title_ar": "كتاب العقل والجهل",
+                        "title_ur": "کتاب العقل و الجہل (عقل و دانائی کی فضیلت)",
+                        "content_ar": "عَنْ أَبِي جَعْفَرٍ الْبَاقِرِ عَلَيْهِ السَّلَامُ قَالَ: لَمَّا خَلَقَ اللَّهُ الْعَقْلَ اسْتَنْطَقَهُ ثُمَّ قَالَ لَهُ: أَقْبِلْ فَأَقْبَلَ، ثُمَّ قَالَ لَهُ: أَدْبِرْ فَأَدْبَرَ، ثُمَّ قَالَ: وَعِزَّتِي وَجَلَالِي مَا خَلَقْتُ خَلْقاً هُوَ أَحَبُّ إِلَيَّ مِنْكَ، بِكَ آخُذُ وَبِكَ أُعْطِي.",
+                        "content_en": "Imam Muhammad al-Baqir (peace be upon him) said: When Allah created the Intellect, He tested it and said: 'Advance', so it advanced; then He said: 'Retreat', so it retreated. Then Allah said: 'By My Might and Majesty, I have created no creation more beloved to Me than you. Through you I reward and through you I hold accountable.'",
+                        "content_ur": "امام محمد باقر علیہ السلام سے روایت ہے کہ جب اللہ تعالیٰ نے عقل کو پیدا کیا تو اس سے فرمایا: 'آگے آؤ' تو وہ آگے آئی، پھر فرمایا: 'پیچھے ہٹو' تو وہ پیچھے ہٹی۔ تب اللہ نے فرمایا: 'میری عزت و جلال کی قسم! میں نے تجھ سے زیادہ پیاری کوئی مخلوق پیدا نہیں کی، تیرے ہی ذریعے میں جزا دوں گا اور تیرے ہی ذریعے محاسبہ کروں گا۔'"
+                    }
+                ]
+            },
+            {
+                "id": 9,
+                "title": "Al-Khisal (The Book of Pious Characteristics)",
+                "title_ar": "الخصال للشيخ الصدوق",
+                "title_ur": "الخصال (عمدہ عادات اور اخلاقی خصائل)",
+                "slug": "al-khisal",
+                "description": "Shaykh al-Saduq's ethical compendium classifying virtues and moral guidance through numbered sets of prophetic and Ahl al-Bayt traditions.",
+                "author_id": 14,
+                "tradition_id": 8, # Ja'fari
+                "category_id": 6, # Ethics
+                "language": "Arabic • English • Urdu",
+                "publication_year": "381 AH",
+                "cover_url": "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop&q=80",
+                "featured": False,
+                "chapters": [
+                    {
+                        "chapter_number": 1,
+                        "title": "Three Noble Traits Beloved to Allah",
+                        "title_ar": "باب الثلاثة: ثلاث خصال من خصال الإيمان",
+                        "title_ur": "تین خصلتیں جو ایمان کا کمال ہیں",
+                        "content_ar": "قَالَ رَسُولُ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَآلِهِ: ثَلَاثٌ مَنْ كُنَّ فِيهِ اسْتَكْمَلَ خِصَالَ الْإِيمَانِ: إِذَا رَضِيَ لَمْ يُدْخِلْهُ رِضَاهُ فِي بَاطِلٍ، وَإِذَا غَضِبَ لَمْ يُخْرِجْهُ غَضَبُهُ مِنَ الْحَقِّ، وَإِذَا قَدَرَ لَمْ يَتَعَاطَ مَا لَيْسَ لَهُ.",
+                        "content_en": "The Messenger of Allah ﷺ said: Three traits complete one's faith: when pleased, pleasure does not lead him into falsehood; when angry, anger does not lead him away from the truth; and when having power, he does not take what is not his.",
+                        "content_ur": "رسول اللہ ﷺ نے فرمایا: تین خصلتیں جس میں ہوں اس کا ایمان مکمل ہے: جب خوش ہو تو خوشی اسے باطل میں نہ لے جائے، جب غصے میں ہو تو غصہ اسے حق سے نہ ہٹائے، اور جب قدرت و اختیار پائے تو ناحق چیز پر ہاتھ نہ ڈالے۔"
+                    }
+                ]
+            },
+
+            # ----- SUNNI TRADITION (Hanafi, Shafi'i, Maliki, Hanbali, General Sunni) -----
+            {
+                "id": 2,
+                "title": "Al-Arba'in an-Nawawiyya (40 Hadith of Nawawi)",
+                "title_ar": "الأربعون النووية",
+                "title_ur": "چالیس احادیثِ نبوی (اربعین نووی)",
+                "slug": "arbaeen-nawawi",
+                "description": "The quintessential collection of 42 core prophetic traditions compiled by Imam an-Nawawi summarizing the fundamental legal and moral pillars of Islam.",
+                "author_id": 2,
+                "tradition_id": 2, # Sunni
+                "category_id": 2, # Hadith
+                "language": "Arabic • English • Urdu",
+                "publication_year": "676 AH",
+                "cover_url": "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600&auto=format&fit=crop&q=80",
+                "featured": True,
+                "chapters": [
+                    {
+                        "chapter_number": 1,
+                        "title": "Hadith 1: Actions are Judged by Intentions",
+                        "title_ar": "الحديث الأول: إنما الأعمال بالنيات",
+                        "title_ur": "حدیث ۱: اعمال کا دارومدار نیتوں پر ہے",
+                        "content_ar": "«إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى، فَمَنْ كَانَتْ هِجْرَتُهُ إِلَى اللَّهِ وَرَسُولِهِ فَهِجْرَتُهُ إِلَى اللَّهِ وَرَسُولِهِ».",
+                        "content_en": "Actions are only by intentions, and every person shall have only that which he intended. Thus, he whose migration was for Allah and His Messenger, his migration was for Allah and His Messenger.",
+                        "content_ur": "اعمال کا دارومدار نیتوں پر ہے اور ہر انسان کو وہی ملے گا جس کی اس نے نیت کی۔ پس جس کی ہجرت اللہ اور اس کے رسول کے لیے ہو تو اس کی ہجرت اللہ اور اس کے رسول ہی کے لیے ہے۔"
+                    },
+                    {
+                        "chapter_number": 2,
+                        "title": "Hadith 2: Islam, Iman, and Ihsan (Hadith Jibril)",
+                        "title_ar": "الحديث الثاني: مراتب الدين - حديث جبريل",
+                        "title_ur": "حدیث ۲: دین کے مراتب - اسلام، ایمان اور احسان",
+                        "content_ar": "قَالَ: فَأَخْبِرْنِي عَنِ الإِحْسَانِ؟ قَالَ: «أَنْ تَعْبُدَ اللَّهَ كَأَنَّكَ تَرَاهُ، فَإِنْ لَمْ تَكُنْ تَرَاهُ فَإِنَّهُ يَرَاكَ».",
+                        "content_en": "He said: 'Tell me about Ihsan.' The Prophet replied: 'It is to worship Allah as though you see Him, and if you cannot see Him, then truly He sees you.'",
+                        "content_ur": "اس نے کہا: 'مجھے احسان کے بارے میں بتائیے۔' آپ ﷺ نے فرمایا: 'تم اللہ کی عبادت اس طرح کرو گویا تم اسے دیکھ رہے ہو، اور اگر تم اسے نہیں دیکھ رہے تو وہ تمہیں دیکھ رہا ہے۔'"
                     }
                 ]
             },
@@ -282,7 +314,7 @@ O Allah, let me fear them with the awe of a powerful authority, and love them wi
                 "title_ar": "رياض الصالحين من كلام سيد المرسلين",
                 "title_ur": "ریاض الصالحین (باغِ صالحین)",
                 "slug": "riyad-as-salihin",
-                "description": "A comprehensive, world-renowned anthology of authentic prophetic traditions compiled by Imam an-Nawawi, organized into practical chapters covering everyday morals, family life, community welfare, and spiritual purification.",
+                "description": "An essential anthology of prophetic hadiths organized by practical moral chapters: sincerity, patience, piety, truthfulness, and family ethics.",
                 "author_id": 2,
                 "tradition_id": 2, # Sunni
                 "category_id": 6, # Ethics
@@ -290,53 +322,25 @@ O Allah, let me fear them with the awe of a powerful authority, and love them wi
                 "publication_year": "670 AH",
                 "cover_url": "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&auto=format&fit=crop&q=80",
                 "featured": True,
-                "total_chapters": 2,
                 "chapters": [
                     {
                         "chapter_number": 1,
                         "title": "Chapter on Patience and Steadfastness (Bab as-Sabr)",
                         "title_ar": "باب الصبر والاحتساب",
                         "title_ur": "باب الصبر: صبر و استقامت کی فضیلت",
-                        "content_ar": """قَالَ اللَّهُ تَعَالَى: {يَا أَيُّهَا الَّذِينَ آمَنُوا اصْبِرُوا وَصَابِرُوا وَرَابِطُوا وَاتَّقُوا اللَّهَ لَعَلَّكُمْ تُفْلِحُونَ} [آل عمران: ٢٠٠].
-وَعَنْ أَبِي مَالِكٍ الْحَارِثِ بْنِ عَاصِمٍ الْأَشْعَرِيِّ رَضِيَ اللَّهُ عَنْهُ قَالَ: قَالَ رَسُولُ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ:
-«الطُّهُورُ شَطْرُ الْإِيمَانِ، وَالْحَمْدُ لِلَّهِ تَمْلأُ الْمِيزَانَ، وَسُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ تَمْلآنِ - أَوْ تَمْلأُ - مَا بَيْنَ السَّمَاوَاتِ وَالأَرْضِ، وَالصَّلاةُ نُورٌ، وَالصَّدَقَةُ بُرْهَانٌ، وَالصَّبْرُ ضِيَاءٌ، وَالْقُرْآنُ حُجَّةٌ لَكَ أَوْ عَلَيْكَ، كُلُّ النَّاسِ يَغْدُو فَبَائِعٌ نَفْسَهُ فَمُعْتِقُهَا أَوْ مُوبِقُهَا».
-رَوَاهُ مُسْلِمٌ.""",
-                        "content_en": """Allah the Exalted says: "O you who have believed, persevere and endure and remain stationed and fear Allah that you may be successful." (3:200).
-Abu Malik al-Harith ibn Asim al-Ash'ari (may Allah be pleased with him) reported: The Messenger of Allah (peace be upon him) said:
-"Purity is half of faith. Al-hamdu lillah (praise be to Allah) fills the scale. Subhan Allah and Al-hamdu lillah together fill whatever is between the heavens and the earth. Prayer is light, charity is proof, patience is illumination, and the Quran is an argument for you or against you. Every person goes out in the morning and sells himself, thereby freeing it or destroying it."
-[Narrated by Muslim]""",
-                        "content_ur": """اللہ تعالیٰ کا ارشاد ہے: "اے ایمان والو! صبر کرو، اور ثابت قدم رہو، اور چوکس رہو، اور اللہ سے ڈرتے رہو تاکہ تم فلاح پاؤ۔" (آل عمران: ۲۰۰)
-حضرت ابو مالک اشعری رضی اللہ عنہ سے روایت ہے کہ رسول اللہ ﷺ نے فرمایا:
-"پاکیزگی اور صفائی آدھا ایمان ہے۔ 'الحمد للہ' ترازو کو بھر دیتا ہے۔ 'سبحان اللہ' اور 'الحمد للہ' زمین و آسمان کے درمیان کی ساری خلا کو بھر دیتے ہیں۔ نماز روشنی ہے، صدقہ دلیل و برہان ہے، صبر ایک تابناک اجالا ہے، اور قرآن تمہارے حق میں یا تمہارے خلاف حجت ہے۔ ہر انسان صبح اٹھ کر اپنی جان کی سودا بازی کرتا ہے؛ یا تو وہ اسے اللہ کی اطاعت میں لگا کر آزاد کر لیتا ہے یا نافرمانی کر کے ہلاکت میں ڈال دیتا ہے۔"
-[صحیح مسلم]"""
-                    },
-                    {
-                        "chapter_number": 2,
-                        "title": "Chapter on Sincerity in All Actions (Bab al-Ikhlas)",
-                        "title_ar": "باب الإخلاص وإحضار النية",
-                        "title_ur": "باب الإخلاص: تمام کاموں میں اخلاص اور نیک نیتی",
-                        "content_ar": """قَالَ اللَّهُ تَعَالَى: {وَمَا أُمِرُوا إِلَّا لِيَعْبُدُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ حُنَفَاءَ وَيُقِيمُوا الصَّلَاةَ وَيُؤْتُوا الزَّكَاةَ ۚ وَذَٰلِكَ دِينُ الْقَيِّمَةِ} [البينة: ٥].
-وَعَنْ أَبِي هُرَيْرَةَ رَضِيَ اللَّهُ عَنْهُ قَالَ: قَالَ رَسُولُ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ:
-«إِنَّ اللَّهَ لا يَنْظُرُ إِلَى أَجْسَادِكُمْ، وَلا إِلَى صُوَرِكُمْ، وَلَكِنْ يَنْظُرُ إِلَى قُلُوبِكُمْ وَأَعْمَالِكُمْ».
-رَوَاهُ مُسْلِمٌ.""",
-                        "content_en": """Allah the Exalted says: "And they were not commanded except to worship Allah, being sincere to Him in religion, inclining to truth, and to establish prayer and to give zakah. And that is the correct religion." (98:5).
-Abu Hurayrah (may Allah be pleased with him) reported: The Messenger of Allah (peace be upon him) said:
-"Verily Allah does not look at your bodies nor at your appearances, but rather He looks into your hearts and your deeds."
-[Narrated by Muslim]""",
-                        "content_ur": """اللہ تعالیٰ کا ارشاد ہے: "اور انہیں اس کے سوا کوئی حکم نہیں دیا گیا تھا کہ وہ یکسو ہو کر صرف اللہ کے لیے دین کو خالص کرتے ہوئے اس کی عبادت کریں، نماز قائم کریں اور زکوٰۃ ادا کریں۔ اور یہی سیدھا اور سچا دین ہے۔" (البینہ: ۵)
-حضرت ابو ہریرہ رضی اللہ عنہ سے روایت ہے کہ رسول اللہ ﷺ نے فرمایا:
-"بے شک اللہ تعالیٰ تمہارے جسموں اور تمہاری ظاہری صورتوں کو نہیں دیکھتا، بلکہ وہ تمہارے دلوں اور تمہارے اعمال کو دیکھتا ہے۔"
-[صحیح مسلم]"""
+                        "content_ar": "«الصَّلاةُ نُورٌ، وَالصَّدَقَةُ بُرْهَانٌ، وَالصَّبْرُ ضِيَاءٌ، وَالْقُرْآنُ حُجَّةٌ لَكَ أَوْ عَلَيْكَ».",
+                        "content_en": "Prayer is light, charity is proof, patience is illumination, and the Quran is an argument for you or against you.",
+                        "content_ur": "نماز روشنی ہے، صدقہ دلیل ہے، صبر ایک تابناک اجالا ہے، اور قرآن تمہارے حق میں یا تمہارے خلاف حجت ہے۔"
                     }
                 ]
             },
             {
                 "id": 5,
-                "title": "Mukhtasar al-Quduri (Foundations of Hanafi Fiqh)",
+                "title": "Mukhtasar al-Quduri (Hanafi Fiqh Primer)",
                 "title_ar": "مختصر القدوري في الفقه الحنفي",
-                "title_ur": "مختصر القدوری (فقہِ حنفی کی بنیادی کتاب)",
+                "title_ur": "مختصر القدوری (فقہِ حنفی کی مستند کتاب)",
                 "slug": "mukhtasar-al-quduri",
-                "description": "The authoritative classical primer of Hanafi jurisprudence by Imam al-Quduri, covering the legal rules of purification, prayers, transactions, and ethical obligations according to the school of Imam Abu Hanifah.",
+                "description": "The classical, foundational primer of Hanafi jurisprudence by Imam al-Quduri, covering ritual purification, prayer timings, and legal rulings.",
                 "author_id": 5,
                 "tradition_id": 3, # Hanafi
                 "category_id": 3, # Fiqh
@@ -344,90 +348,191 @@ Abu Hurayrah (may Allah be pleased with him) reported: The Messenger of Allah (p
                 "publication_year": "428 AH",
                 "cover_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&auto=format&fit=crop&q=80",
                 "featured": False,
-                "total_chapters": 1,
                 "chapters": [
                     {
                         "chapter_number": 1,
-                        "title": "Kitab at-Taharah (The Book of Purification & Wudu)",
+                        "title": "Kitab at-Taharah (Purification & Wudu Rulings)",
                         "title_ar": "كتاب الطهارة وأحكام الوضوء",
-                        "title_ur": "کتاب الطہارۃ: وضو، غسل اور پاکیزگی کے بنیادی احکام",
-                        "content_ar": """قَالَ اللَّهُ تَعَالَى: {يَا أَيُّهَا الَّذِينَ آمَنُوا إِذَا قُمْتُمْ إِلَى الصَّلَاةِ فَاغْسِلُوا وُجُوهَكُمْ وَأَيْدِيَكُمْ إِلَى الْمَرَافِقِ وَامْسَحُوا بِرُءُوسِكُمْ وَأَرْجُلَكُمْ إِلَى الْكَعْبَيْنِ}.
-فَرَائِضُ الْوُضُوءِ أَرْبَعَةٌ:
-١. غَسْلُ الْوَجْهِ مِنَ الْقِصَاصِ إِلَى أَسْفَلِ الذَّقَنِ وَمَا بَيْنَ شَحْمَتَيِ الْأُذُنَيْنِ.
-٢. غَسْلُ الْيَدَيْنِ مَعَ الْمِرْفَقَيْنِ.
-٣. مَسْحُ رُبُعِ الرَّأْسِ.
-٤. غَسْلُ الرِّجْلَيْنِ مَعَ الْكَعْبَيْنِ.""",
-                        "content_en": """Allah the Exalted says: "O you who have believed, when you rise to prayer, wash your faces and your hands up to the elbows and wipe over your heads and wash your feet up to the ankles." (5:6).
-The obligatory acts (Fara'id) of Wudu are four:
-1. Washing the entire face from the hairline to below the chin and from earlobe to earlobe.
-2. Washing both arms including the elbows.
-3. Wiping over at least one-fourth of the head.
-4. Washing both feet including the ankles.""",
-                        "content_ur": """اللہ تعالیٰ کا ارشاد ہے: "اے ایمان والو! جب تم نماز کے لیے کھڑے ہو تو اپنے چہرے اور کہنیوں تک ہاتھ دھو لو، اور اپنے سروں کا مسح کرو اور ٹخنوں تک پاؤں دھو لو۔" (المائدہ: ۶)
-وضو کے فرائض چار ہیں:
-۱. پیشانی کے بالوں سے لے کر ٹھوڑی کے نیچے تک اور ایک کان کی لو سے دوسرے کان کی لو تک پورے چہرے کا دھونا۔
-۲. دونوں ہاتھوں کا کہنیوں سمیت دھونا۔
-۳. چوتھائی سر کا مسح کرنا۔
-۴. دونوں پاؤں کا ٹخنوں سمیت دھونا۔"""
+                        "title_ur": "کتاب الطہارۃ: وضو اور پاکیزگی کے فرائض و سنن",
+                        "content_ar": "فَرَائِضُ الْوُضُوءِ أَرْبَعَةٌ: غَسْلُ الْوَجْهِ، وَغَسْلُ الْيَدَيْنِ مَعَ الْمِرْفَقَيْنِ، وَمَسْحُ رُبُعِ الرَّأْسِ، وَغَسْلُ الرِّجْلَيْنِ مَعَ الْكَعْبَيْنِ.",
+                        "content_en": "The obligatory acts (Fara'id) of Wudu are four: washing the face, washing both arms including the elbows, wiping over one-fourth of the head, and washing both feet including the ankles.",
+                        "content_ur": "وضو کے چار فرائض ہیں: چہرہ دھونا، کہنیوں سمیت دونوں ہاتھ دھونا، چوتھائی سر کا مسح کرنا، اور ٹخنوں سمیت دونوں پاؤں دھونا۔"
                     }
                 ]
             },
             {
+                "id": 10,
+                "title": "Al-Fiqh al-Akbar (Foundations of Islamic Belief)",
+                "title_ar": "الفقه الأكبر للإمام أبي حنيفة",
+                "title_ur": "الفقہ الاکبر (امام اعظم ابو حنیفہ کی کتاب العقائد)",
+                "slug": "al-fiqh-al-akbar",
+                "description": "Imam Abu Hanifah's seminal theological treatise defining the Sunni Hanafi creed on Tawhid, Divine Attributes, Destiny, and Faith.",
+                "author_id": 10,
+                "tradition_id": 3, # Hanafi
+                "category_id": 4, # Aqeedah
+                "language": "Arabic • English • Urdu",
+                "publication_year": "150 AH",
+                "cover_url": "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=600&auto=format&fit=crop&q=80",
+                "featured": False,
+                "chapters": [
+                    {
+                        "chapter_number": 1,
+                        "title": "Oneness of God and Divine Attributes",
+                        "title_ar": "أصل التوحيد وما يجب اعتقاده",
+                        "title_ur": "توحیدِ باری تعالیٰ اور صفاتِ الٰہیہ کا بیان",
+                        "content_ar": "وَاللَّهُ تَعَالَى وَاحِدٌ لَا مِنْ طَرِيقِ الْعَدَدِ وَلَكِنْ مِنْ طَرِيقِ أَنَّهُ لَا شَرِيكَ لَهُ، لَمْ يَلِدْ وَلَمْ يُولَدْ وَلَمْ يَكُنْ لَهُ كُفُواً أَحَدٌ.",
+                        "content_en": "Allah the Exalted is One, not in terms of number, but in the sense that He has no partner. He neither begets nor is born, and nor is there to Him any equivalent.",
+                        "content_ur": "اللہ تعالیٰ ایک ہے، نہ کہ عددی لحاظ سے بلکہ اس لحاظ سے کہ اس کا کوئی شریک نہیں، نہ اس کی کوئی اولاد ہے اور نہ وہ کسی کی اولاد ہے اور نہ کوئی اس کا ہمسر ہے۔"
+                    }
+                ]
+            },
+            {
+                "id": 11,
+                "title": "Al-Muwatta of Imam Malik",
+                "title_ar": "الموطأ لإمام دار الهجرة مالك بن أنس",
+                "title_ur": "موطا امام مالک (اہلِ مدینہ کا فقہی و حدیثی ذخیرہ)",
+                "slug": "al-muwatta-malik",
+                "description": "The earliest extant legal and hadith compilation from the scholars of Madinah, compiled by Imam Malik ibn Anas.",
+                "author_id": 11,
+                "tradition_id": 5, # Maliki
+                "category_id": 3, # Fiqh
+                "language": "Arabic • English • Urdu",
+                "publication_year": "179 AH",
+                "cover_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80",
+                "featured": False,
+                "chapters": [
+                    {
+                        "chapter_number": 1,
+                        "title": "Book of Prayer Timings and Congregations",
+                        "title_ar": "وقوت الصلاة وما جاء في فضلها",
+                        "title_ur": "نماز کے اوقات اور باجماعت ادائیگی کی فضیلت",
+                        "content_ar": "عَنْ يَحْيَى بْنِ سَعِيدٍ أَنَّ عُمَرَ بْنَ عَبْدِ الْعَزِيزِ أَخَّرَ الصَّلَاةَ يَوْماً، فَدَخَلَ عَلَيْهِ عُرْوَةُ بْنُ الزُّبَيْرِ فَأَخْبَرَهُ أَنَّ الْمُغِيرَةَ بْنَ شُعْبَةَ كَانَ يُؤَخِّرُ الصَّلَاةَ فَقَالَ لَهُ أَبُو مَسْعُودٍ الْأَنْصَارِيُّ: أَلَمْ تَعْلَمْ أَنَّ جِبْرِيلَ نَزَلَ فَصَلَّى فَصَلَّى رَسُولُ اللَّهِ ﷺ.",
+                        "content_en": "Yahya ibn Sa'id reported that the Angel Jibril descended and demonstrated the precise prayer timings to the Messenger of Allah ﷺ.",
+                        "content_ur": "حضرت جبرائیل علیہ السلام نے نازل ہو کر رسول اللہ ﷺ کو نمازوں کے وقت اور ان کی ادائیگی کا طریقہ سکھایا۔"
+                    }
+                ]
+            },
+            {
+                "id": 12,
+                "title": "Bihashti Zewar (Heavenly Ornaments)",
+                "title_ar": "بهشتي زيور في الفقه الحنفي",
+                "title_ur": "بہشتی زیور (احکام و مسائلِ شریعت)",
+                "slug": "bihashti-zewar",
+                "description": "Mawlana Ashraf Ali Thanvi's widely read encyclopedic manual of Hanafi everyday fiqh, family relations, hygiene, and ethical guidelines.",
+                "author_id": 15,
+                "tradition_id": 3, # Hanafi
+                "category_id": 3, # Fiqh
+                "language": "Urdu • English • Arabic",
+                "publication_year": "1325 AH",
+                "cover_url": "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop&q=80",
+                "featured": False,
+                "chapters": [
+                    {
+                        "chapter_number": 1,
+                        "title": "Foundational Faith & Daily Obligations",
+                        "title_ar": "العقائد الأساسية والواجبات اليومية",
+                        "title_ur": "ایمانیات کے بنیادی عقائد اور روزمرہ فرائض",
+                        "content_ar": "يَجِبُ عَلَى كُلِّ مُسْلِمٍ وَمُسْلِمَةٍ مَعْرِفَةُ أَرْكَانِ الْإِيمَانِ وَفَرَائِضِ الصَّلَاةِ وَالطَّهَارَةِ.",
+                        "content_en": "It is essential for every Muslim to understand the pillars of belief and the obligatory acts of prayer, cleanliness, and daily worship.",
+                        "content_ur": "ہر مسلمان پر لازم ہے کہ وہ اپنے دین کے بنیادی عقائد، نماز کے فرائض اور طہارت کے صحیح مسائل کو اچھی طرح سمجھے۔"
+                    }
+                ]
+            },
+
+            # ----- GENERAL ISLAMIC & SEERAH / ETHICS -----
+            {
                 "id": 6,
                 "title": "Ar-Raheeq Al-Makhtum (The Sealed Nectar)",
                 "title_ar": "الرحيق المختوم في سيرة النبي المأمون",
-                "title_ur": "الرحیق المختوم (سیرتِ نبوی ﷺ کا شاہکار)",
+                "title_ur": "الرحیق المختوم (سیرتِ نبوی ﷺ کا مستند شاہکار)",
                 "slug": "ar-raheeq-al-makhtum",
-                "description": "The award-winning, globally acclaimed biography of Prophet Muhammad ﷺ by Shaykh Safiur Rahman Mubarakpuri, capturing the vibrant historical context, noble character, and transformative mission of the final Messenger.",
+                "description": "The award-winning, globally acclaimed biography of Prophet Muhammad ﷺ by Shaykh Safiur Rahman Mubarakpuri.",
                 "author_id": 7,
-                "tradition_id": 11, # General
+                "tradition_id": 11, # General Islamic
                 "category_id": 5, # Seerah
                 "language": "Arabic • English • Urdu",
-                "publication_year": "1396 AH / 1976 CE",
+                "publication_year": "1396 AH",
                 "cover_url": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80",
                 "featured": True,
-                "total_chapters": 1,
                 "chapters": [
                     {
                         "chapter_number": 1,
                         "title": "The First Divine Revelation in Cave Hira",
                         "title_ar": "مبدأ الوحي ونزول جبريل في غار حراء",
                         "title_ur": "آغازِ وحی اور غارِ حرا میں نزولِ جبریل علیہ السلام",
-                        "content_ar": """لَمَّا تَمَّ لَهُ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ أَرْبَعُونَ سَنَةً، وَهِيَ رَأْسُ الْكَمَالِ، بَدَتْ طَلائِعُ النُّبُوَّةِ؛ فَكَانَ لا يَرَى رُؤْيَا إِلا جَاءَتْ مِثْلَ فَلَقِ الصُّبْحِ.
-وَحُبِّبَ إِلَيْهِ الْخَلاءُ، فَكَانَ يَخْلُو بِغَارِ حِرَاءٍ يَتَحَنَّثُ فِيهِ اللَّيَالِيَ ذَوَاتِ الْعَدَدِ.
-حَتَّى جَاءَهُ الْحَقُّ وَهُوَ فِي غَارِ حِرَاءٍ، فَجَاءَهُ الْمَلَكُ فَقَالَ: «اقْرَأْ»، قَالَ: «مَا أَنَا بِقَارِئٍ»، فَأَخَذَهُ فَغَطَّهُ حَتَّى بَلَغَ مِنْهُ الْجَهْدَ، ثُمَّ أَرْسَلَهُ فَقَالَ: {اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ}.""",
-                        "content_en": """When the Prophet (peace be upon him) reached forty years of age — the peak of human maturity — the early signs of Prophethood began to manifest. He would not see a dream except that it came true as clear as the breaking of the dawn.
-Solitude became beloved to him, and he would retreat to Cave Hira to worship Allah for several nights at a time.
-Until the Truth came to him while he was in Cave Hira. The Angel Jibril came to him and said: "Read!" He replied: "I cannot read." The angel embraced him firmly until he could bear it no more, then released him and recited: "Read in the name of your Lord who created..." (96:1).""",
-                        "content_ur": """جب رسول اللہ ﷺ کی عمرِ مبارک چالیس سال ہوئی — جو کمالِ انسانیت کا دور ہوتا ہے — تو نبوت کے آثار ظاہر ہونا شروع ہوئے۔ آپ جو بھی خواب دیکھتے وہ صبح کے اجالے کی طرح سچ ثابت ہوتا۔
-آپ کو تنہائی اور خلوت نشینی محبوب ہو گئی، چنانچہ آپ مکہ مکرمہ کے قریب غارِ حرا میں تشریف لے جاتے اور کئی کئی راتیں مسلسل عبادت میں مصروف رہتے۔
-یہاں تک کہ غارِ حرا میں آپ پر حق نازل ہوا۔ حضرت جبرائیل علیہ السلام تشریف لائے اور کہا: "پڑھیے!" آپ ﷺ نے فرمایا: "میں پڑھا ہوا نہیں ہوں۔" فرشتے نے آپ کو زور سے اپنے سینے سے لگایا اور پھر چھوڑ کر کہا: "پڑھیے اپنے رب کے نام سے جس نے پیدا کیا!" (العلق: ۱)"""
+                        "content_ar": "حَتَّى جَاءَهُ الْحَقُّ وَهُوَ فِي غَارِ حِرَاءٍ، فَجَاءَهُ الْمَلَكُ فَقَالَ: «اقْرَأْ»، قَالَ: «مَا أَنَا بِقَارِئٍ»، فَقَالَ: {اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ}.",
+                        "content_en": "Until the Truth came to him in Cave Hira. The Angel Jibril came and said: 'Read!' He replied: 'I cannot read.' Then the angel recited: 'Read in the name of your Lord who created...'",
+                        "content_ur": "یہاں تک کہ غارِ حرا میں آپ پر حق نازل ہوا۔ حضرت جبرائیل علیہ السلام نے آ کر کہا: 'پڑھیے!' آپ ﷺ نے فرمایا: 'میں پڑھا ہوا نہیں ہوں۔' فرشتے نے کہا: 'پڑھیے اپنے رب کے نام سے جس نے پیدا کیا!'"
+                    }
+                ]
+            },
+            {
+                "id": 13,
+                "title": "Bidayat al-Hidayah (The Beginning of Guidance)",
+                "title_ar": "بداية الهداية لحجة الإسلام الغزالي",
+                "title_ur": "ہدایت کا آغاز (امام غزالی کی خود سازی کی رہنمائی)",
+                "slug": "bidayat-al-hidayah",
+                "description": "Imam al-Ghazali's practical manual of spiritual discipline, daily routine from dawn till dusk, and guarding the senses from sin.",
+                "author_id": 6,
+                "tradition_id": 11, # General Islamic
+                "category_id": 6, # Ethics
+                "language": "Arabic • English • Urdu",
+                "publication_year": "500 AH",
+                "cover_url": "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=600&auto=format&fit=crop&q=80",
+                "featured": True,
+                "chapters": [
+                    {
+                        "chapter_number": 1,
+                        "title": "Daily Etiquette from Awakening till Dawn",
+                        "title_ar": "آداب الاستيقاظ من النوم إلى صلاة الفجر",
+                        "title_ur": "بیدار ہونے سے فجر کی نماز تک کے آداب و دعائیں",
+                        "content_ar": "إِذَا اسْتَيْقَظْتَ مِنَ النَّوْمِ فَاجْتَهِدْ أَنْ تَبْتَدِئَ بِذِكْرِ اللَّهِ تَعَالَى وَقُلْ: الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ.",
+                        "content_en": "When you awaken from sleep, strive to begin with the remembrance of Allah and say: 'Praise be to Allah who gave us life after having caused us to die, and unto Him is the resurrection.'",
+                        "content_ur": "جب تم نیند سے بیدار ہو تو کوشش کرو کہ تمہارا آغاز اللہ کے ذکر سے ہو اور یہ دعا پڑھو: 'سب تعریفیں اللہ کے لیے ہیں جس نے ہمیں موت کے بعد زندگی دی اور اسی کی طرف لوٹنا ہے۔'"
                     }
                 ]
             }
         ]
 
         for b in books_data:
-            book_obj = models.Book(
-                id=b["id"],
-                title=b["title"],
-                title_ar=b["title_ar"],
-                title_ur=b["title_ur"],
-                slug=b["slug"],
-                description=b["description"],
-                author_id=b["author_id"],
-                tradition_id=b["tradition_id"],
-                category_id=b["category_id"],
-                language=b["language"],
-                publication_year=b["publication_year"],
-                cover_url=b["cover_url"],
-                featured=b["featured"],
-                total_chapters=len(b["chapters"])
-            )
-            db.add(book_obj)
-            db.commit()
+            existing_book = db.query(models.Book).filter(models.Book.id == b["id"]).first()
+            if not existing_book:
+                book_obj = models.Book(
+                    id=b["id"],
+                    title=b["title"],
+                    title_ar=b["title_ar"],
+                    title_ur=b["title_ur"],
+                    slug=b["slug"],
+                    description=b["description"],
+                    author_id=b["author_id"],
+                    tradition_id=b["tradition_id"],
+                    category_id=b["category_id"],
+                    language=b["language"],
+                    publication_year=b["publication_year"],
+                    cover_url=b["cover_url"],
+                    featured=b["featured"],
+                    total_chapters=len(b["chapters"])
+                )
+                db.add(book_obj)
+                db.commit()
+            else:
+                existing_book.title = b["title"]
+                existing_book.title_ar = b["title_ar"]
+                existing_book.title_ur = b["title_ur"]
+                existing_book.slug = b["slug"]
+                existing_book.description = b["description"]
+                existing_book.author_id = b["author_id"]
+                existing_book.tradition_id = b["tradition_id"]
+                existing_book.category_id = b["category_id"]
+                existing_book.language = b["language"]
+                existing_book.publication_year = b["publication_year"]
+                existing_book.cover_url = b["cover_url"]
+                existing_book.featured = b["featured"]
+                existing_book.total_chapters = len(b["chapters"])
+                db.commit()
 
-            # Add chapters
+            # Clean and re-seed chapters
+            db.query(models.BookChapter).filter(models.BookChapter.book_id == b["id"]).delete()
             for chap in b["chapters"]:
                 ch_obj = models.BookChapter(
                     book_id=b["id"],
@@ -441,17 +546,18 @@ Until the Truth came to him while he was in Cave Hira. The Angel Jibril came to 
                 )
                 db.add(ch_obj)
 
-            # Add source entry
-            source_obj = models.BookSource(
-                book_id=b["id"],
-                provider="internal",
-                can_host=True,
-                can_download=True
-            )
-            db.add(source_obj)
+            # Ensure source
+            if not db.query(models.BookSource).filter(models.BookSource.book_id == b["id"]).first():
+                source_obj = models.BookSource(
+                    book_id=b["id"],
+                    provider="internal",
+                    can_host=True,
+                    can_download=True
+                )
+                db.add(source_obj)
             db.commit()
 
-        print("Successfully seeded Islamic Books Catalog!")
+        print("Successfully seeded all Islamic Books across Traditions!")
 
     except Exception as e:
         print(f"Error seeding books catalog: {e}")
