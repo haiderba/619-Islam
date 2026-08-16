@@ -67,11 +67,11 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useRegisterSW({
     onRegistered(r) {
       if (r) {
-        // Immediate check on register + periodic check every 5 minutes
+        // Immediate check on register + rapid check every 15 seconds
         r.update();
         setInterval(() => {
           r.update();
-        }, 5 * 60 * 1000);
+        }, 15 * 1000);
       }
     },
     onRegisterError(error) {
@@ -184,35 +184,37 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   };
 
-  // Poll for updates on load, focus, and every 60s
+  // Poll for updates on load (500ms), on focus, on reconnect, and every 15s
   useEffect(() => {
     const timeout = setTimeout(() => {
       checkLiveVersion();
-    }, 2000);
+    }, 500);
 
     const interval = setInterval(() => {
       checkLiveVersion();
-    }, 60 * 1000);
+    }, 15 * 1000);
 
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        checkLiveVersion();
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistration().then((reg) => {
-            if (reg) reg.update();
-          });
-        }
+      checkLiveVersion();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then((reg) => {
+          if (reg) reg.update();
+        });
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('focus', handleVisibility);
+    window.addEventListener('online', handleVisibility);
+    window.addEventListener('pageshow', handleVisibility);
 
     return () => {
       clearTimeout(timeout);
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', handleVisibility);
+      window.removeEventListener('online', handleVisibility);
+      window.removeEventListener('pageshow', handleVisibility);
     };
   }, []);
 
@@ -238,6 +240,14 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem('show_whats_new_after_update', 'true');
       localStorage.setItem('last_seen_app_version', serverVersion || CURRENT_APP_VERSION);
       localStorage.setItem('applied_update_version', serverVersion || CURRENT_APP_VERSION);
+
+      // Force waiting service worker to activate immediately
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      }
       sessionStorage.setItem('dismissed_update_version', serverVersion || CURRENT_APP_VERSION);
       
       // Clear caches and reload
