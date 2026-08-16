@@ -10,16 +10,28 @@ import {
   ChevronLeft, 
   ChevronRight, 
   X,
-  Gauge
+  Gauge,
+  RotateCcw,
+  FastForward
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 type ViewMode = 'grid' | 'flashcard';
 type CategoryFilter = 'all' | 'mercy' | 'majesty' | 'forgiveness' | 'creator' | 'protection';
 
-// Exact continuous audio timing parameters
-const INTRO_OFFSET = 17.0;
-const DURATION_PER_NAME = 1.894; // (205s - 17s) / 99 names
+// Exact AI-aligned word timestamps for all 99 names in the audio flow
+const EXACT_NAME_TIMESTAMPS = [
+  33.6, 34.9, 36.26, 37.66, 38.64, 40.06, 41.1, 42.44, 43.92, 45.12, 
+  46.62, 48.02, 49.46, 51.04, 52.46, 53.88, 55.2, 56.54, 57.88, 58.98, 
+  60.9, 62.04, 63.66, 64.96, 66.12, 66.96, 68.44, 69.9, 70.88, 71.56, 
+  72.6, 73.98, 75.0, 76.5, 77.58, 78.8, 79.86, 80.92, 81.88, 83.1, 
+  84.28, 85.68, 86.58, 88.06, 88.96, 90.78, 91.84, 92.98, 94.16, 95.88, 
+  96.36, 97.32, 97.96, 99.26, 100.22, 101.7, 102.8, 104.12, 104.92, 105.64, 
+  107.14, 108.04, 109.4, 110.0, 111.58, 113.16, 114.56, 115.9, 116.86, 118.3, 
+  119.66, 120.66, 121.02, 122.36, 123.38, 124.64, 125.28, 127.6, 128.52, 130.88, 
+  133.34, 134.42, 135.94, 137.1, 137.7, 138.34, 139.5, 142.5, 145.0, 147.5, 
+  150.0, 153.0, 155.88, 157.28, 158.62, 160.08, 162.86, 165.74, 168.0
+];
 
 export const NamesOfAllah: React.FC = () => {
   const navigate = useNavigate();
@@ -96,21 +108,33 @@ export const NamesOfAllah: React.FC = () => {
       const time = audio.currentTime;
       setAudioCurrentTime(time);
 
-      if (time >= INTRO_OFFSET && time <= 206.0) {
-        const nameIdx = Math.min(98, Math.max(0, Math.floor((time - INTRO_OFFSET) / DURATION_PER_NAME)));
-        setCurrentPlayingIndex(nameIdx);
+      if (time < EXACT_NAME_TIMESTAMPS[0]) {
+        setCurrentPlayingIndex(null);
+        return;
+      }
+
+      // Find exact active name index based on precise timestamps
+      let activeIdx = 0;
+      for (let i = 0; i < EXACT_NAME_TIMESTAMPS.length; i++) {
+        if (time >= EXACT_NAME_TIMESTAMPS[i]) {
+          activeIdx = i;
+        } else {
+          break;
+        }
+      }
+
+      if (activeIdx !== currentPlayingIndex && activeIdx < ALLAH_NAMES.length) {
+        setCurrentPlayingIndex(activeIdx);
 
         // Auto switch pagination page to keep the playing card visible
-        const targetPage = Math.floor(nameIdx / ITEMS_PER_PAGE) + 1;
+        const targetPage = Math.floor(activeIdx / ITEMS_PER_PAGE) + 1;
         setCurrentPage(targetPage);
 
         // Smooth scroll active element into view
-        const activeCard = document.getElementById(`name-card-${ALLAH_NAMES[nameIdx].id}`);
+        const activeCard = document.getElementById(`name-card-${ALLAH_NAMES[activeIdx]?.id}`);
         if (activeCard) {
           activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-      } else if (time < INTRO_OFFSET) {
-        setCurrentPlayingIndex(null);
       }
     };
 
@@ -154,11 +178,40 @@ export const NamesOfAllah: React.FC = () => {
     }
   };
 
+  // Restart from Beginning (Name 1: Ar-Rahman at 33.6s)
+  const restartRecitation = () => {
+    if (!continuousAudioRef.current) return;
+    continuousAudioRef.current.currentTime = EXACT_NAME_TIMESTAMPS[0];
+    continuousAudioRef.current.playbackRate = playbackSpeed;
+    continuousAudioRef.current.play()
+      .then(() => {
+        setIsPlayingContinuous(true);
+        setCurrentPlayingIndex(0);
+        setCurrentPage(1);
+        window.scrollTo({ top: 150, behavior: 'smooth' });
+      })
+      .catch(console.warn);
+  };
+
+  // Skip Intro straight to Name 1 (33.6s)
+  const skipIntro = () => {
+    if (!continuousAudioRef.current) return;
+    continuousAudioRef.current.currentTime = EXACT_NAME_TIMESTAMPS[0];
+    continuousAudioRef.current.playbackRate = playbackSpeed;
+    if (!isPlayingContinuous) {
+      continuousAudioRef.current.play()
+        .then(() => setIsPlayingContinuous(true))
+        .catch(console.warn);
+    }
+    setCurrentPlayingIndex(0);
+    setCurrentPage(1);
+  };
+
   // Jump Continuous Player to a Specific Name
   const jumpToNameInContinuous = (index: number) => {
     if (!continuousAudioRef.current) return;
 
-    const targetTime = Math.max(0, INTRO_OFFSET + (index * DURATION_PER_NAME));
+    const targetTime = EXACT_NAME_TIMESTAMPS[index] ?? EXACT_NAME_TIMESTAMPS[0];
     continuousAudioRef.current.currentTime = targetTime;
     continuousAudioRef.current.playbackRate = playbackSpeed;
     
@@ -266,7 +319,7 @@ export const NamesOfAllah: React.FC = () => {
         </div>
 
         {/* 🌟 Currently Reciting Name Highlight Banner */}
-        {activePlayingName && (
+        {activePlayingName ? (
           <div className="mt-4 p-3 bg-black/40 border border-amber-500/40 rounded-2xl flex items-center justify-between backdrop-blur-md animate-in fade-in-50">
             <div>
               <div className="flex items-center gap-2">
@@ -286,29 +339,51 @@ export const NamesOfAllah: React.FC = () => {
               {activePlayingName.arabic}
             </span>
           </div>
-        )}
+        ) : isPlayingContinuous && audioCurrentTime < EXACT_NAME_TIMESTAMPS[0] ? (
+          <div className="mt-4 p-2.5 bg-black/30 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-300">
+            <span className="italic">🎵 Opening Introduction (Huwallahul ladhee...)</span>
+            <button
+              onClick={skipIntro}
+              className="px-2.5 py-1 rounded-xl bg-amber-500 text-black font-black text-[10px] flex items-center gap-1 active:scale-95 transition-all"
+            >
+              <span>Skip to Name 1</span>
+              <FastForward size={12} />
+            </button>
+          </div>
+        ) : null}
 
         {/* 🎙️ Master Melodic Continuous Player Bar */}
         <div className="mt-4 pt-3 border-t border-white/10 relative z-10 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-1.5">
+              {/* Play / Pause Toggle */}
               <button
                 onClick={toggleContinuousPlay}
-                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all"
               >
                 {isPlayingContinuous ? (
                   <>
                     <Pause size={14} className="fill-black" />
-                    <span>Pause Flow</span>
+                    <span>Pause</span>
                   </>
                 ) : (
                   <>
                     <Play size={14} className="fill-black" />
-                    <span>Play Melodic Flow (99 Names)</span>
+                    <span>Play Melodic Flow</span>
                   </>
                 )}
               </button>
 
+              {/* Restart Button */}
+              <button
+                onClick={restartRecitation}
+                className="p-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-amber-500/30 text-amber-300 active:scale-95 transition-all"
+                title="Restart from Name 1 (Ar-Rahman)"
+              >
+                <RotateCcw size={14} />
+              </button>
+
+              {/* Speed Button */}
               <button
                 onClick={cyclePlaybackSpeed}
                 className="px-2.5 py-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-amber-500/30 text-amber-300 text-xs font-black active:scale-95 transition-all flex items-center gap-1"
@@ -398,7 +473,7 @@ export const NamesOfAllah: React.FC = () => {
                 className="px-4 py-2 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all"
               >
                 <Volume2 size={15} />
-                <span>Hear Pronunciation</span>
+                <span>Hear in Melodic Flow</span>
               </button>
             </div>
           </div>
