@@ -154,8 +154,8 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Middle Section: Full Islamic Hijri Date, Desi Solar & Interactive Quick Launchers */}
-          <div className="bg-gradient-to-br from-emerald-500/10 via-[#072d2f]/40 to-transparent border border-emerald-500/25 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+          {/* Middle Section: Frosted Glass Islamic Hijri Date, Desi Solar & Interactive Launchers */}
+          <div className="bg-surface/70 dark:bg-surface/40 backdrop-blur-xl border border-border/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm">
             {/* Left: Full Unclipped Islamic Date & Desi Date */}
             <div 
               onClick={() => setShowEventsModal(true)}
@@ -163,22 +163,22 @@ const Dashboard: React.FC = () => {
               title="Click to view 12-Month Islamic Events Calendar"
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider">Islamic Hijri</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="text-[10px] font-black uppercase text-primary tracking-wider">Islamic Hijri</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                   {hijriDate?.year || '1448'} {hijriDate?.designation?.abbreviated || 'AH'}
                 </span>
               </div>
 
               {/* Full Hijri Date Title */}
-              <h2 className="text-sm sm:text-base font-black text-text group-hover:text-emerald-400 transition-colors mt-0.5 leading-snug">
+              <h2 className="text-sm sm:text-base font-black text-text group-hover:text-primary transition-colors mt-0.5 leading-snug">
                 {hijriDate ? `${hijriDate.day} ${hijriDate.month.en}` : 'Loading date...'}
               </h2>
 
               {/* Desi Solar Calendar Inline Sub-Pill */}
-              <div className="flex items-center gap-1 text-[11px] text-amber-400/90 font-bold mt-1">
+              <div className="flex items-center gap-1 text-[11px] text-amber-500 font-bold mt-1">
                 <span>🌾</span>
                 <span>{desiDate.day} {desiDate.monthEn}</span>
-                <span className="font-urdu text-[10px] text-amber-300">({desiDate.monthUr})</span>
+                <span className="font-urdu text-[10px] text-amber-600 dark:text-amber-300">({desiDate.monthUr})</span>
               </div>
             </div>
 
@@ -190,24 +190,24 @@ const Dashboard: React.FC = () => {
                   e.stopPropagation();
                   setShowMoonModal(true);
                 }}
-                className="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-xs font-bold flex flex-col items-center justify-center text-amber-300 shadow-sm active:scale-95 transition-all"
+                className="px-2.5 py-1.5 rounded-xl bg-card hover:bg-surface border border-border/80 text-xs font-bold flex flex-col items-center justify-center text-text shadow-sm active:scale-95 transition-all"
                 title="Open Moon Sighting & Astronomy Observatory"
               >
                 <div className="flex items-center gap-1">
                   <span className="text-base leading-none">{moonEmoji}</span>
-                  <span className="text-[10px] font-black text-white">{todayMoon.illumination}%</span>
+                  <span className="text-[10px] font-black text-text">{todayMoon.illumination}%</span>
                 </div>
-                <span className="text-[8px] font-extrabold uppercase tracking-wider text-emerald-300 mt-0.5">Moon</span>
+                <span className="text-[8px] font-extrabold uppercase tracking-wider text-primary mt-0.5">Moon</span>
               </button>
 
               {/* 🗓️ 12-Month Events Calendar Button */}
               <button
                 onClick={() => setShowEventsModal(true)}
-                className="px-2.5 py-1.5 rounded-xl bg-surface hover:bg-card border border-border text-xs font-bold flex flex-col items-center justify-center text-subtext hover:text-text shadow-sm active:scale-95 transition-all"
+                className="px-2.5 py-1.5 rounded-xl bg-card hover:bg-surface border border-border/80 text-xs font-bold flex flex-col items-center justify-center text-text shadow-sm active:scale-95 transition-all"
                 title="View All Islamic Month Events"
               >
                 <span className="text-sm leading-none">🗓️</span>
-                <span className="text-[8px] font-extrabold uppercase tracking-wider text-subtext mt-0.5">Events</span>
+                <span className="text-[8px] font-extrabold uppercase tracking-wider text-muted mt-0.5">Events</span>
               </button>
             </div>
           </div>
