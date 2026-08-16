@@ -3,13 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { useGoals } from '../hooks/useGoals';
 import { useStreak } from '../hooks/useStreak';
 import { getTodayDateString } from '../utils/dateUtils';
-import { Target, Clock, Book, BookOpen, Users, MapPin, ChevronRight, Calendar, Flame, Sparkles, CheckCircle2, Circle } from 'lucide-react';
+import { Target, Clock, Book, BookOpen, Users, MapPin, ChevronRight, Calendar, Flame, Sparkles, CheckCircle2, Circle, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNamaz } from '../hooks/useNamaz';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import DailyAyahCard from '../components/dashboard/DailyAyahCard';
 import IslamicEventsModal from '../components/dashboard/IslamicEventsModal';
 import MoonSightingModal from '../components/dashboard/MoonSightingModal';
+import { CreditsModal } from '../components/ui/CreditsModal';
 import { getDesiDate } from '../utils/desiDateUtils';
 import { getUpcomingIslamicEvent, ISLAMIC_MONTHS } from '../utils/islamicEvents';
 import { getMoonPhase } from '../utils/lunarEngine';
@@ -25,6 +26,7 @@ const Dashboard: React.FC = () => {
 
   const [showEventsModal, setShowEventsModal] = useState<boolean>(false);
   const [showMoonModal, setShowMoonModal] = useState<boolean>(false);
+  const [showCreditsModal, setShowCreditsModal] = useState<boolean>(false);
   
   const desiDate = getDesiDate();
   const today = getTodayDateString();
@@ -355,6 +357,18 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
+      {/* 🤲 Dua & App Dedication Footer Banner */}
+      <div className="pt-2 pb-6 text-center">
+        <button
+          onClick={() => setShowCreditsModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-surface/80 hover:bg-surface border border-border/80 text-xs font-semibold text-subtext hover:text-emerald-400 transition-all shadow-sm active:scale-95"
+        >
+          <Heart size={14} className="text-rose-400 fill-rose-400/40" />
+          <span>Credits & Dua for Creators</span>
+          <span className="text-[10px] text-amber-500 font-bold">🤲</span>
+        </button>
+      </div>
+
       {/* 🗓️ Islamic Events Calendar Modal Popup */}
       <IslamicEventsModal
         isOpen={showEventsModal}
@@ -371,6 +385,12 @@ const Dashboard: React.FC = () => {
         initialHijriDay={currentHijriDayNum}
         initialHijriMonth={matchedMonth ? matchedMonth.nameEn : "Rabi' al-Awwal"}
         initialHijriYear={hijriDate?.year || 1448}
+      />
+
+      {/* 🤲 App Credits & Dua Modal */}
+      <CreditsModal
+        isOpen={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
       />
     </div>
   );

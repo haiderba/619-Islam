@@ -14,10 +14,12 @@ import {
   RefreshCw, 
   Bell, 
   RotateCcw, 
-  Download
+  Download,
+  Heart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppUpdate } from '../context/UpdateContext';
+import { CreditsModal } from '../components/ui/CreditsModal';
 
 const FIQH_OPTIONS = [
   "Sunni (Hanafi)",
@@ -81,6 +83,7 @@ const Settings: React.FC = () => {
   
   const [message, setMessage] = useState({ text: '', type: '' });
   const [updateFeedback, setUpdateFeedback] = useState<string | null>(null);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
 
   // Update local state if user context updates late
   useEffect(() => {
@@ -427,6 +430,35 @@ const Settings: React.FC = () => {
             )}
           </section>
 
+          {/* 🤲 App Credits & Dua Request Card */}
+          <section className="bg-gradient-to-br from-emerald-500/10 via-card to-amber-500/10 p-4 sm:p-5 rounded-2xl border border-emerald-500/25 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
+                <Heart size={16} className="text-rose-400 fill-rose-400/30" /> Credits & Dua Request
+              </h3>
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                Dedication
+              </span>
+            </div>
+
+            <div className="space-y-1 text-xs text-subtext leading-relaxed">
+              <p>
+                <strong className="text-text font-bold">Mind & Idea:</strong> Mr. Syed Wajahat Ali
+              </p>
+              <p>
+                <strong className="text-text font-bold">Lead Development:</strong> Mr. Usman Haider
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowCreditsModal(true)}
+              className="w-full py-2.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+            >
+              <Heart size={14} className="fill-emerald-400" />
+              <span>🤲 View Credits & Send Dua</span>
+            </button>
+          </section>
+
           {/* Security */}
           <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
             <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
@@ -468,6 +500,12 @@ const Settings: React.FC = () => {
         </div>
 
       </div>
+
+      {/* 🤲 Credits & Dua Modal */}
+      <CreditsModal
+        isOpen={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+      />
     </div>
   );
 };
