@@ -126,14 +126,10 @@ const Settings: React.FC = () => {
           await reg.update();
         }
       }
-      if ('caches' in window) {
-        const cacheKeys = await caches.keys();
-        await Promise.all(cacheKeys.map(key => caches.delete(key)));
-      }
-      setMessage({ text: 'Checking latest version and refreshing app...', type: 'success' });
+      setMessage({ text: 'Checking for updates and refreshing...', type: 'success' });
       setTimeout(() => {
         window.location.reload();
-      }, 800);
+      }, 500);
     } catch (err) {
       window.location.reload();
     } finally {
