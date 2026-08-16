@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNamaz } from '../hooks/useNamaz';
-import { CheckCircle2, Circle, Clock, Compass, MapPin, Calendar } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Compass, MapPin, Calendar, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getDesiDate } from '../utils/desiDateUtils';
+import { IslamicNotificationsModal } from '../components/ui/IslamicNotificationsModal';
 
 const PRAYERS = [
   { name: 'Fajr', icon: '🌅' },
@@ -15,6 +16,7 @@ const PRAYERS = [
 const Namaz: React.FC = () => {
   const { timings, hijriDate, locationName, loading, error, completedPrayers, togglePrayer } = useNamaz();
   const { user } = useAuth();
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const desiDate = getDesiDate();
   const gregorianFormatted = new Intl.DateTimeFormat('en-GB', {
     weekday: 'short',
@@ -48,12 +50,25 @@ const Namaz: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 pb-28 max-w-5xl mx-auto w-full">
       <header className="mb-6 pt-1 space-y-3">
-        <div>
-          <h1 className="text-3xl font-black text-text tracking-tight">Prayer Times</h1>
-          <div className="flex items-center gap-1.5 text-primary mt-1 text-sm font-medium">
-            <MapPin size={15} className="shrink-0" />
-            <span className="truncate">{locationName} • <span className="text-subtext font-normal">{user?.fiqh}</span></span>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-black text-text tracking-tight">Prayer Times</h1>
+            <div className="flex items-center gap-1.5 text-primary mt-1 text-sm font-medium">
+              <MapPin size={15} className="shrink-0" />
+              <span className="truncate">{locationName} • <span className="text-subtext font-normal">{user?.fiqh}</span></span>
+            </div>
           </div>
+
+          {/* Quick Adhan & Notification Settings Button */}
+          <button
+            onClick={() => setShowNotificationsModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 text-xs font-bold shrink-0 shadow-sm active:scale-95 transition-all"
+            title="Configure Adhan & Islamic Notifications"
+          >
+            <Bell size={14} className="fill-amber-400/30" />
+            <span className="hidden sm:inline">Adhan & Alerts</span>
+            <span className="sm:hidden">Alerts</span>
+          </button>
         </div>
 
         {/* 🌟 Multi-Date Banner */}
@@ -165,6 +180,12 @@ const Namaz: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* 🔔 Islamic Notifications Modal */}
+      <IslamicNotificationsModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+      />
     </div>
   );
 };

@@ -35,6 +35,13 @@ import Layout from './components/ui/Layout';
 import InstallPrompt from './components/ui/InstallPrompt';
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt';
 import SplashScreen from './components/ui/SplashScreen';
+import { useNotificationScheduler } from './hooks/useNotificationScheduler';
+
+// Background Islamic Notification Scheduler Runner
+const NotificationSchedulerRunner: React.FC = () => {
+  useNotificationScheduler();
+  return null;
+};
 
 // Route Persistence Listener: Saves active route so background/re-opened apps restore where user left off
 const RoutePersistenceListener: React.FC = () => {
@@ -136,6 +143,7 @@ function App() {
   return (
     <AuthProvider>
       <UpdateProvider>
+        <NotificationSchedulerRunner />
         {showSplash && (
           <SplashScreen 
             message="Preparing 619 Islam..." 

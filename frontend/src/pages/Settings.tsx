@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppUpdate } from '../context/UpdateContext';
 import { CreditsModal } from '../components/ui/CreditsModal';
 import { FeedbackModal } from '../components/ui/FeedbackModal';
+import { IslamicNotificationsModal } from '../components/ui/IslamicNotificationsModal';
 
 const FIQH_OPTIONS = [
   "Sunni (Hanafi)",
@@ -64,8 +65,7 @@ const Settings: React.FC = () => {
     serverVersion,
     requiresReinstall,
     reinstallApp,
-    notificationPermission,
-    requestNotificationPermission
+    notificationPermission
   } = useAppUpdate();
   
   const [fiqh, setFiqh] = useState(user?.fiqh || FIQH_OPTIONS[0]);
@@ -88,6 +88,7 @@ const Settings: React.FC = () => {
   const [updateFeedback, setUpdateFeedback] = useState<string | null>(null);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showIslamicNotificationsModal, setShowIslamicNotificationsModal] = useState(false);
 
   // Update local state if user context updates late
   useEffect(() => {
@@ -175,12 +176,6 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleEnableNotifications = async () => {
-    const granted = await requestNotificationPermission();
-    if (granted) {
-      setMessage({ text: '🔔 Automatic update notifications enabled!', type: 'success' });
-    }
-  };
 
   const handleLogout = () => {
     signOut();
@@ -404,34 +399,32 @@ const Settings: React.FC = () => {
             </div>
           </section>
 
-          {/* 🔔 Mobile Push Notifications for Updates */}
+          {/* 🔔 Islamic Notifications & Prayer Reminders Hub */}
           <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
-                <Bell size={16} className="text-amber-500" /> Update Alerts
+                <Bell size={16} className="text-amber-500" /> Islamic Notifications
               </h3>
               <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
                 notificationPermission === 'granted'
                   ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
                   : 'bg-surface text-muted border-border'
               }`}>
-                {notificationPermission === 'granted' ? '🔔 Enabled' : 'Off'}
+                {notificationPermission === 'granted' ? '🔔 Active' : 'Off'}
               </span>
             </div>
 
             <p className="text-xs text-subtext leading-relaxed">
-              Receive automatic push notifications on your device whenever new Islamic features or app updates arrive.
+              Namaz Adhan alerts, Verse of the Day, Friday Surah Al-Kahf, Nightly Surah Al-Mulk & Azkar reminders.
             </p>
 
-            {notificationPermission !== 'granted' && (
-              <button
-                onClick={handleEnableNotifications}
-                className="w-full py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
-              >
-                <Bell size={14} />
-                <span>Enable Update Push Notifications</span>
-              </button>
-            )}
+            <button
+              onClick={() => setShowIslamicNotificationsModal(true)}
+              className="w-full py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+            >
+              <Bell size={14} />
+              <span>Configure Islamic Notifications</span>
+            </button>
           </section>
 
           {/* 🤲 App Credits & Dua Request Card */}
@@ -551,6 +544,12 @@ const Settings: React.FC = () => {
       <FeedbackModal
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
+      />
+
+      {/* 🔔 Islamic Notifications Modal */}
+      <IslamicNotificationsModal
+        isOpen={showIslamicNotificationsModal}
+        onClose={() => setShowIslamicNotificationsModal(false)}
       />
     </div>
   );
