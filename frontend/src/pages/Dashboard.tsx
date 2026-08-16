@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGoals } from '../hooks/useGoals';
 import { useStreak } from '../hooks/useStreak';
 import { getTodayDateString } from '../utils/dateUtils';
-import { Target, CheckCircle2, Circle, Flame, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight, Calendar, Library } from 'lucide-react';
+import { Target, CheckCircle2, Circle, Flame, Clock, Book, BookOpen, Compass, Activity, Users, MapPin, ChevronRight, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNamaz } from '../hooks/useNamaz';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -58,16 +58,6 @@ const Dashboard: React.FC = () => {
       icon: <Book size={24} className="text-emerald-500" />,
       bg: 'bg-emerald-500/10 hover:border-emerald-500/30',
       iconBg: 'bg-emerald-500/15',
-      requiresOnline: false,
-    },
-    {
-      id: 'books',
-      title: 'Library',
-      subtitle: 'Hadith & Books',
-      to: '/books',
-      icon: <Library size={24} className="text-amber-500" />,
-      bg: 'bg-amber-500/10 hover:border-amber-500/30',
-      iconBg: 'bg-amber-500/15',
       requiresOnline: false,
     },
     {

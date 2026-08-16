@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, Book, Settings, WifiOff, CheckCircle2, Library } from 'lucide-react';
+import { Home, Book, Settings, WifiOff, CheckCircle2, Clock } from 'lucide-react';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 const Layout: React.FC = () => {
@@ -34,7 +34,7 @@ const Layout: React.FC = () => {
         <div className="flex justify-around items-center max-w-md mx-auto">
           <NavItem to="/" icon={<Home size={21} />} label="Today" />
           <NavItem to="/quran" icon={<Book size={21} />} label="Quran" />
-          <NavItem to="/books" icon={<Library size={21} />} label="Books" />
+          <NavItem to="/namaz" icon={<Clock size={21} />} label="Namaz" />
           <NavItem to="/settings" icon={<Settings size={21} />} label="Settings" />
         </div>
       </nav>
