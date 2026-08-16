@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNamaz } from '../hooks/useNamaz';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import DailyAyahCard from '../components/dashboard/DailyAyahCard';
+import { getDesiDate } from '../utils/desiDateUtils';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const Dashboard: React.FC = () => {
   const { isOnline } = useNetworkStatus();
   const navigate = useNavigate();
   
+  const desiDate = getDesiDate();
   const today = getTodayDateString();
   const todayCompletions = completions.filter(c => c.date === today && c.completed);
   
@@ -104,17 +106,24 @@ const Dashboard: React.FC = () => {
           <img src="/logo.png" alt="619 Islam" className="w-11 h-11 object-contain drop-shadow-md hover:scale-105 transition-transform" />
         </div>
 
-        {/* Hijri Date & Location Pill */}
-        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-subtext">
+        {/* Multi-Calendar Dates (Hijri Islamic, Desi Bikrami, Location) */}
+        <div className="flex flex-wrap items-center gap-2 mt-2.5 text-xs">
           {hijriDate && (
-            <span className="font-semibold text-primary">
-              {hijriDate.day} {hijriDate.month.en} {hijriDate.year} {hijriDate.designation.abbreviated}
+            <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/25 flex items-center gap-1.5 shadow-sm">
+              <span className="text-xs">🌙</span>
+              <span>{hijriDate.day} {hijriDate.month.en} {hijriDate.year} {hijriDate.designation.abbreviated}</span>
             </span>
           )}
-          {hijriDate && <span className="text-muted">•</span>}
-          <span className="flex items-center gap-1 font-medium text-text bg-surface px-2.5 py-1 rounded-full border border-border">
+
+          {/* Desi Month & Date (Sawan, Bhadon, etc.) */}
+          <span className="font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/25 flex items-center gap-1.5 shadow-sm" title="Desi Bikrami Solar Date">
+            <span className="text-xs">🌾</span>
+            <span>{desiDate.day} {desiDate.monthEn} ({desiDate.monthUr})</span>
+          </span>
+
+          <span className="flex items-center gap-1 font-medium text-text bg-surface px-2.5 py-1 rounded-xl border border-border">
             <MapPin size={12} className="text-primary shrink-0" />
-            <span className="truncate max-w-[180px]">{locationName}</span>
+            <span className="truncate max-w-[160px]">{locationName}</span>
           </span>
         </div>
       </header>

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNamaz } from '../hooks/useNamaz';
 import { CheckCircle2, Circle, Clock, Compass, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getDesiDate } from '../utils/desiDateUtils';
 
 const PRAYERS = [
   { name: 'Fajr', icon: '🌅' },
@@ -12,8 +13,9 @@ const PRAYERS = [
 ];
 
 const Namaz: React.FC = () => {
-  const { timings, locationName, loading, error, completedPrayers, togglePrayer } = useNamaz();
+  const { timings, hijriDate, locationName, loading, error, completedPrayers, togglePrayer } = useNamaz();
   const { user } = useAuth();
+  const desiDate = getDesiDate();
 
   const getNextPrayer = () => {
     if (!timings) return null;
@@ -39,13 +41,26 @@ const Namaz: React.FC = () => {
 
   return (
     <div className="p-6 pb-24 max-w-lg mx-auto">
-      <header className="mb-6 pt-4 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-text">Prayer Times</h1>
-          <div className="flex items-center gap-1.5 text-primary mt-1 text-sm font-medium">
-            <MapPin size={15} className="shrink-0" />
-            <span className="truncate">{locationName} • <span className="text-subtext font-normal">{user?.fiqh}</span></span>
-          </div>
+      <header className="mb-6 pt-4">
+        <h1 className="text-3xl font-black text-text tracking-tight">Prayer Times</h1>
+        <div className="flex items-center gap-1.5 text-primary mt-1 text-sm font-medium">
+          <MapPin size={15} className="shrink-0" />
+          <span className="truncate">{locationName} • <span className="text-subtext font-normal">{user?.fiqh}</span></span>
+        </div>
+
+        {/* Date Multi-Pills */}
+        <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
+          {hijriDate && (
+            <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/25 flex items-center gap-1.5 shadow-sm">
+              <span className="text-xs">🌙</span>
+              <span>{hijriDate.day} {hijriDate.month.en} {hijriDate.year} {hijriDate.designation.abbreviated}</span>
+            </span>
+          )}
+
+          <span className="font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/25 flex items-center gap-1.5 shadow-sm">
+            <span className="text-xs">🌾</span>
+            <span>{desiDate.day} {desiDate.monthEn} ({desiDate.monthUr})</span>
+          </span>
         </div>
       </header>
 
