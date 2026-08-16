@@ -27,9 +27,9 @@ const CURATED_DAILY_VERSES: [number, number, string][] = [
   [8, 2, "The believers are those whose hearts tremble at the mention of Allah"],
 
   // Day Set 5
-  [49, 13, "Indeed, the most noble of you in the sight of Allah is the most righteous"],
+  [2, 195, "Indeed, Allah loves the doers of good"],
   [55, 60, "Is the reward for good anything but good?"],
-  [2, 214, "Unquestionably, the help of Allah is near"],
+  [94, 6, "Indeed, with hardship will be ease"],
 
   // Day Set 6
   [20, 114, "My Lord, increase me in knowledge"],
@@ -173,135 +173,189 @@ const DailyAyahCard: React.FC = () => {
 
   if (ayahs.length === 0) return null;
 
+  const [showModal, setShowModal] = useState<boolean>(false);
+
   const currentAyah = ayahs[selectedIdx] || ayahs[0];
   const arabicLength = currentAyah?.arabicText?.length || 0;
-  const arabicFontClass = arabicLength > 160
-    ? 'text-lg sm:text-xl leading-[2.0]'
-    : arabicLength > 80
+  const arabicFontClass = arabicLength > 120
     ? 'text-xl sm:text-2xl leading-[2.1]'
     : 'text-2xl sm:text-3xl leading-[2.3]';
 
   return (
-    <div className="bg-gradient-to-br from-[#062426] via-[#093538] to-[#041c1d] border border-amber-500/30 p-5 sm:p-6 rounded-3xl shadow-xl shadow-teal-950/40 text-white mb-6 relative overflow-hidden flex flex-col justify-between h-[460px] sm:h-[480px] transition-all">
-      {/* Subtle Background Glow Elements */}
-      <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      {/* ── TOP: Header with 619 Logo and Tabs (Fixed) ── */}
-      <div className="relative z-10 flex items-center justify-between gap-2 pb-3 border-b border-white/10 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <img src="/logo.png" alt="619 Islam" className="w-8 h-8 object-contain drop-shadow" />
-          <div>
-            <div className="flex items-center gap-1.5">
-              <Sparkles size={13} className="text-amber-400" />
-              <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest">
-                Ayah of the Day
-              </span>
+    <>
+      {/* ── 🌟 SLEEK, PROMINENT DASHBOARD BANNER CARD (Compact & Attractive) ── */}
+      <div 
+        onClick={() => setShowModal(true)}
+        className="bg-gradient-to-r from-[#062426] via-[#0b3c3f] to-[#041c1d] border border-amber-500/40 p-3.5 sm:p-4 rounded-2xl shadow-lg shadow-teal-950/30 text-white mb-6 relative overflow-hidden cursor-pointer group hover:border-amber-400/70 hover:shadow-xl transition-all duration-300 active:scale-[0.99]"
+      >
+        {/* Glow effect */}
+        <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform" />
+        
+        <div className="flex items-center justify-between gap-3 relative z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Sparkle Icon Badge */}
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500/25 to-amber-600/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+              <Sparkles size={20} className="animate-pulse" />
             </div>
-            <p className="text-[10px] text-white/60">3 Daily Inspiring Verses</p>
-          </div>
-        </div>
 
-        {/* 3 Ayah Switcher Tabs */}
-        <div className="flex bg-black/30 backdrop-blur-md p-1 rounded-xl border border-white/10">
-          {ayahs.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => handleSelectTab(i)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
-                selectedIdx === i
-                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30'
-                  : 'text-white/60 hover:text-white'
-              }`}
-            >
-              #{i + 1}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── MIDDLE: Arabic & English Content (Scrollable & Dynamic Scaling) ── */}
-      <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center my-3 overflow-y-auto px-1 scrollbar-none space-y-3">
-        {/* Main Arabic Calligraphy Text */}
-        <p className={`font-arabic text-amber-100 font-medium drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)] ${arabicFontClass}`}>
-          {currentAyah.arabicText}
-        </p>
-
-        {/* English Translation */}
-        <p className="text-white/90 text-xs sm:text-sm font-normal italic leading-relaxed max-w-sm">
-          "{currentAyah.englishTranslation}"
-        </p>
-      </div>
-
-      {/* ── BOTTOM: Surah Info + Audio + Action Buttons (Pinned & Consistent) ── */}
-      <div className="relative z-10 pt-2 border-t border-white/10 shrink-0 space-y-2.5">
-        {/* Surah Reference Badge & Audio Row */}
-        <div className="flex items-center justify-between gap-2">
-          <div 
-            onClick={() => navigate(`/quran/${currentAyah.surahNumber}`)}
-            className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-xl border border-white/10 max-w-[200px] truncate"
-          >
-            <BookOpen size={13} className="text-amber-400 shrink-0" />
-            <span className="text-[11px] font-bold text-amber-300 truncate">
-              Surah {currentAyah.surahNameEnglish} • {currentAyah.surahNumber}:{currentAyah.ayahNumber}
-            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-400">
+                  Ayah of the Day
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                  3 Verses
+                </span>
+              </div>
+              <p className="text-xs text-white/90 font-medium truncate mt-0.5 max-w-[210px] sm:max-w-xs">
+                {currentAyah ? `"${currentAyah.theme || currentAyah.englishTranslation}"` : 'Daily Inspiring Verses'}
+              </p>
+            </div>
           </div>
 
-          {/* Audio Player Button */}
-          {currentAyah.audioUrl && (
-            <button
-              onClick={handleToggleAudio}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                isPlaying
-                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 animate-pulse'
-                  : 'bg-white/10 hover:bg-white/20 text-white'
-              }`}
-            >
-              {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-              <span>{isPlaying ? 'Playing' : 'Listen'}</span>
-              <Volume2 size={12} className="opacity-70" />
-            </button>
-          )}
-        </div>
-
-        {/* Action Buttons: Status PNG Download & Share */}
-        <div className="grid grid-cols-2 gap-2">
-          {/* Download Status Button */}
-          <button
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
-          >
-            {downloadSuccess ? (
-              <>
-                <Check size={14} className="text-black" />
-                <span>Saved PNG!</span>
-              </>
-            ) : isDownloading ? (
-              <>
-                <Loader2 size={14} className="animate-spin text-black" />
-                <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <Download size={14} />
-                <span>Download Status</span>
-              </>
-            )}
-          </button>
-
-          {/* Share Button */}
-          <button
-            onClick={handleShare}
-            disabled={isDownloading}
-            className="flex items-center justify-center gap-2 py-2.5 px-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 active:scale-95 transition-all"
-          >
-            <Share2 size={14} className="text-amber-400" />
-            <span>Share Story</span>
-          </button>
+          {/* Action Pill */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shrink-0 shadow-md shadow-amber-500/20 group-hover:bg-amber-400 transition-colors">
+            <span>Read</span>
+            <BookOpen size={13} />
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* ── 📖 IMMERSIVE 3-VERSES POPUP MODAL ── */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-gradient-to-br from-[#062426] via-[#093538] to-[#041c1d] border border-amber-500/40 rounded-3xl shadow-2xl p-5 sm:p-6 max-w-sm w-full relative text-white flex flex-col justify-between min-h-[480px] max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                if (audioRef.current) audioRef.current.pause();
+                setIsPlaying(false);
+                setShowModal(false);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors z-20"
+            >
+              ✕
+            </button>
+
+            {/* Modal Header */}
+            <div className="relative z-10 flex items-center justify-between gap-2 pb-3 border-b border-white/10 shrink-0 pr-8">
+              <div className="flex items-center gap-2">
+                <img src="/logo.png" alt="619 Islam" className="w-7 h-7 object-contain drop-shadow" />
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-amber-400" />
+                    <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest">
+                      Ayah of the Day
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-white/60">3 Daily Inspiring Verses</p>
+                </div>
+              </div>
+
+              {/* 3 Tabs */}
+              <div className="flex bg-black/40 backdrop-blur-md p-1 rounded-xl border border-white/10">
+                {ayahs.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSelectTab(i)}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-all duration-200 ${
+                      selectedIdx === i
+                        ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30'
+                        : 'text-white/60 hover:text-white'
+                    }`}
+                  >
+                    #{i + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Middle: Arabic & English Content */}
+            <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center my-3 overflow-y-auto px-1 scrollbar-none space-y-3">
+              <p className={`font-arabic text-amber-100 font-medium drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)] ${arabicFontClass}`}>
+                {currentAyah.arabicText}
+              </p>
+
+              <p className="text-white/90 text-xs sm:text-sm font-normal italic leading-relaxed max-w-sm">
+                "{currentAyah.englishTranslation}"
+              </p>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="relative z-10 pt-2 border-t border-white/10 shrink-0 space-y-2.5">
+              {/* Surah Reference Badge & Audio Row */}
+              <div className="flex items-center justify-between gap-2">
+                <div 
+                  onClick={() => {
+                    setShowModal(false);
+                    navigate(`/quran/${currentAyah.surahNumber}`);
+                  }}
+                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-xl border border-white/10 max-w-[190px] truncate"
+                >
+                  <BookOpen size={13} className="text-amber-400 shrink-0" />
+                  <span className="text-[11px] font-bold text-amber-300 truncate">
+                    Surah {currentAyah.surahNameEnglish} • {currentAyah.surahNumber}:{currentAyah.ayahNumber}
+                  </span>
+                </div>
+
+                {/* Audio Player Button */}
+                {currentAyah.audioUrl && (
+                  <button
+                    onClick={handleToggleAudio}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                      isPlaying
+                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 animate-pulse'
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                  >
+                    {isPlaying ? <Pause size={13} /> : <Play size={13} />}
+                    <span>{isPlaying ? 'Playing' : 'Listen'}</span>
+                    <Volume2 size={12} className="opacity-70" />
+                  </button>
+                )}
+              </div>
+
+              {/* Action Buttons: Status PNG Download & Share */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+                >
+                  {downloadSuccess ? (
+                    <>
+                      <Check size={14} className="text-black" />
+                      <span>Saved PNG!</span>
+                    </>
+                  ) : isDownloading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin text-black" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={14} />
+                      <span>Download Status</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleShare}
+                  disabled={isDownloading}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 active:scale-95 transition-all"
+                >
+                  <Share2 size={14} className="text-amber-400" />
+                  <span>Share Story</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
