@@ -49,6 +49,7 @@ const DailyAyahCard: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const navigate = useNavigate();
@@ -172,8 +173,6 @@ const DailyAyahCard: React.FC = () => {
   }
 
   if (ayahs.length === 0) return null;
-
-  const [showModal, setShowModal] = useState<boolean>(false);
 
   const currentAyah = ayahs[selectedIdx] || ayahs[0];
   const arabicLength = currentAyah?.arabicText?.length || 0;
