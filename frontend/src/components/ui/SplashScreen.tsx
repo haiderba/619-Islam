@@ -34,7 +34,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
     if (onComplete) {
       setTimeout(() => {
         onComplete();
-      }, 400);
+      }, 350);
     }
   };
 
@@ -61,24 +61,22 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
         hasEnded ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* Background Video Player */}
-      <video
-        ref={videoRef}
-        src="/splash-video.mp4"
-        playsInline
-        autoPlay
-        onEnded={handleVideoEnded}
-        className="absolute inset-0 w-full h-full object-cover object-center"
+      {/* 🕌 Majestic Glowing Mosque Atmospheric Background */}
+      <img
+        src="/splash-mosque-bg.jpg"
+        alt="619 Islam Mosque Background"
+        className="absolute inset-0 w-full h-full object-cover object-center animate-in fade-in duration-700"
       />
 
-      {/* Subtle Dark Vignette for contrast */}
-      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+      {/* Atmospheric Dark Tint & Golden Ambient Glow Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/60 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-amber-500/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
-      {/* Top Floating Controls: Sound Toggle & Skip */}
+      {/* Top Floating Action Controls: Sound & Skip */}
       <div className="relative z-20 w-full p-4 pt-6 flex items-center justify-between max-w-lg mx-auto">
         <button
           onClick={toggleSound}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 text-xs font-bold shadow-lg active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md text-white border border-white/20 text-xs font-bold shadow-xl active:scale-95 transition-all"
         >
           {isMuted ? (
             <>
@@ -95,18 +93,48 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
 
         <button
           onClick={handleSkip}
-          className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-amber-300 border border-amber-500/30 text-xs font-black shadow-lg hover:bg-black/80 active:scale-95 transition-all"
+          className="flex items-center gap-1 px-4 py-1.5 rounded-full bg-black/65 backdrop-blur-md text-amber-300 border border-amber-500/35 text-xs font-black shadow-xl hover:bg-black/85 active:scale-95 transition-all"
         >
           <span>Skip</span>
           <FastForward size={13} />
         </button>
       </div>
 
+      {/* 🌟 Center: Logo Video with Original Natural Dimensions & Radiant Golden Glow */}
+      <div className="relative z-10 flex flex-col items-center justify-center my-auto px-4">
+        {/* Outer Glow Halo */}
+        <div className="relative flex items-center justify-center">
+          <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/30 via-emerald-500/30 to-amber-500/30 rounded-3xl blur-xl opacity-75 animate-pulse pointer-events-none" />
+
+          {/* Video Container in Original Logo Proportions */}
+          <div className="relative w-56 h-56 sm:w-64 sm:h-64 rounded-3xl overflow-hidden shadow-2xl border border-amber-500/40 bg-black/60 backdrop-blur-md ring-2 ring-amber-400/20">
+            <video
+              ref={videoRef}
+              src="/splash-video.mp4"
+              playsInline
+              autoPlay
+              onEnded={handleVideoEnded}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Title underneath the glowing logo video */}
+        <div className="text-center mt-5 space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-black font-arabic text-amber-300 tracking-wide drop-shadow-md">
+            ٦١٩ إِسْلَام
+          </h1>
+          <p className="text-xs text-white/80 font-medium tracking-wider drop-shadow">
+            Daily Islamic Habit & Quran Companion
+          </p>
+        </div>
+      </div>
+
       {/* Bottom Loading / Subtitle Indicator */}
       <div className="relative z-20 pb-10 flex flex-col items-center gap-2">
-        <div className="w-6 h-6 rounded-full border-2 border-amber-400/40 border-t-amber-400 animate-spin" />
+        <div className="w-5 h-5 rounded-full border-2 border-amber-400/40 border-t-amber-400 animate-spin" />
         {message && (
-          <p className="text-amber-200/90 text-[11px] font-bold tracking-wider uppercase drop-shadow-md">
+          <p className="text-amber-200/90 text-[10px] font-bold tracking-widest uppercase drop-shadow-md">
             {message}
           </p>
         )}
