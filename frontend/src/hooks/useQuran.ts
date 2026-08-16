@@ -152,7 +152,7 @@ export function useQuran() {
     }
 
     try {
-      let translationId = user?.quran_translation || '85';
+      let translationId = user?.quran_translation || localStorage.getItem('quran_translation_pref') || '85';
       if (translationId.includes('.')) translationId = '85';
       
       const [res, chapterRes] = await Promise.all([

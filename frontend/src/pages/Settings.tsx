@@ -35,6 +35,12 @@ const QURAN_TRANSLATIONS = [
   { id: "85", label: "English (M.A.S. Abdel Haleem)" },
   { id: "20", label: "English (Saheeh International)" },
   { id: "234", label: "Urdu (Fatah Muhammad Jalandhari)" },
+  { id: "158", label: "Urdu (Dr. Israr Ahmad - Bayan-ul-Quran)" },
+  { id: "54", label: "Urdu (Maulana Muhammad Junagarhi)" },
+  { id: "831", label: "Roman Urdu (Abul Ala Maududi)" },
+  { id: "118", label: "Pashto / پښتو (Zakaria Abulsalam)" },
+  { id: "238", label: "Sindhi / سنڌي (Taj Mehmood Amroti)" },
+  { id: "122", label: "Hindi / हिन्दी (Maulana Azizul Haque)" },
   { id: "31", label: "French (Muhammad Hamidullah)" },
   { id: "83", label: "Spanish (Sheikh Isa Garcia)" },
 ];
