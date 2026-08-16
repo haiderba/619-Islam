@@ -732,59 +732,59 @@ const SurahReader: React.FC = () => {
         </button>
       </div>
 
-      {/* ── 🎵 STREAMLINED FLOATING BOTTOM AUDIO & MODE PLAYER ── */}
-      <div className="fixed bottom-20 left-4 right-4 z-40 max-w-lg mx-auto bg-card/95 backdrop-blur-2xl border border-border/90 rounded-3xl shadow-2xl p-3 animate-in slide-in-from-bottom-4">
+      {/* ── 🎵 STREAMLINED ULTRA-COMPACT FLOATING BOTTOM AUDIO & MODE PLAYER ── */}
+      <div className="fixed bottom-16 sm:bottom-20 left-2 right-2 sm:left-4 sm:right-4 z-40 max-w-md mx-auto bg-card/95 backdrop-blur-2xl border border-border/90 rounded-2xl sm:rounded-3xl shadow-2xl p-1.5 sm:p-2.5 animate-in slide-in-from-bottom-4 box-border">
         
         {/* Reading Mode Picker Sheet */}
         {showModeMenu && (
-          <div className="absolute bottom-full left-0 right-0 mb-3 bg-card border border-border rounded-3xl shadow-2xl p-4 animate-in slide-in-from-bottom-4 z-50">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
-              <h3 className="text-sm font-bold text-text flex items-center gap-1.5">
-                <BookOpen size={16} className="text-primary" />
+          <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 animate-in slide-in-from-bottom-4 z-50">
+            <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-border">
+              <h3 className="text-xs sm:text-sm font-bold text-text flex items-center gap-1.5">
+                <BookOpen size={15} className="text-primary" />
                 <span>Choose Reading Mode</span>
               </h3>
-              <button onClick={() => setShowModeMenu(false)} className="p-1.5 bg-surface rounded-full text-subtext hover:text-text">
-                <X size={16} />
+              <button onClick={() => setShowModeMenu(false)} className="p-1 bg-surface rounded-full text-subtext hover:text-text">
+                <X size={15} />
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               <button
                 onClick={() => { setReadMode('translation'); setShowModeMenu(false); }}
-                className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 ${
+                className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-center transition-all flex flex-col items-center gap-1 ${
                   readMode === 'translation'
                     ? 'bg-primary text-white border-primary shadow-md font-bold'
                     : 'bg-surface border-border text-text hover:border-primary/40'
                 }`}
               >
-                <span className="text-lg">📖</span>
-                <span className="text-xs font-bold">Verses</span>
-                <span className="text-[9px] opacity-75">Verse & Meaning</span>
+                <span className="text-base sm:text-lg">📖</span>
+                <span className="text-[11px] sm:text-xs font-bold">Verses</span>
+                <span className="text-[8px] sm:text-[9px] opacity-75">Verse & Meaning</span>
               </button>
 
               <button
                 onClick={() => { setReadMode('wordByWord'); setShowModeMenu(false); }}
-                className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 ${
+                className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-center transition-all flex flex-col items-center gap-1 ${
                   readMode === 'wordByWord'
                     ? 'bg-primary text-white border-primary shadow-md font-bold'
                     : 'bg-surface border-border text-text hover:border-primary/40'
                 }`}
               >
-                <span className="text-lg">🔤</span>
-                <span className="text-xs font-bold">Words</span>
-                <span className="text-[9px] opacity-75">Word by Word</span>
+                <span className="text-base sm:text-lg">🔤</span>
+                <span className="text-[11px] sm:text-xs font-bold">Words</span>
+                <span className="text-[8px] sm:text-[9px] opacity-75">Word by Word</span>
               </button>
 
               <button
                 onClick={() => { setReadMode('reading'); setShowModeMenu(false); }}
-                className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 ${
+                className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-center transition-all flex flex-col items-center gap-1 ${
                   readMode === 'reading'
                     ? 'bg-primary text-white border-primary shadow-md font-bold'
                     : 'bg-surface border-border text-text hover:border-primary/40'
                 }`}
               >
-                <span className="text-lg">📜</span>
-                <span className="text-xs font-bold">Mushaf</span>
-                <span className="text-[9px] opacity-75">Continuous Flow</span>
+                <span className="text-base sm:text-lg">📜</span>
+                <span className="text-[11px] sm:text-xs font-bold">Mushaf</span>
+                <span className="text-[8px] sm:text-[9px] opacity-75">Continuous Flow</span>
               </button>
             </div>
           </div>
@@ -792,29 +792,29 @@ const SurahReader: React.FC = () => {
 
         {/* Reciter Voice Picker Sheet */}
         {showQariMenu && (
-          <div className="absolute bottom-full left-0 right-0 mb-3 bg-card border border-border rounded-3xl shadow-2xl p-5 max-h-[60vh] overflow-y-auto animate-in slide-in-from-bottom-4 z-50">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
-              <h3 className="text-sm font-bold text-text flex items-center gap-1.5">
-                <Mic size={16} className="text-primary" />
+          <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 max-h-[55vh] overflow-y-auto animate-in slide-in-from-bottom-4 z-50">
+            <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-border">
+              <h3 className="text-xs sm:text-sm font-bold text-text flex items-center gap-1.5">
+                <Mic size={15} className="text-primary" />
                 <span>Choose Reciter Voice</span>
               </h3>
-              <button onClick={() => setShowQariMenu(false)} className="p-1.5 bg-surface rounded-full text-subtext hover:text-text">
-                <X size={16} />
+              <button onClick={() => setShowQariMenu(false)} className="p-1 bg-surface rounded-full text-subtext hover:text-text">
+                <X size={15} />
               </button>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {QARI_OPTIONS.map(qari => (
                 <button 
                   key={qari.id}
                   onClick={() => handleSelectQari(qari.id)}
-                  className={`w-full text-left p-3 rounded-2xl flex items-center justify-between transition-all ${
+                  className={`w-full text-left p-2.5 rounded-xl sm:rounded-2xl flex items-center justify-between transition-all ${
                     selectedQari === qari.id 
                       ? 'bg-primary/10 border border-primary text-primary font-bold shadow-sm' 
                       : 'bg-surface hover:bg-border text-text'
                   }`}
                 >
                   <span className="text-xs font-semibold">{qari.name}</span>
-                  {selectedQari === qari.id && <Check size={16} />}
+                  {selectedQari === qari.id && <Check size={15} />}
                 </button>
               ))}
             </div>
@@ -823,138 +823,115 @@ const SurahReader: React.FC = () => {
 
         {/* Speed Controls Picker Sheet */}
         {showSpeedMenu && (
-          <div className="absolute bottom-full left-0 right-0 mb-3 bg-card border border-border rounded-3xl shadow-2xl p-4 animate-in slide-in-from-bottom-4 z-50">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
-              <h3 className="text-sm font-bold text-text flex items-center gap-1.5">
-                <Gauge size={16} className="text-primary" />
+          <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 animate-in slide-in-from-bottom-4 z-50">
+            <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-border">
+              <h3 className="text-xs sm:text-sm font-bold text-text flex items-center gap-1.5">
+                <Gauge size={15} className="text-primary" />
                 <span>Playback Speed</span>
               </h3>
-              <button onClick={() => setShowSpeedMenu(false)} className="p-1.5 bg-surface rounded-full text-subtext hover:text-text">
-                <X size={16} />
+              <button onClick={() => setShowSpeedMenu(false)} className="p-1 bg-surface rounded-full text-subtext hover:text-text">
+                <X size={15} />
               </button>
             </div>
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-5 gap-1">
               {SPEED_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => handleSpeedChange(opt.value)}
-                  className={`p-2.5 rounded-2xl border text-center transition-all ${
+                  className={`p-2 rounded-xl sm:rounded-2xl border text-center transition-all ${
                     playbackSpeed === opt.value
                       ? 'bg-primary text-white border-primary shadow-md font-bold'
                       : 'bg-surface border-border text-text hover:border-primary/40'
                   }`}
                 >
                   <span className="text-xs font-bold block">{opt.label}</span>
-                  <span className="text-[9px] opacity-80 block">{opt.desc}</span>
+                  <span className="text-[8px] opacity-80 block">{opt.desc}</span>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── RESPONSIVE 2-TIER PLAYER CONTROLS (FITS 100% ON SHORT/NARROW SCREENS) ── */}
-        <div className="space-y-2">
+        {/* ── ULTRA-COMPACT SINGLE FLUID BAR (100% FIT ON ALL PHONE DISPLAYS) ── */}
+        <div className="flex items-center justify-between gap-1 sm:gap-1.5 w-full">
           
-          {/* Row 1: Mode, Reciter, Speed & Ayah Counter */}
-          <div className="flex items-center justify-between gap-1.5 pb-1.5 border-b border-border/50">
-            <div className="flex items-center gap-1.5 min-w-0">
-              {/* 1. Mode Dropdown Pill */}
-              <button 
-                onClick={() => {
-                  setShowModeMenu(!showModeMenu);
-                  setShowQariMenu(false);
-                  setShowSpeedMenu(false);
-                }}
-                className="flex items-center gap-1 py-1 px-2.5 bg-primary/10 hover:bg-primary/20 rounded-xl text-[11px] font-bold text-primary border border-primary/25 transition-colors shrink-0 active:scale-95"
-                title="Switch Reading Mode"
-              >
-                <span>{readMode === 'translation' ? '📖 Verses' : readMode === 'wordByWord' ? '🔤 Words' : '📜 Mushaf'}</span>
-                <ChevronUp size={11} className={`transition-transform ${showModeMenu ? 'rotate-180' : ''}`} />
-              </button>
+          {/* 1. Mode Pill */}
+          <button 
+            onClick={() => {
+              setShowModeMenu(!showModeMenu);
+              setShowQariMenu(false);
+              setShowSpeedMenu(false);
+            }}
+            className="flex items-center gap-0.5 sm:gap-1 py-1 px-1.5 sm:px-2 bg-primary/10 hover:bg-primary/20 rounded-xl text-[10px] sm:text-xs font-bold text-primary border border-primary/25 transition-colors shrink-0 active:scale-95"
+            title="Switch Reading Mode"
+          >
+            <span>{readMode === 'translation' ? '📖 Verses' : readMode === 'wordByWord' ? '🔤 Words' : '📜 Mushaf'}</span>
+            <ChevronUp size={10} className={`transition-transform ${showModeMenu ? 'rotate-180' : ''}`} />
+          </button>
 
-              {/* 2. Reciter Selector Pill */}
-              <button 
-                onClick={() => {
-                  setShowQariMenu(!showQariMenu);
-                  setShowModeMenu(false);
-                  setShowSpeedMenu(false);
-                }}
-                className="flex items-center gap-1 py-1 px-2 bg-surface hover:bg-border/60 rounded-xl text-[11px] font-bold text-text border border-border/60 transition-colors max-w-[120px] sm:max-w-[140px] truncate shrink-0 active:scale-95"
-                title="Select Reciter Voice"
-              >
-                <Volume2 size={12} className="text-primary shrink-0" />
-                <span className="truncate">{currentQariName.split(' ')[0]}</span>
-                <ChevronUp size={11} className={`text-muted shrink-0 transition-transform ${showQariMenu ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
+          {/* 2. Reciter Selector Pill */}
+          <button 
+            onClick={() => {
+              setShowQariMenu(!showQariMenu);
+              setShowModeMenu(false);
+              setShowSpeedMenu(false);
+            }}
+            className="flex items-center gap-0.5 sm:gap-1 py-1 px-1.5 sm:px-2 bg-surface hover:bg-border/60 rounded-xl text-[10px] sm:text-xs font-bold text-text border border-border/60 transition-colors max-w-[65px] sm:max-w-[95px] truncate shrink active:scale-95"
+            title="Select Reciter Voice"
+          >
+            <Volume2 size={11} className="text-primary shrink-0" />
+            <span className="truncate">{currentQariName.split(' ')[0]}</span>
+            <ChevronUp size={10} className={`text-muted shrink-0 transition-transform ${showQariMenu ? 'rotate-180' : ''}`} />
+          </button>
 
-            {/* Right: Speed & Ayah Badge */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => {
-                  setShowSpeedMenu(!showSpeedMenu);
-                  setShowModeMenu(false);
-                  setShowQariMenu(false);
-                }}
-                className={`py-1 px-1.5 rounded-xl text-[10px] font-bold border transition-colors flex items-center gap-0.5 shrink-0 active:scale-95 ${
-                  playbackSpeed !== 1.0
-                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                    : 'bg-surface border-border text-subtext hover:text-text'
-                }`}
-                title="Audio Playback Speed"
-              >
-                <Gauge size={11} />
-                <span>{playbackSpeed}x</span>
-              </button>
+          {/* 3. Speed Selector Button */}
+          <button
+            onClick={() => {
+              setShowSpeedMenu(!showSpeedMenu);
+              setShowModeMenu(false);
+              setShowQariMenu(false);
+            }}
+            className={`py-1 px-1.5 rounded-xl text-[10px] sm:text-xs font-bold border transition-colors flex items-center gap-0.5 shrink-0 active:scale-95 ${
+              playbackSpeed !== 1.0
+                ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                : 'bg-surface border-border/60 text-subtext hover:text-text'
+            }`}
+            title="Audio Playback Speed"
+          >
+            <Gauge size={10} />
+            <span>{playbackSpeed}x</span>
+          </button>
 
-              <span className="text-[10px] sm:text-[11px] font-black text-text bg-surface px-2 py-0.5 rounded-lg border border-border/50">
-                Ayah {playingAyah || 1}<span className="text-subtext font-normal text-[9px]">/{surah.numberOfAyahs}</span>
-              </span>
-            </div>
-          </div>
+          {/* 4. Play/Pause & Skip Controls */}
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+            <button 
+              onClick={playPrev}
+              className="p-1 sm:p-1.5 rounded-lg bg-surface hover:bg-border text-subtext hover:text-text active:scale-90 transition-all"
+              title="Previous Ayah"
+            >
+              <SkipBack size={13} className="sm:w-3.5 sm:h-3.5" />
+            </button>
 
-          {/* Row 2: Surah & Reciter Details + Big Touch Controls */}
-          <div className="flex items-center justify-between px-1">
-            <div className="min-w-0 pr-2">
-              <h4 className="text-xs font-black text-text truncate">
-                {surah.englishName} • <span className="font-arabic text-amber-500">{surah.name}</span>
-              </h4>
-              <p className="text-[10px] text-subtext truncate">
-                {currentQariName}
-              </p>
-            </div>
+            <button 
+              onClick={() => {
+                if (playingAyah !== null) {
+                  togglePlay(playingAyah);
+                } else if (surah.ayahs.length > 0) {
+                  togglePlay(surah.ayahs[0].numberInSurah, surah.ayahs[0].audio);
+                }
+              }}
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-primary text-white rounded-xl shadow-md shadow-primary/30 hover:scale-105 active:scale-90 transition-all shrink-0"
+            >
+              {playingAyah !== null ? <Pause size={13} className="sm:w-3.5 sm:h-3.5" /> : <Play size={13} className="ml-0.5 sm:w-3.5 sm:h-3.5" />}
+            </button>
 
-            {/* Play/Pause & Skip Controls */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button 
-                onClick={playPrev}
-                className="p-1.5 sm:p-2 rounded-xl bg-surface hover:bg-border text-subtext hover:text-text active:scale-90 transition-all"
-                title="Previous Ayah"
-              >
-                <SkipBack size={15} />
-              </button>
-
-              <button 
-                onClick={() => {
-                  if (playingAyah !== null) {
-                    togglePlay(playingAyah);
-                  } else if (surah.ayahs.length > 0) {
-                    togglePlay(surah.ayahs[0].numberInSurah, surah.ayahs[0].audio);
-                  }
-                }}
-                className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-90 transition-all"
-              >
-                {playingAyah !== null ? <Pause size={17} /> : <Play size={17} className="ml-0.5" />}
-              </button>
-
-              <button 
-                onClick={playNext}
-                className="p-1.5 sm:p-2 rounded-xl bg-surface hover:bg-border text-subtext hover:text-text active:scale-90 transition-all"
-                title="Next Ayah"
-              >
-                <SkipForward size={15} />
-              </button>
-            </div>
+            <button 
+              onClick={playNext}
+              className="p-1 sm:p-1.5 rounded-lg bg-surface hover:bg-border text-subtext hover:text-text active:scale-90 transition-all"
+              title="Next Ayah"
+            >
+              <SkipForward size={13} className="sm:w-3.5 sm:h-3.5" />
+            </button>
           </div>
 
         </div>
