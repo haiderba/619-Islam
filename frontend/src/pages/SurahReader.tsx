@@ -33,6 +33,15 @@ const SurahReader: React.FC = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(() => {
     return Number(localStorage.getItem('quran_playback_speed')) || 1.0;
   });
+  const playbackSpeedRef = useRef<number>(playbackSpeed);
+
+  useEffect(() => {
+    playbackSpeedRef.current = playbackSpeed;
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+      audioRef.current.defaultPlaybackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
 
   // Surah Info Modal State
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -154,7 +163,20 @@ const SurahReader: React.FC = () => {
     }
 
     const newAudio = new Audio(targetUrl);
-    newAudio.playbackRate = playbackSpeed;
+    newAudio.defaultPlaybackRate = playbackSpeedRef.current;
+    newAudio.playbackRate = playbackSpeedRef.current;
+    
+    // Ensure playbackRate persists on mobile Safari / Chrome during playback start
+    newAudio.onloadedmetadata = () => {
+      newAudio.playbackRate = playbackSpeedRef.current;
+    };
+    newAudio.onplay = () => {
+      newAudio.playbackRate = playbackSpeedRef.current;
+    };
+    newAudio.oncanplay = () => {
+      newAudio.playbackRate = playbackSpeedRef.current;
+    };
+
     audioRef.current = newAudio;
     setPlayingAyah(ayahNumber);
     setMushafSelectedAyah(ayahNumber);
@@ -173,7 +195,11 @@ const SurahReader: React.FC = () => {
       const fallbackUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surah.number).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
       if (targetUrl !== fallbackUrl) {
         const fallbackAudio = new Audio(fallbackUrl);
-        fallbackAudio.playbackRate = playbackSpeed;
+        fallbackAudio.defaultPlaybackRate = playbackSpeedRef.current;
+        fallbackAudio.playbackRate = playbackSpeedRef.current;
+        fallbackAudio.onplay = () => {
+          fallbackAudio.playbackRate = playbackSpeedRef.current;
+        };
         audioRef.current = fallbackAudio;
         fallbackAudio.onended = newAudio.onended;
         fallbackAudio.play().catch(() => setPlayingAyah(null));
@@ -215,9 +241,11 @@ const SurahReader: React.FC = () => {
 
   const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed);
+    playbackSpeedRef.current = speed;
     localStorage.setItem('quran_playback_speed', String(speed));
     if (audioRef.current) {
       audioRef.current.playbackRate = speed;
+      audioRef.current.defaultPlaybackRate = speed;
     }
     setShowSpeedMenu(false);
   };
