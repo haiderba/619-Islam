@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../config/api';
-import { User, Lock, MapPin, BookOpen, LogOut, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, Lock, MapPin, BookOpen, LogOut, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const FIQH_OPTIONS = [
@@ -113,6 +113,32 @@ const Settings: React.FC = () => {
     );
   };
 
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  const handleCheckUpdates = async () => {
+    setCheckingUpdate(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.update();
+        }
+      }
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map(key => caches.delete(key)));
+      }
+      setMessage({ text: 'Checking latest version and refreshing app...', type: 'success' });
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } catch (err) {
+      window.location.reload();
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
   const handleLogout = () => {
     signOut();
     navigate('/login');
@@ -182,26 +208,22 @@ const Settings: React.FC = () => {
         </div>
 
         <div className="pt-1">
-          <label className="block text-[11px] font-semibold text-subtext mb-1 uppercase tracking-wider">Location Override (Coordinates)</label>
-          <div className="grid grid-cols-2 gap-2.5 mb-2 w-full">
-            <div className="min-w-0">
-              <input
-                type="text"
-                placeholder="Latitude"
-                value={lat}
-                onChange={(e) => setLat(e.target.value)}
-                className="w-full min-w-0 px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
-              />
-            </div>
-            <div className="min-w-0">
-              <input
-                type="text"
-                placeholder="Longitude"
-                value={lng}
-                onChange={(e) => setLng(e.target.value)}
-                className="w-full min-w-0 px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
-              />
-            </div>
+          <label className="block text-[11px] font-semibold text-subtext mb-1 uppercase tracking-wider">Location (Latitude & Longitude)</label>
+          <div className="flex gap-2 mb-2">
+            <input 
+              type="text" 
+              placeholder="Latitude (e.g. 24.8607)"
+              value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              className="w-full min-w-0 px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
+            />
+            <input 
+              type="text" 
+              placeholder="Longitude (e.g. 67.0011)"
+              value={lng}
+              onChange={(e) => setLng(e.target.value)}
+              className="w-full min-w-0 px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
+            />
           </div>
           <button 
             onClick={handleGetLocation}
@@ -249,6 +271,27 @@ const Settings: React.FC = () => {
           className="w-full bg-surface border border-border text-text py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-border transition-colors active:scale-95"
         >
           Update Password
+        </button>
+      </section>
+
+      {/* App Version & Cache Updates */}
+      <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
+        <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
+          <Sparkles size={16} className="text-amber-500" /> App Updates & Cache
+        </h3>
+        
+        <div className="flex items-center justify-between text-xs text-subtext pt-1">
+          <span>Installed Build</span>
+          <span className="font-bold text-text bg-surface px-2.5 py-1 rounded-lg border border-border">v1.2.0</span>
+        </div>
+
+        <button 
+          onClick={handleCheckUpdates}
+          disabled={checkingUpdate}
+          className="w-full bg-surface border border-border text-text py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-border transition-colors flex items-center justify-center gap-2 active:scale-95"
+        >
+          {checkingUpdate ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          <span>Check for Updates & Refresh App</span>
         </button>
       </section>
 

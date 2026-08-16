@@ -19,6 +19,7 @@ import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
 import Layout from './components/ui/Layout';
 import InstallPrompt from './components/ui/InstallPrompt';
+import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt';
 
 import SplashScreen from './components/ui/SplashScreen';
 
@@ -69,6 +70,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <PWAUpdatePrompt />
         <InstallPrompt />
         <AppRoutes />
       </BrowserRouter>
