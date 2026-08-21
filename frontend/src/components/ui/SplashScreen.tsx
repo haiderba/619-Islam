@@ -7,26 +7,25 @@ interface SplashScreenProps {
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [hasEnded, setHasEnded] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-
-    video.muted = false;
-    const playPromise = video.play();
-
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // Browser blocked unmuted autoplay, fallback to muted autoplay
-        console.log('Autoplay with sound prevented by browser policy; starting muted.');
-        video.muted = true;
-        setIsMuted(true);
-        video.play().catch(e => console.warn('Video play failed', e));
+    if (video) {
+      video.muted = true;
+      video.play().catch(() => {
+        console.log('Autoplay muted attempt failed or deferred by browser.');
       });
     }
+
+    // Safety Timeout: Never let the user get stuck on splash screen (Max 3.5s)
+    const timer = setTimeout(() => {
+      handleVideoEnded();
+    }, 3500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const handleVideoEnded = () => {
@@ -34,7 +33,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
     if (onComplete) {
       setTimeout(() => {
         onComplete();
-      }, 350);
+      }, 300);
     }
   };
 
@@ -113,6 +112,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
               src="/splash-video.mp4"
               playsInline
               autoPlay
+              muted={isMuted}
               onEnded={handleVideoEnded}
               className="w-full h-full object-cover transform scale-[1.05]"
             />
