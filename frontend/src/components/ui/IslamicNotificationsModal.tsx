@@ -160,6 +160,23 @@ export const IslamicNotificationsModal: React.FC<IslamicNotificationsModalProps>
                     className="accent-primary w-4 h-4 rounded cursor-pointer"
                   />
                 </div>
+
+                {/* 🕌 Adhan Audio Sound on Prayer Times */}
+                <div className="flex items-center justify-between pt-1 border-t border-border/60">
+                  <span className="text-xs text-text font-bold flex items-center gap-1.5">
+                    <span>🔊</span>
+                    <span>Play Adhan Sound on Prayer Times</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.namaz.playAdhanAudio !== false}
+                    onChange={(e) => handleToggle(p => ({
+                      ...p,
+                      namaz: { ...p.namaz, playAdhanAudio: e.target.checked }
+                    }))}
+                    className="accent-emerald-500 w-4 h-4 rounded cursor-pointer"
+                  />
+                </div>
               </div>
             )}
           </div>

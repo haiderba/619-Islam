@@ -37,6 +37,7 @@ import Layout from './components/ui/Layout';
 import InstallPrompt from './components/ui/InstallPrompt';
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt';
 import SplashScreen from './components/ui/SplashScreen';
+import { AdhanPrayerModal } from './components/ui/AdhanPrayerModal';
 import { useNotificationScheduler } from './hooks/useNotificationScheduler';
 
 // Background Islamic Notification Scheduler Runner
@@ -157,6 +158,7 @@ function App() {
         <BrowserRouter>
           <PWAUpdatePrompt />
           <InstallPrompt />
+          <AdhanPrayerModal />
           <AppRoutes />
         </BrowserRouter>
       </UpdateProvider>

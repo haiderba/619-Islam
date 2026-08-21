@@ -13,7 +13,8 @@ import {
   VolumeX, 
   Radio, 
   Disc3, 
-  Plane
+  Plane,
+  Loader2
 } from 'lucide-react';
 import { persistentAudioPlayer, AudioTrack } from '../services/persistentAudioPlayer';
 import { ambientAudioService } from '../services/ambientAudioService';
@@ -144,10 +145,19 @@ export const QuranSleepStation: React.FC = () => {
   };
 
   const handleTogglePlay = () => {
-    if (!playerState.currentTrack) {
+    if (!playerState.currentTrack || playerState.currentTrack.surahNumber !== selectedSurah.id) {
       handlePlaySurah(selectedSurah);
     } else {
       persistentAudioPlayer.toggle();
+    }
+  };
+
+  const handleSurahCardClick = (surah: SleepSurah) => {
+    setSelectedSurah(surah);
+    if (playerState.currentTrack?.surahNumber === surah.id) {
+      persistentAudioPlayer.toggle();
+    } else {
+      handlePlaySurah(surah);
     }
   };
 
@@ -267,8 +277,11 @@ export const QuranSleepStation: React.FC = () => {
               <button
                 onClick={handleTogglePlay}
                 className="w-14 h-14 rounded-2xl bg-gradient-to-r from-cyan-400 to-teal-400 text-black flex items-center justify-center shadow-xl shadow-cyan-400/30 active:scale-95 transition-transform hover:scale-105"
+                title={playerState.isPlaying ? 'Pause' : 'Play'}
               >
-                {playerState.isPlaying ? (
+                {playerState.isLoading ? (
+                  <Loader2 size={24} className="animate-spin text-black" />
+                ) : playerState.isPlaying && playerState.currentTrack?.surahNumber === selectedSurah.id ? (
                   <Pause size={24} className="fill-black" />
                 ) : (
                   <Play size={24} className="fill-black ml-0.5" />
@@ -443,7 +456,7 @@ export const QuranSleepStation: React.FC = () => {
             return (
               <div
                 key={surah.id}
-                onClick={() => handlePlaySurah(surah)}
+                onClick={() => handleSurahCardClick(surah)}
                 className={`p-4 rounded-3xl border cursor-pointer transition-all active:scale-[0.98] flex items-center justify-between gap-3 shadow-sm ${
                   isPlaying 
                     ? 'bg-cyan-500/15 border-cyan-500/40 ring-1 ring-cyan-500' 

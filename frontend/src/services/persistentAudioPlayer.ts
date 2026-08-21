@@ -55,7 +55,7 @@ class PersistentAudioPlayer {
       this.isLoading = false;
       this.handleStateChange();
     });
-    this.audio.addEventListener('timeupdate', () => this.handleStateChange());
+    this.audio.addEventListener('timeupdate', () => this.notify());
     this.audio.addEventListener('loadedmetadata', () => {
       this.isLoading = false;
       this.handleStateChange();
@@ -107,20 +107,37 @@ class PersistentAudioPlayer {
     }
   }
 
-  private updateMediaSession() {
+  private lastMetadataTrackId: string | null = null;
+
+  private updateMediaSession(force: boolean = false) {
     if (typeof window === 'undefined' || !('mediaSession' in navigator) || !this.currentTrack) return;
 
     try {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: this.currentTrack.title,
-        artist: this.currentTrack.artist,
-        album: this.currentTrack.album || '619 Islam',
-        artwork: [
-          { src: this.currentTrack.artwork || '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/logo.png', sizes: '192x192', type: 'image/png' },
-        ],
-      });
+      // ONLY instantiate new MediaMetadata when track actually changes to prevent iOS Dynamic Island / Lock Screen flickering
+      if (force || this.lastMetadataTrackId !== this.currentTrack.id) {
+        this.lastMetadataTrackId = this.currentTrack.id;
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: this.currentTrack.title,
+          artist: this.currentTrack.artist,
+          album: this.currentTrack.album || '619 Islam',
+          artwork: [
+            { src: this.currentTrack.artwork || '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+            { src: '/logo.png', sizes: '192x192', type: 'image/png' },
+          ],
+        });
+      }
+
       navigator.mediaSession.playbackState = this.audio.paused ? 'paused' : 'playing';
+
+      if ('setPositionState' in navigator.mediaSession && this.audio.duration && !isNaN(this.audio.duration)) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: Math.max(0, this.audio.duration),
+            playbackRate: this.audio.playbackRate || 1,
+            position: Math.min(Math.max(0, this.audio.currentTime), this.audio.duration),
+          });
+        } catch (posErr) {}
+      }
     } catch (e) {}
   }
 
@@ -138,7 +155,7 @@ class PersistentAudioPlayer {
   }
 
   private handleStateChange() {
-    this.updateMediaSession();
+    this.updateMediaSession(false);
     this.notify();
   }
 

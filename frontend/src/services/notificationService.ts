@@ -171,7 +171,10 @@ export const notificationService = {
 
     switch (type) {
       case 'namaz':
-        return this.sendNotification('🕌 Adhan: Dhuhr Prayer Time', {
+        import('./adhanService').then(({ adhanService }) => {
+          adhanService.playAdhan('Dhuhr', 'الظهر');
+        }).catch(() => {});
+        return this.sendNotification('🕌 Adhan: Dhuhr Prayer Time (الظهر)', {
           body: 'حي على الصلاة • Time to pause Dunya, perform Wudu, and stand before Allah 🤍',
           url: '/namaz',
           tag: 'namaz-dhuhr-test',
@@ -270,6 +273,14 @@ export const notificationService = {
             tag: `namaz-${p.name.toLowerCase()}`,
             requireInteraction: true,
           });
+
+          // Play Adhan Sound on prayer time
+          if (settings.namaz.playAdhanAudio !== false) {
+            import('./adhanService').then(({ adhanService }) => {
+              adhanService.playAdhan(p.name, p.arabic);
+            }).catch(() => {});
+          }
+
           markSent(exactLogKey);
         }
 

@@ -12,12 +12,12 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '2.1.1';
+export const CURRENT_APP_VERSION = '2.2.0';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
   releaseDate: 'August 2026',
-  headline: "What's New in Update v2.1.1",
+  headline: "What's New in Update v2.2.0",
   features: [
     {
       icon: 'BookOpen',
