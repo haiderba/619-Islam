@@ -117,12 +117,25 @@ class PersistentAudioPlayer {
     };
   }
 
-  public async playTrack(track: AudioTrack, onEnded?: () => void): Promise<void> {
+  public async playTrack(track: AudioTrack, onEnded?: () => void, qariKey?: string): Promise<void> {
     this.currentTrack = track;
     this.onTrackEndedCallback = onEnded || null;
 
-    if (this.audio.src !== track.src) {
-      this.audio.src = track.src;
+    let targetSrc = track.src;
+
+    // Check if offline local blob exists on device for instant offline playback
+    if (track.surahNumber && qariKey) {
+      try {
+        const { audioOfflineStorageService } = await import('./audioOfflineStorageService');
+        const offlineUrl = await audioOfflineStorageService.getOfflineAudioUrl(track.surahNumber, qariKey);
+        if (offlineUrl) {
+          targetSrc = offlineUrl;
+        }
+      } catch (e) {}
+    }
+
+    if (this.audio.src !== targetSrc) {
+      this.audio.src = targetSrc;
     }
 
     this.audio.volume = 1.0;

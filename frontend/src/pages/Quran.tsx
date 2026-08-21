@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useQuran, QuranSearchResult, QARI_OPTIONS } from '../hooks/useQuran';
-import { Search, Book, PlayCircle, Trophy, Sparkles, MapPin, BookOpen, Layers, SearchCode, ArrowRight, Loader2, Download, CheckCircle, Trash2, HardDrive, WifiOff, Volume2, Mic, RefreshCw, Moon } from 'lucide-react';
+import { Search, Book, PlayCircle, Trophy, Sparkles, MapPin, BookOpen, Layers, SearchCode, ArrowRight, Loader2, Download, CheckCircle, Trash2, HardDrive, WifiOff, Volume2, Mic, RefreshCw, Moon, Plane } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { api } from '../config/api';
 import axios from 'axios';
+import { OfflineAudioModal } from '../components/ui/OfflineAudioModal';
 
 const QURAN_API_HEADERS = { 'Accept': 'application/json' };
 
@@ -82,6 +83,7 @@ const Quran: React.FC = () => {
   const [searchTotal, setSearchTotal] = useState<number>(0);
   const [searchLoading, setSearchLoading] = useState<boolean>(false);
   const [activeTopic, setActiveTopic] = useState<string>('');
+  const [showOfflineAudioModal, setShowOfflineAudioModal] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -182,12 +184,24 @@ const Quran: React.FC = () => {
       <header className="mb-4 pt-1">
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-3xl font-black text-text tracking-tight">The Holy Quran</h1>
-          {!isOnline && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 text-xs font-bold border border-amber-500/20">
-              <WifiOff size={12} />
-              <span>Offline</span>
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowOfflineAudioModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 text-xs font-bold shadow-sm active:scale-95 transition-all"
+              title="Download Quran Audio for Airplanes & Travel"
+            >
+              <Plane size={13} />
+              <span className="hidden sm:inline">Flight Audio</span>
+              <span className="sm:hidden">Offline</span>
+            </button>
+
+            {!isOnline && (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 text-xs font-bold border border-amber-500/20">
+                <WifiOff size={12} />
+                <span>Offline</span>
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Dashboard Cards */}
@@ -649,6 +663,12 @@ const Quran: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* ✈️ Offline Airplane Audio Downloader Modal */}
+      <OfflineAudioModal
+        isOpen={showOfflineAudioModal}
+        onClose={() => setShowOfflineAudioModal(false)}
+      />
     </div>
   );
 };

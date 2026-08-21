@@ -4,7 +4,6 @@ import {
   ArrowLeft, 
   Play, 
   Pause, 
-  Moon, 
   Sparkles, 
   Volume2, 
   CloudRain, 
@@ -12,11 +11,13 @@ import {
   Waves, 
   Clock, 
   VolumeX, 
-  Radio,
-  Disc3
+  Radio, 
+  Disc3, 
+  Plane
 } from 'lucide-react';
 import { persistentAudioPlayer, AudioTrack } from '../services/persistentAudioPlayer';
 import { ambientAudioService } from '../services/ambientAudioService';
+import { OfflineAudioModal } from '../components/ui/OfflineAudioModal';
 
 interface SleepSurah {
   id: number;
@@ -61,6 +62,7 @@ export const QuranSleepStation: React.FC = () => {
   const [ambientSound, setAmbientSound] = useState<'none' | 'rain' | 'breeze' | 'river'>('rain');
   const [ambientVolume, setAmbientVolume] = useState<number>(0.4);
   const [activeTimerMinutes, setActiveTimerMinutes] = useState<number | null>(30);
+  const [showOfflineModal, setShowOfflineModal] = useState<boolean>(false);
   
   // Player state
   const [playerState, setPlayerState] = useState(persistentAudioPlayer.getState());
@@ -155,9 +157,16 @@ export const QuranSleepStation: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 text-xs font-bold shrink-0">
-          <Moon size={14} />
-          <span className="hidden sm:inline">Bedtime Audio</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowOfflineModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 text-xs font-bold shrink-0 shadow-sm active:scale-95 transition-all"
+            title="Download for Airplane & Offline Travel"
+          >
+            <Plane size={14} />
+            <span className="hidden sm:inline">Airplane Downloads</span>
+            <span className="sm:hidden">Offline</span>
+          </button>
         </div>
       </header>
 
@@ -442,6 +451,12 @@ export const QuranSleepStation: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* ✈️ Offline Airplane Audio Downloader Modal */}
+      <OfflineAudioModal
+        isOpen={showOfflineModal}
+        onClose={() => setShowOfflineModal(false)}
+      />
 
     </div>
   );
