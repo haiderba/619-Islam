@@ -30,6 +30,26 @@
 
 body {
   @apply bg-background text-text font-sans antialiased;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* iOS WebKit Glassmorphism & Smooth Scrolling */
+.backdrop-blur-xl {
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+.backdrop-blur-md {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.backdrop-blur-sm {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 
 /* Tajweed Colors */
@@ -62,7 +82,23 @@ tajweed[class="ham_wasl"], tajweed[class="laam_shamsiyah"], tajweed[class="silen
 }
 
 @layer utilities {
+  /* iOS Safe Area Inset Helpers */
+  .safe-area-pt {
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
+  }
   .safe-area-pb {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+  }
+  .safe-area-pl {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0.75rem));
+  }
+  .safe-area-pr {
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0.75rem));
+  }
+  .safe-bottom-nav {
+    padding-bottom: calc(0.45rem + env(safe-area-inset-bottom, 0px));
+  }
+  .safe-content-pb {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
   }
 }

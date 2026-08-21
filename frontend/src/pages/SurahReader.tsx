@@ -381,8 +381,8 @@ const SurahReader: React.FC = () => {
   return (
     <div className="min-h-screen bg-background pb-40">
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3">
+      <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border shadow-sm safe-area-pt">
+        <div className="max-w-2xl mx-auto px-4 py-2.5 sm:py-3">
           <div className="flex items-center justify-between gap-3">
             {/* Left: Back & Title */}
             <div className="flex items-center gap-2.5 min-w-0">
@@ -733,7 +733,7 @@ const SurahReader: React.FC = () => {
       </div>
 
       {/* ── 🎵 STREAMLINED ULTRA-COMPACT FLOATING BOTTOM AUDIO & MODE PLAYER ── */}
-      <div className="fixed bottom-16 sm:bottom-20 left-2 right-2 sm:left-4 sm:right-4 z-40 max-w-md mx-auto bg-card/95 backdrop-blur-2xl border border-border/90 rounded-2xl sm:rounded-3xl shadow-2xl p-1.5 sm:p-2.5 animate-in slide-in-from-bottom-4 box-border">
+      <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] sm:bottom-20 left-2 right-2 sm:left-4 sm:right-4 z-40 max-w-md mx-auto bg-card/95 backdrop-blur-2xl border border-border/90 rounded-2xl sm:rounded-3xl shadow-2xl p-1.5 sm:p-2.5 animate-in slide-in-from-bottom-4 box-border">
         
         {/* Reading Mode Picker Sheet */}
         {showModeMenu && (

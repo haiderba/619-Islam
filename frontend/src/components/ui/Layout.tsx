@@ -58,17 +58,17 @@ const Layout: React.FC = () => {
       </header>
 
       {/* Main Content Area: Fully fluid and responsive */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 pb-24 md:pb-12 pt-2 md:pt-4 overflow-y-auto">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 safe-content-pb md:pb-12 pt-2 md:pt-4 overflow-y-auto safe-area-pl safe-area-pr">
         <Outlet />
       </main>
 
       {/* 📱 Mobile Streamlined Bottom Navigation Bar (hidden on desktop) */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-card/95 backdrop-blur-md border-t border-border px-4 py-2.5 safe-area-pb z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full bg-card/95 backdrop-blur-xl border-t border-border px-3 pt-2 safe-bottom-nav z-50 shadow-2xl">
         <div className="flex justify-around items-center max-w-md mx-auto">
-          <NavItem to="/" icon={<Home size={21} />} label="Today" />
-          <NavItem to="/quran" icon={<Book size={21} />} label="Quran" />
-          <NavItem to="/namaz" icon={<Clock size={21} />} label="Namaz" />
-          <NavItem to="/settings" icon={<Settings size={21} />} label="Settings" />
+          <NavItem to="/" icon={<Home size={20} />} label="Today" />
+          <NavItem to="/quran" icon={<Book size={20} />} label="Quran" />
+          <NavItem to="/namaz" icon={<Clock size={20} />} label="Namaz" />
+          <NavItem to="/settings" icon={<Settings size={20} />} label="Settings" />
         </div>
       </nav>
     </div>
@@ -98,13 +98,15 @@ const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }> = 
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex flex-col items-center gap-1 transition-colors ${
-          isActive ? 'text-primary' : 'text-muted hover:text-subtext'
+        `flex flex-col items-center justify-center gap-0.5 py-1 px-3.5 rounded-2xl transition-all duration-200 active:scale-90 ${
+          isActive 
+            ? 'text-primary font-black bg-primary/10 shadow-sm' 
+            : 'text-muted hover:text-subtext'
         }`
       }
     >
       {icon}
-      <span className="text-[10px] font-medium">{label}</span>
+      <span className="text-[10px] tracking-tight">{label}</span>
     </NavLink>
   );
 };

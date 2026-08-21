@@ -369,7 +369,23 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 export const useAppUpdate = () => {
   const context = useContext(UpdateContext);
   if (!context) {
-    throw new Error('useAppUpdate must be used within an UpdateProvider');
+    return {
+      updateAvailable: false,
+      applyingUpdate: false,
+      isCheckingUpdates: false,
+      serverVersion: null,
+      requiresReinstall: false,
+      applyUpdate: async () => {},
+      reinstallApp: async () => {},
+      dismissUpdate: () => {},
+      checkForUpdates: async (): Promise<UpdateCheckResult> => ({ hasUpdate: false, currentVersion: CURRENT_APP_VERSION, serverVersion: undefined, requiresReinstall: false }),
+      showWhatsNew: false,
+      setShowWhatsNew: () => {},
+      currentVersion: CURRENT_APP_VERSION,
+      notificationPermission: 'default' as const,
+      requestNotificationPermission: async () => false,
+    };
   }
   return context;
 };
+
