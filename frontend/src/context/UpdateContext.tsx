@@ -150,6 +150,20 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         // ONLY trigger update if server version is strictly newer than current running app version
         if (ver && isNewerVersion(ver, CURRENT_APP_VERSION)) {
+          // If the user already tapped update or dismissed for this version in this session, do not prompt repeatedly
+          const dismissed = sessionStorage.getItem('dismissed_update_version');
+          const applied = localStorage.getItem('applied_update_version');
+          
+          if (dismissed === ver || applied === ver) {
+            setManualUpdateAvailable(false);
+            return {
+              hasUpdate: false,
+              serverVersion: ver,
+              currentVersion: CURRENT_APP_VERSION,
+              requiresReinstall: false
+            };
+          }
+
           setServerVersion(ver);
           setManualUpdateAvailable(true);
           setRequiresReinstall(needsReinstall);
@@ -236,21 +250,22 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setManualUpdateAvailable(false);
     await dismissPendingUpdateNotifications();
 
-    try {
-      localStorage.setItem('show_whats_new_after_update', 'true');
-      localStorage.setItem('last_seen_app_version', serverVersion || CURRENT_APP_VERSION);
-      localStorage.setItem('applied_update_version', serverVersion || CURRENT_APP_VERSION);
+    const targetVer = serverVersion || CURRENT_APP_VERSION;
+    sessionStorage.setItem('dismissed_update_version', targetVer);
+    localStorage.setItem('applied_update_version', targetVer);
+    localStorage.setItem('show_whats_new_after_update', 'true');
+    localStorage.setItem('last_seen_app_version', targetVer);
 
-      // Force waiting service worker to activate immediately
+    try {
+      // 1. Force waiting service worker to activate immediately
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.getRegistration();
         if (reg && reg.waiting) {
           reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
       }
-      sessionStorage.setItem('dismissed_update_version', serverVersion || CURRENT_APP_VERSION);
       
-      // Clear caches and reload
+      // 2. Clear caches
       if ('caches' in window) {
         try {
           const names = await caches.keys();
@@ -267,9 +282,11 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } catch (e) {}
       }
 
-      window.location.reload();
+      // 3. Hard cache-busting replace for iOS Safari & PWAs
+      const cleanPath = window.location.pathname;
+      window.location.replace(`${cleanPath}?_v=${Date.now()}`);
     } catch (err) {
-      window.location.reload();
+      window.location.replace(`${window.location.pathname}?_v=${Date.now()}`);
     }
   };
 
