@@ -32,6 +32,7 @@ import { MasjidFinder } from './pages/MasjidFinder';
 import { RuqyahStation } from './pages/RuqyahStation';
 import { IslamicQuiz } from './pages/IslamicQuiz';
 import { QazaTracker } from './pages/QazaTracker';
+import { QuranSleepStation } from './pages/QuranSleepStation';
 import Layout from './components/ui/Layout';
 import InstallPrompt from './components/ui/InstallPrompt';
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt';
@@ -100,6 +101,7 @@ const AppRoutes = () => {
           <Route path="tasbeeh" element={<Tasbeeh />} />
           <Route path="quran" element={<Quran />} />
           <Route path="quran/:id" element={<SurahReader />} />
+          <Route path="sleep-station" element={<QuranSleepStation />} />
           <Route path="names-of-allah" element={<NamesOfAllah />} />
           <Route path="features" element={<AllFeatures />} />
           <Route path="zakat" element={<ZakatCalculator />} />

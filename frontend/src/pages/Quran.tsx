@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuran, QuranSearchResult, QARI_OPTIONS } from '../hooks/useQuran';
-import { Search, Book, PlayCircle, Trophy, Sparkles, MapPin, BookOpen, Layers, SearchCode, ArrowRight, Loader2, Download, CheckCircle, Trash2, HardDrive, WifiOff, Volume2, Mic, RefreshCw } from 'lucide-react';
+import { Search, Book, PlayCircle, Trophy, Sparkles, MapPin, BookOpen, Layers, SearchCode, ArrowRight, Loader2, Download, CheckCircle, Trash2, HardDrive, WifiOff, Volume2, Mic, RefreshCw, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { api } from '../config/api';
@@ -232,6 +232,36 @@ const Quran: React.FC = () => {
               </p>
             </div>
           )}
+
+          {/* 🌙 Quran Sleep Sanctuary & Soundscapes Card */}
+          <div 
+            onClick={() => navigate('/sleep-station')}
+            className="bg-gradient-to-r from-[#05161d] via-[#092c35] to-[#041417] border border-cyan-500/40 hover:border-cyan-400 p-4 sm:p-5 rounded-2xl cursor-pointer shadow-lg hover:scale-[1.01] transition-all flex items-center justify-between gap-3 group text-white relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="flex items-center gap-3.5 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-cyan-500/30 shrink-0 group-hover:scale-105 transition-transform shadow-lg shadow-cyan-500/20">
+                <Moon size={22} className="text-cyan-300" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-black text-white">Quran Sleep Sanctuary</h3>
+                  <span className="text-[9px] font-black uppercase bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                    New 🎧
+                  </span>
+                </div>
+                <p className="text-xs text-cyan-100/70 mt-0.5">
+                  Bedtime Quran recitations with layered rain & breeze ambiance + Sleep Timer.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 text-xs font-bold text-cyan-300 shrink-0 relative z-10">
+              <span className="hidden sm:inline">Open Sanctuary</span>
+              <span>➔</span>
+            </div>
+          </div>
 
           {/* 📥 Offline Quran Download & Storage Status Card */}
           <div className="bg-card border border-border p-4 rounded-2xl shadow-sm">

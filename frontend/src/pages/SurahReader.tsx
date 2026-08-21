@@ -188,32 +188,34 @@ const SurahReader: React.FC = () => {
       ? explicitUrl
       : getAyahAudioUrl(surah.number, ayahNumber, qariToUse);
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    // Reuse persistent audio instance to guarantee seamless screen-off background playback on iOS & Android
+    let player = audioRef.current;
+    if (!player) {
+      player = new Audio();
+      player.preload = 'auto';
+      player.crossOrigin = 'anonymous';
+      audioRef.current = player;
     }
 
-    const newAudio = new Audio(targetUrl);
-    newAudio.defaultPlaybackRate = playbackSpeedRef.current;
-    newAudio.playbackRate = playbackSpeedRef.current;
+    player.src = targetUrl;
+    player.defaultPlaybackRate = playbackSpeedRef.current;
+    player.playbackRate = playbackSpeedRef.current;
     
-    // Ensure playbackRate persists on mobile Safari / Chrome during playback start
-    newAudio.onloadedmetadata = () => {
-      newAudio.playbackRate = playbackSpeedRef.current;
+    player.onloadedmetadata = () => {
+      player.playbackRate = playbackSpeedRef.current;
     };
-    newAudio.onplay = () => {
-      newAudio.playbackRate = playbackSpeedRef.current;
+    player.onplay = () => {
+      player.playbackRate = playbackSpeedRef.current;
       if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'playing';
       }
     };
-    newAudio.onpause = () => {
+    player.onpause = () => {
       if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'paused';
       }
     };
 
-    audioRef.current = newAudio;
     setPlayingAyah(ayahNumber);
     setMushafSelectedAyah(ayahNumber);
 
@@ -225,7 +227,8 @@ const SurahReader: React.FC = () => {
         artist: qariObj?.name || 'Quran Recitation',
         album: '619 Islam — The Holy Quran',
         artwork: [
-          { src: '/logo.png', sizes: '512x512', type: 'image/png' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/logo.png', sizes: '192x192', type: 'image/png' },
           { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
         ]
       });
@@ -255,7 +258,7 @@ const SurahReader: React.FC = () => {
       });
     }
 
-    newAudio.onended = () => {
+    player.onended = () => {
       const nextAyah = surah.ayahs.find(a => a.numberInSurah === ayahNumber + 1);
       if (nextAyah) {
         togglePlay(nextAyah.numberInSurah, undefined, qariToUse);
@@ -267,22 +270,18 @@ const SurahReader: React.FC = () => {
       }
     };
 
-    newAudio.onerror = () => {
+    player.onerror = () => {
       // Fallback to EveryAyah Alafasy if primary fails
       const fallbackUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surah.number).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
-      if (targetUrl !== fallbackUrl) {
-        const fallbackAudio = new Audio(fallbackUrl);
-        fallbackAudio.defaultPlaybackRate = playbackSpeedRef.current;
-        fallbackAudio.playbackRate = playbackSpeedRef.current;
-        audioRef.current = fallbackAudio;
-        fallbackAudio.onended = newAudio.onended;
-        fallbackAudio.play().catch(() => setPlayingAyah(null));
+      if (targetUrl !== fallbackUrl && audioRef.current) {
+        audioRef.current.src = fallbackUrl;
+        audioRef.current.play().catch(() => setPlayingAyah(null));
       } else {
         setPlayingAyah(null);
       }
     };
 
-    newAudio.play().catch((err) => {
+    player.play().catch((err) => {
       console.warn('Audio play was interrupted', err);
       setPlayingAyah(null);
     });

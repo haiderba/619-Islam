@@ -60,6 +60,14 @@ export const AllFeatures: React.FC = () => {
           badge: 'v4 Open API',
         },
         {
+          id: 'sleep-station',
+          title: 'Quran Sleep Sanctuary',
+          subtitle: 'Bedtime Quran & Rain/Breeze Ambiance',
+          icon: <Moon size={22} className="text-cyan-400" />,
+          to: '/sleep-station',
+          badge: 'New 🌙',
+        },
+        {
           id: 'names-of-allah',
           title: '99 Names of Allah',
           subtitle: 'Asma-ul-Husna with Audio & Meanings',
