@@ -47,67 +47,71 @@ class AmbientAudioEngine {
   }
 
   public startSound(type: 'rain' | 'breeze' | 'river' | 'none', volume: number = 0.5) {
-    this.stop();
-    if (type === 'none') return;
+    try {
+      this.stop();
+      if (type === 'none') return;
 
-    this.initContext();
-    if (!this.ctx || !this.masterGain) return;
+      this.initContext();
+      if (!this.ctx || !this.masterGain) return;
 
-    this.setVolume(volume);
-    const noiseBuffer = this.createPinkNoiseBuffer();
-    if (!noiseBuffer) return;
+      this.setVolume(volume);
+      const noiseBuffer = this.createPinkNoiseBuffer();
+      if (!noiseBuffer) return;
 
-    const noiseSource = this.ctx.createBufferSource();
-    noiseSource.buffer = noiseBuffer;
-    noiseSource.loop = true;
+      const noiseSource = this.ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+      noiseSource.loop = true;
 
-    if (type === 'rain') {
-      // Bandpass filtered pink noise for gentle rain drops
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
-      filter.Q.setValueAtTime(0.7, this.ctx.currentTime);
+      if (type === 'rain') {
+        // Bandpass filtered pink noise for gentle rain drops
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
+        filter.Q.setValueAtTime(0.7, this.ctx.currentTime);
 
-      const highpass = this.ctx.createBiquadFilter();
-      highpass.type = 'highpass';
-      highpass.frequency.setValueAtTime(200, this.ctx.currentTime);
+        const highpass = this.ctx.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.setValueAtTime(200, this.ctx.currentTime);
 
-      noiseSource.connect(filter);
-      filter.connect(highpass);
-      highpass.connect(this.masterGain);
-      this.rainNode = noiseSource;
-    } else if (type === 'breeze') {
-      // Modulated gentle breeze / desert night wind
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(400, this.ctx.currentTime);
-      filter.Q.setValueAtTime(2.0, this.ctx.currentTime);
+        noiseSource.connect(filter);
+        filter.connect(highpass);
+        highpass.connect(this.masterGain);
+        this.rainNode = noiseSource;
+      } else if (type === 'breeze') {
+        // Modulated gentle breeze / desert night wind
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(400, this.ctx.currentTime);
+        filter.Q.setValueAtTime(2.0, this.ctx.currentTime);
 
-      // Low frequency oscillator for wind gusts
-      const lfo = this.ctx.createOscillator();
-      lfo.frequency.setValueAtTime(0.15, this.ctx.currentTime);
-      const lfoGain = this.ctx.createGain();
-      lfoGain.gain.setValueAtTime(250, this.ctx.currentTime);
-      lfo.connect(lfoGain);
-      lfoGain.connect(filter.frequency);
-      lfo.start();
+        // Low frequency oscillator for wind gusts
+        const lfo = this.ctx.createOscillator();
+        lfo.frequency.setValueAtTime(0.15, this.ctx.currentTime);
+        const lfoGain = this.ctx.createGain();
+        lfoGain.gain.setValueAtTime(250, this.ctx.currentTime);
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+        lfo.start();
 
-      noiseSource.connect(filter);
-      filter.connect(this.masterGain);
-      this.breezeNode = noiseSource;
-    } else if (type === 'river') {
-      // Soft flowing stream
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(650, this.ctx.currentTime);
+        noiseSource.connect(filter);
+        filter.connect(this.masterGain);
+        this.breezeNode = noiseSource;
+      } else if (type === 'river') {
+        // Soft flowing stream
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(650, this.ctx.currentTime);
 
-      noiseSource.connect(filter);
-      filter.connect(this.masterGain);
-      this.riverNode = noiseSource;
+        noiseSource.connect(filter);
+        filter.connect(this.masterGain);
+        this.riverNode = noiseSource;
+      }
+
+      noiseSource.start();
+      this.isRunning = true;
+    } catch (e) {
+      console.warn('Ambient sound start ignored', e);
     }
-
-    noiseSource.start();
-    this.isRunning = true;
   }
 
   public setVolume(volume: number) {

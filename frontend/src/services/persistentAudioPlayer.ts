@@ -1,4 +1,4 @@
-// Persistent Background Audio Player Singleton with Lock Screen & MediaSession support
+import { audioOfflineStorageService } from './audioOfflineStorageService';
 
 export interface AudioTrack {
   id: string;
@@ -6,6 +6,7 @@ export interface AudioTrack {
   artist: string;
   album: string;
   src: string;
+  fallbackSrc?: string;
   artwork?: string;
   surahNumber?: number;
   ayahNumber?: number;
@@ -17,6 +18,7 @@ type AudioEventListener = (state: {
   currentTime: number;
   duration: number;
   sleepTimerRemaining: number | null;
+  isLoading: boolean;
 }) => void;
 
 class PersistentAudioPlayer {
@@ -28,6 +30,7 @@ class PersistentAudioPlayer {
   private sleepIntervalId: any = null;
   private fadeIntervalId: any = null;
   private isFadingOut: boolean = false;
+  private isLoading: boolean = false;
   private onTrackEndedCallback: (() => void) | null = null;
 
   constructor() {
@@ -36,15 +39,47 @@ class PersistentAudioPlayer {
     this.audio.crossOrigin = 'anonymous';
 
     // Event listeners on persistent audio element
-    this.audio.addEventListener('play', () => this.handleStateChange());
-    this.audio.addEventListener('pause', () => this.handleStateChange());
+    this.audio.addEventListener('play', () => {
+      this.isLoading = false;
+      this.handleStateChange();
+    });
+    this.audio.addEventListener('playing', () => {
+      this.isLoading = false;
+      this.handleStateChange();
+    });
+    this.audio.addEventListener('waiting', () => {
+      this.isLoading = true;
+      this.handleStateChange();
+    });
+    this.audio.addEventListener('pause', () => {
+      this.isLoading = false;
+      this.handleStateChange();
+    });
     this.audio.addEventListener('timeupdate', () => this.handleStateChange());
-    this.audio.addEventListener('loadedmetadata', () => this.handleStateChange());
+    this.audio.addEventListener('loadedmetadata', () => {
+      this.isLoading = false;
+      this.handleStateChange();
+    });
     this.audio.addEventListener('ended', () => {
+      this.isLoading = false;
       if (this.onTrackEndedCallback) {
         this.onTrackEndedCallback();
       }
       this.handleStateChange();
+    });
+
+    this.audio.addEventListener('error', (e) => {
+      console.warn('Persistent Audio error encountered, trying fallback if available', e);
+      if (this.currentTrack?.fallbackSrc && this.audio.src !== this.currentTrack.fallbackSrc) {
+        this.audio.src = this.currentTrack.fallbackSrc;
+        this.audio.play().catch(() => {
+          this.isLoading = false;
+          this.handleStateChange();
+        });
+      } else {
+        this.isLoading = false;
+        this.handleStateChange();
+      }
     });
 
     this.setupMediaSessionActionHandlers();
@@ -114,41 +149,61 @@ class PersistentAudioPlayer {
       currentTime: this.audio.currentTime || 0,
       duration: this.audio.duration || 0,
       sleepTimerRemaining: this.sleepTimerSeconds,
+      isLoading: this.isLoading,
     };
   }
 
-  public async playTrack(track: AudioTrack, onEnded?: () => void, qariKey?: string): Promise<void> {
+  // Synchronous user-gesture play handler (guaranteed iOS & Android Safari playback)
+  public playTrack(track: AudioTrack, onEnded?: () => void, qariKey?: string): void {
     this.currentTrack = track;
     this.onTrackEndedCallback = onEnded || null;
-
-    let targetSrc = track.src;
-
-    // Check if offline local blob exists on device for instant offline playback
-    if (track.surahNumber && qariKey) {
-      try {
-        const { audioOfflineStorageService } = await import('./audioOfflineStorageService');
-        const offlineUrl = await audioOfflineStorageService.getOfflineAudioUrl(track.surahNumber, qariKey);
-        if (offlineUrl) {
-          targetSrc = offlineUrl;
-        }
-      } catch (e) {}
-    }
-
-    if (this.audio.src !== targetSrc) {
-      this.audio.src = targetSrc;
-    }
-
-    this.audio.volume = 1.0;
+    this.isLoading = true;
     this.isFadingOut = false;
+    this.audio.volume = 1.0;
+
+    // Direct synchronous src assignment
+    if (this.audio.src !== track.src) {
+      this.audio.src = track.src;
+    }
 
     this.updateMediaSession();
+    this.notify();
 
-    try {
-      await this.audio.play();
-    } catch (e) {
-      console.warn('Playback error', e);
+    // Trigger play immediately inside touch event stack
+    const playPromise = this.audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          this.isLoading = false;
+          this.handleStateChange();
+        })
+        .catch((err) => {
+          console.warn('Direct audio play failed, checking fallback', err);
+          if (track.fallbackSrc && this.audio.src !== track.fallbackSrc) {
+            this.audio.src = track.fallbackSrc;
+            this.audio.play().catch(() => {
+              this.isLoading = false;
+              this.handleStateChange();
+            });
+          } else {
+            this.isLoading = false;
+            this.handleStateChange();
+          }
+        });
     }
-    this.handleStateChange();
+
+    // Check in background if local offline blob exists for subsequent offline loads
+    if (track.surahNumber && qariKey) {
+      audioOfflineStorageService.getOfflineAudioUrl(track.surahNumber, qariKey).then((offlineUrl) => {
+        if (offlineUrl && this.currentTrack?.id === track.id && this.audio.src !== offlineUrl) {
+          // If offline blob was ready, smoothly switch to local blob if needed
+          const curTime = this.audio.currentTime;
+          this.audio.src = offlineUrl;
+          this.audio.currentTime = curTime;
+          this.audio.play().catch(() => {});
+        }
+      }).catch(() => {});
+    }
   }
 
   public play() {

@@ -99,12 +99,25 @@ export const audioOfflineStorageService = {
     qariName: string,
     onProgress?: (percent: number) => void
   ): Promise<boolean> {
-    const audioUrl = `https://cdn.islamic.network/quran/audio-surah/128/${qariKey}/${surahNumber}.mp3`;
+    const pad3 = (n: number) => String(n).padStart(3, '0');
+    const QARI_URL_MAP: Record<string, string> = {
+      'ar.alafasy': `https://server8.mp3quran.net/afs/${pad3(surahNumber)}.mp3`,
+      'ar.abdulbasitmurattal': `https://server7.mp3quran.net/basit/${pad3(surahNumber)}.mp3`,
+      'ar.minshawi': `https://server10.mp3quran.net/minsh/${pad3(surahNumber)}.mp3`,
+      'ar.saadalghamdi': `https://server7.mp3quran.net/s_gmd/${pad3(surahNumber)}.mp3`,
+      'ar.dussary': `https://server11.mp3quran.net/yasser/${pad3(surahNumber)}.mp3`,
+    };
+
+    const primaryUrl = QARI_URL_MAP[qariKey] || `https://server8.mp3quran.net/afs/${pad3(surahNumber)}.mp3`;
+    const fallbackUrl = `https://cdn.islamic.network/quran/audio-surah/128/${qariKey}/${surahNumber}.mp3`;
     const key = this.getAudioKey(surahNumber, qariKey);
 
     try {
       if (onProgress) onProgress(10);
-      const response = await fetch(audioUrl);
+      let response = await fetch(primaryUrl);
+      if (!response.ok) {
+        response = await fetch(fallbackUrl);
+      }
       if (!response.ok) throw new Error('Failed to download audio stream');
 
       const totalBytes = parseInt(response.headers.get('content-length') || '0', 10);

@@ -44,15 +44,51 @@ interface Qari {
   id: string;
   name: string;
   serverKey: string;
+  getUrl: (surahNum: number) => string;
+  fallbackUrl?: (surahNum: number) => string;
   bitrate: number;
 }
 
+const pad3 = (n: number) => String(n).padStart(3, '0');
+
 const SLEEP_QARIS: Qari[] = [
-  { id: 'alafasy', name: 'Mishary Rashid Alafasy', serverKey: 'ar.alafasy', bitrate: 128 },
-  { id: 'abdulbasit', name: 'Abdul Basit (Murattal)', serverKey: 'ar.abdulbasitmurattal', bitrate: 192 },
-  { id: 'minshawi', name: 'Muhammad Siddiq Al-Minshawi', serverKey: 'ar.minshawi', bitrate: 128 },
-  { id: 'ghamdi', name: 'Saad Al-Ghamdi', serverKey: 'ar.saadalghamdi', bitrate: 128 },
-  { id: 'dosari', name: 'Yasser Al-Dosari', serverKey: 'ar.dussary', bitrate: 128 },
+  { 
+    id: 'alafasy', 
+    name: 'Mishary Rashid Alafasy', 
+    serverKey: 'ar.alafasy',
+    getUrl: (s) => `https://server8.mp3quran.net/afs/${pad3(s)}.mp3`,
+    fallbackUrl: (s) => `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${s}.mp3`,
+    bitrate: 128 
+  },
+  { 
+    id: 'abdulbasit', 
+    name: 'Abdul Basit (Murattal)', 
+    serverKey: 'ar.abdulbasitmurattal',
+    getUrl: (s) => `https://server7.mp3quran.net/basit/${pad3(s)}.mp3`,
+    fallbackUrl: (s) => `https://cdn.islamic.network/quran/audio-surah/128/ar.abdulbasitmurattal/${s}.mp3`,
+    bitrate: 192 
+  },
+  { 
+    id: 'minshawi', 
+    name: 'Muhammad Siddiq Al-Minshawi', 
+    serverKey: 'ar.minshawi',
+    getUrl: (s) => `https://server10.mp3quran.net/minsh/${pad3(s)}.mp3`,
+    bitrate: 128 
+  },
+  { 
+    id: 'ghamdi', 
+    name: 'Saad Al-Ghamdi', 
+    serverKey: 'ar.saadalghamdi',
+    getUrl: (s) => `https://server7.mp3quran.net/s_gmd/${pad3(s)}.mp3`,
+    bitrate: 128 
+  },
+  { 
+    id: 'dosari', 
+    name: 'Yasser Al-Dosari', 
+    serverKey: 'ar.dussary',
+    getUrl: (s) => `https://server11.mp3quran.net/yasser/${pad3(s)}.mp3`,
+    bitrate: 128 
+  },
 ];
 
 export const QuranSleepStation: React.FC = () => {
@@ -81,20 +117,17 @@ export const QuranSleepStation: React.FC = () => {
     }
   }, [playerState.isPlaying, ambientSound, ambientVolume]);
 
-  const getSurahAudioUrl = (surahNum: number, qariKey: string): string => {
-    // High-quality full surah CDN stream with zero buffering
-    return `https://cdn.islamic.network/quran/audio-surah/128/${qariKey}/${surahNum}.mp3`;
-  };
-
   const handlePlaySurah = (surah: SleepSurah) => {
     setSelectedSurah(surah);
-    const audioUrl = getSurahAudioUrl(surah.id, selectedQari.serverKey);
+    const audioUrl = selectedQari.getUrl(surah.id);
+    const fallbackUrl = selectedQari.fallbackUrl ? selectedQari.fallbackUrl(surah.id) : undefined;
     const track: AudioTrack = {
       id: `sleep-surah-${surah.id}-${selectedQari.id}`,
       title: `Surah ${surah.name} (${surah.arabicName})`,
       artist: selectedQari.name,
       album: 'Quran Sleep Sanctuary • 619 Islam',
       src: audioUrl,
+      fallbackSrc: fallbackUrl,
       artwork: '/pwa-512x512.png',
       surahNumber: surah.id,
     };
@@ -103,7 +136,7 @@ export const QuranSleepStation: React.FC = () => {
       // Auto play next surah on loop
       const nextIdx = (SLEEP_SURAHS.findIndex(s => s.id === surah.id) + 1) % SLEEP_SURAHS.length;
       handlePlaySurah(SLEEP_SURAHS[nextIdx]);
-    });
+    }, selectedQari.serverKey);
 
     if (activeTimerMinutes && activeTimerMinutes > 0) {
       persistentAudioPlayer.setSleepTimer(activeTimerMinutes);
@@ -363,18 +396,20 @@ export const QuranSleepStation: React.FC = () => {
               key={qari.id}
               onClick={() => {
                 setSelectedQari(qari);
-                if (playerState.isPlaying) {
+                if (playerState.isPlaying || playerState.currentTrack) {
                   // Switch voice immediately
-                  const audioUrl = getSurahAudioUrl(selectedSurah.id, qari.serverKey);
+                  const audioUrl = qari.getUrl(selectedSurah.id);
+                  const fallbackUrl = qari.fallbackUrl ? qari.fallbackUrl(selectedSurah.id) : undefined;
                   persistentAudioPlayer.playTrack({
                     id: `sleep-surah-${selectedSurah.id}-${qari.id}`,
                     title: `Surah ${selectedSurah.name} (${selectedSurah.arabicName})`,
                     artist: qari.name,
-                    album: 'Quran Sleep Sanctuary',
+                    album: 'Quran Sleep Sanctuary • 619 Islam',
                     src: audioUrl,
+                    fallbackSrc: fallbackUrl,
                     artwork: '/pwa-512x512.png',
                     surahNumber: selectedSurah.id,
-                  });
+                  }, undefined, qari.serverKey);
                 }
               }}
               className={`p-3 rounded-2xl border text-left transition-all active:scale-95 ${
