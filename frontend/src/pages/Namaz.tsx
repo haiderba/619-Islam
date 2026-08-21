@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNamaz } from '../hooks/useNamaz';
 import { CheckCircle2, Circle, Clock, Compass, MapPin, Calendar, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +15,7 @@ const PRAYERS = [
 ];
 
 const Namaz: React.FC = () => {
+  const navigate = useNavigate();
   const { timings, hijriDate, locationName, loading, error, completedPrayers, togglePrayer } = useNamaz();
   const { user } = useAuth();
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
@@ -124,6 +126,34 @@ const Namaz: React.FC = () => {
             <Clock size={16} />
             <span className="font-medium">{nextPrayer ? nextPrayer.time : '--:--'}</span>
           </div>
+        </div>
+      </div>
+
+      {/* 🕌 Qaza Namaz Tracker Access Banner */}
+      <div 
+        onClick={() => navigate('/qaza')}
+        className="mb-8 bg-gradient-to-r from-amber-500/15 via-card to-emerald-500/15 border border-amber-500/30 hover:border-amber-500/60 p-4 rounded-3xl cursor-pointer shadow-sm active:scale-[0.99] transition-all flex items-center justify-between gap-3 group"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="p-2.5 rounded-2xl bg-amber-500/20 text-xl border border-amber-500/30 group-hover:scale-110 transition-transform shrink-0">
+            🕌
+          </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-black text-text truncate">Qaza Namaz Tracker</h3>
+              <span className="text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+                New
+              </span>
+            </div>
+            <p className="text-xs text-subtext mt-0.5 truncate">
+              Calculate, log, and fulfill lifetime missed prayers.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 text-xs font-bold text-amber-400 shrink-0">
+          <span className="hidden sm:inline">Open Tracker</span>
+          <span>➔</span>
         </div>
       </div>
 

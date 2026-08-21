@@ -103,6 +103,14 @@ export const AllFeatures: React.FC = () => {
           to: '/namaz',
         },
         {
+          id: 'qaza',
+          title: 'Qaza Namaz Tracker',
+          subtitle: 'Calculate & log missed lifetime prayers',
+          icon: <Calculator size={22} className="text-amber-400" />,
+          to: '/qaza',
+          badge: 'New ✨',
+        },
+        {
           id: 'qibla',
           title: 'Qibla Direction',
           subtitle: 'Live Compass pointing to Kaaba',
