@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Download, Share2, Sparkles, BookOpen, Volume2, Loader2, Check } from 'lucide-react';
+import { Play, Pause, Download, Share2, Sparkles, BookOpen, Volume2, Loader2, Check, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { downloadStatusCard, shareStatusCard, AyahData } from '../../utils/statusImageGenerator';
 import axios from 'axios';
@@ -24,7 +24,7 @@ const CURATED_DAILY_VERSES: [number, number, string][] = [
   // Day Set 4
   [21, 87, "There is no deity except You; exalted are You"],
   [93, 3, "Your Lord has not forsaken you, nor is He displeased"],
-  [8, 2, "The believers are those whose hearts tremble at the mention of Allah"],
+  [8, 2, "Hearts tremble at the mention of Allah"],
 
   // Day Set 5
   [2, 195, "Indeed, Allah loves the doers of good"],
@@ -33,16 +33,31 @@ const CURATED_DAILY_VERSES: [number, number, string][] = [
 
   // Day Set 6
   [20, 114, "My Lord, increase me in knowledge"],
-  [23, 118, "My Lord, forgive and have mercy, for You are the best of the merciful"],
+  [23, 118, "My Lord, forgive and have mercy"],
   [3, 200, "O you who have believed, persevere and endure"],
 
   // Day Set 7
-  [29, 69, "And those who strive for Us - We will surely guide them to Our ways"],
-  [59, 18, "Let every soul consider what it has put forward for tomorrow"],
-  [16, 97, "Whoever does righteousness, whether male or female, while he is a believer - We will surely cause him to live a good life"],
+  [29, 69, "And those who strive for Us - We guide them"],
+  [59, 18, "Consider what you put forward for tomorrow"],
+  [16, 97, "We will cause him to live a good life"],
+
+  // Day Set 8
+  [2, 45, "Seek help through patience and prayer"],
+  [25, 63, "The servants of the Most Merciful walk gently"],
+  [41, 34, "Repel evil with that which is better"],
+
+  // Day Set 9
+  [40, 60, "Call upon Me; I will respond to you"],
+  [67, 15, "Walk among its slopes and eat of His provision"],
+  [3, 159, "Put your trust in Allah. Allah loves the trusting"],
+
+  // Day Set 10
+  [10, 57, "An advice has come to you from your Lord and healing"],
+  [30, 21, "He created for you from yourselves mates for tranquility"],
+  [49, 10, "The believers are but brothers, make peace"],
 ];
 
-const DailyAyahCard: React.FC = () => {
+export const DailyAyahCard: React.FC = () => {
   const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const [ayahs, setAyahs] = useState<AyahData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -54,15 +69,19 @@ const DailyAyahCard: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const navigate = useNavigate();
 
-  // Pick 3 verses deterministically based on today's date
+  // Pick 3 verses deterministically based on today's 7:00 AM daily cycle
   useEffect(() => {
     const loadDailyVerses = async () => {
       try {
         setLoading(true);
-        const today = new Date();
-        // Day of year calculation
-        const start = new Date(today.getFullYear(), 0, 0);
-        const diff = (today.getTime() - start.getTime()) + ((start.getTimezoneOffset() - today.getTimezoneOffset()) * 60 * 1000);
+        
+        // 🌅 7:00 AM Morning Anchor:
+        // Subtract 7 hours so that the period from 7:00 AM today to 6:59 AM tomorrow shares the exact same day cycle
+        const now = new Date();
+        const cycleDate = new Date(now.getTime() - (7 * 60 * 60 * 1000));
+        
+        const start = new Date(cycleDate.getFullYear(), 0, 0);
+        const diff = (cycleDate.getTime() - start.getTime()) + ((start.getTimezoneOffset() - cycleDate.getTimezoneOffset()) * 60 * 1000);
         const oneDay = 1000 * 60 * 60 * 24;
         const dayOfYear = Math.floor(diff / oneDay);
 
@@ -165,9 +184,9 @@ const DailyAyahCard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-card border border-border p-6 rounded-3xl mb-6 shadow-sm flex flex-col items-center justify-center min-h-[220px]">
-        <Loader2 size={24} className="text-primary animate-spin mb-2" />
-        <p className="text-xs text-subtext">Loading today's Quranic verses...</p>
+      <div className="bg-card border border-border/80 p-4 rounded-3xl shadow-sm flex items-center justify-center min-h-[90px]">
+        <Loader2 size={20} className="text-amber-500 animate-spin mr-2" />
+        <span className="text-xs text-subtext font-medium">Loading daily Quranic pearls...</span>
       </div>
     );
   }
@@ -182,40 +201,37 @@ const DailyAyahCard: React.FC = () => {
 
   return (
     <>
-      {/* ── 🌟 SLEEK, PROMINENT DASHBOARD BANNER CARD (Compact & Attractive) ── */}
+      {/* ── 🌟 SLEEK, CLEAN DASHBOARD BANNER CARD ── */}
       <div 
         onClick={() => setShowModal(true)}
-        className="bg-gradient-to-r from-[#062426] via-[#0b3c3f] to-[#041c1d] border border-amber-500/40 p-3.5 sm:p-4 rounded-2xl shadow-lg shadow-teal-950/30 text-white mb-6 relative overflow-hidden cursor-pointer group hover:border-amber-400/70 hover:shadow-xl transition-all duration-300 active:scale-[0.99]"
+        className="bg-card border border-border/80 hover:border-amber-500/40 p-4 rounded-3xl shadow-sm transition-all active:scale-[0.99] cursor-pointer group relative overflow-hidden"
       >
-        {/* Glow effect */}
-        <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform" />
-        
-        <div className="flex items-center justify-between gap-3 relative z-10">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             {/* Sparkle Icon Badge */}
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500/25 to-amber-600/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Sparkles size={20} className="animate-pulse" />
             </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-amber-400">
-                  Ayah of the Day
+                <span className="text-xs font-black text-text">
+                  Daily 3 Verses
                 </span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                  3 Verses
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-bold border border-amber-500/25">
+                  7:00 AM Cycle
                 </span>
               </div>
-              <p className="text-xs text-white/90 font-medium truncate mt-0.5 max-w-[210px] sm:max-w-xs">
-                {currentAyah ? `"${currentAyah.theme || currentAyah.englishTranslation}"` : 'Daily Inspiring Verses'}
+              <p className="text-xs text-subtext font-medium truncate mt-0.5 max-w-[220px] sm:max-w-md">
+                {currentAyah ? `"${currentAyah.theme || currentAyah.englishTranslation}"` : 'Spiritual Reflection'}
               </p>
             </div>
           </div>
 
-          {/* Action Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shrink-0 shadow-md shadow-amber-500/20 group-hover:bg-amber-400 transition-colors">
-            <span>Read</span>
-            <BookOpen size={13} />
+          {/* Action Button */}
+          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/15 text-amber-400 group-hover:bg-amber-500 group-hover:text-black border border-amber-500/30 text-xs font-bold shrink-0 transition-colors">
+            <span>Read 3 Verses</span>
+            <ArrowRight size={13} />
           </div>
         </div>
       </div>
@@ -234,7 +250,7 @@ const DailyAyahCard: React.FC = () => {
               }}
               className="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors z-20"
             >
-              ✕
+              <X size={18} />
             </button>
 
             {/* Modal Header */}
@@ -245,10 +261,10 @@ const DailyAyahCard: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     <Sparkles size={12} className="text-amber-400" />
                     <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest">
-                      Ayah of the Day
+                      Daily Verses
                     </span>
                   </div>
-                  <p className="text-[10px] text-white/60">3 Daily Inspiring Verses</p>
+                  <p className="text-[10px] text-white/60">Updated every morning at 7:00 AM</p>
                 </div>
               </div>
 
@@ -258,7 +274,7 @@ const DailyAyahCard: React.FC = () => {
                   <button
                     key={i}
                     onClick={() => handleSelectTab(i)}
-                    className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-all duration-200 ${
+                    className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all duration-200 ${
                       selectedIdx === i
                         ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30'
                         : 'text-white/60 hover:text-white'
@@ -270,7 +286,7 @@ const DailyAyahCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Middle: Arabic & English Content (100% Top-Safe Scroll View) */}
+            {/* Middle: Arabic & English Content */}
             <div className="relative z-10 flex-1 overflow-y-auto min-h-0 py-4 px-2 scrollbar-none flex flex-col items-center text-center">
               <div className="w-full flex flex-col items-center space-y-4 pt-1 pb-4">
                 <p className={`font-arabic text-amber-100 font-medium drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)] ${arabicFontClass}`}>
