@@ -82,7 +82,16 @@ const SurahReader: React.FC = () => {
 
   // Global Ayah Audio State
   const [playingAyah, setPlayingAyah] = useState<number | null>(null);
+  const [playingPhase, setPlayingPhase] = useState<'arabic' | 'urdu' | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Urdu Voice Translation Audio Configuration
+  const [includeUrduAudio, setIncludeUrduAudio] = useState<boolean>(() => {
+    return localStorage.getItem('quran_include_urdu_audio') === 'true';
+  });
+  const [urduVoiceId, setUrduVoiceId] = useState<string>(() => {
+    return localStorage.getItem('quran_urdu_voice_id') || 'urdu_jalandhari';
+  });
 
   useEffect(() => {
     if (id) {
@@ -147,8 +156,7 @@ const SurahReader: React.FC = () => {
     audio.play().catch(() => setPlayingWordId(null));
   };
 
-  // Universal Bulletproof Audio URL Resolver
-  // Universal Bulletproof Audio URL Resolver for all 11 Qaris
+  // Universal Bulletproof Audio URL Resolver for all 11 Arabic Qaris & Urdu Voices
   const getAyahAudioUrl = (surahNum: number, ayahNum: number, qariId: string) => {
     const s3 = String(surahNum).padStart(3, '0');
     const a3 = String(ayahNum).padStart(3, '0');
@@ -164,29 +172,53 @@ const SurahReader: React.FC = () => {
       '12': 'MaherAlMuaiqly128kbps',
       '5': 'Ghamadi_40kbps',
       '11': 'Yasser_Ad-Dussary_128kbps',
+      'urdu_jalandhari': 'translations/urdu_shamshad_ali_khan_46kbps',
+      'urdu_farhat': 'translations/urdu_farhat_hashmi',
     };
     const folder = qariMap[qariId] || 'Alafasy_128kbps';
     return `https://everyayah.com/data/${folder}/${s3}${a3}.mp3`;
   };
 
-  const togglePlay = (ayahNumber: number, explicitUrl?: string, overrideQari?: string) => {
+  // Dedicated Urdu Translation Audio URL Resolver
+  const getAyahUrduAudioUrl = (surahNum: number, ayahNum: number, voiceId: string = urduVoiceId) => {
+    const s3 = String(surahNum).padStart(3, '0');
+    const a3 = String(ayahNum).padStart(3, '0');
+    const folder = voiceId === 'urdu_farhat'
+      ? 'translations/urdu_farhat_hashmi'
+      : 'translations/urdu_shamshad_ali_khan_46kbps';
+    return `https://everyayah.com/data/${folder}/${s3}${a3}.mp3`;
+  };
+
+  const togglePlay = (
+    ayahNumber: number, 
+    explicitUrl?: string, 
+    overrideQari?: string,
+    phase: 'arabic' | 'urdu' = 'arabic'
+  ) => {
     if (!surah) return;
 
     const qariToUse = overrideQari || selectedQari;
+    const isQariUrdu = qariToUse.startsWith('urdu_');
 
-    // Toggle pause if currently playing the exact same ayah
-    if (playingAyah === ayahNumber && !overrideQari && audioRef.current && !audioRef.current.paused) {
+    // Toggle pause if currently playing the exact same ayah and phase
+    if (playingAyah === ayahNumber && playingPhase === phase && !overrideQari && audioRef.current && !audioRef.current.paused) {
       audioRef.current.pause();
       setPlayingAyah(null);
+      setPlayingPhase(null);
       if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'paused';
       }
       return;
     }
 
-    const targetUrl = explicitUrl && explicitUrl.startsWith('http')
-      ? explicitUrl
-      : getAyahAudioUrl(surah.number, ayahNumber, qariToUse);
+    let targetUrl: string;
+    if (explicitUrl && explicitUrl.startsWith('http')) {
+      targetUrl = explicitUrl;
+    } else if (phase === 'urdu' && !isQariUrdu) {
+      targetUrl = getAyahUrduAudioUrl(surah.number, ayahNumber, urduVoiceId);
+    } else {
+      targetUrl = getAyahAudioUrl(surah.number, ayahNumber, qariToUse);
+    }
 
     // Reuse persistent audio instance to guarantee seamless screen-off background playback on iOS & Android
     let player = audioRef.current;
@@ -217,14 +249,20 @@ const SurahReader: React.FC = () => {
     };
 
     setPlayingAyah(ayahNumber);
+    setPlayingPhase(phase);
     setMushafSelectedAyah(ayahNumber);
 
     // 🌟 Set up Lock-Screen MediaSession Controls (Background Playback)
     if ('mediaSession' in navigator && surah) {
       const qariObj = QARI_OPTIONS.find(q => q.id === qariToUse);
+      const isUrduNow = phase === 'urdu' || isQariUrdu;
+      const voiceTitle = isUrduNow
+        ? (urduVoiceId === 'urdu_farhat' ? 'Urdu Voice (Dr. Farhat Hashmi)' : 'Urdu Voice (Fateh Jalandhari)')
+        : (qariObj?.name || 'Quran Recitation');
+
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: `Surah ${surah.englishName} (${surah.name}) — Verse ${ayahNumber}`,
-        artist: qariObj?.name || 'Quran Recitation',
+        title: `Surah ${surah.englishName} — Verse ${ayahNumber} ${isUrduNow ? '(Urdu Translation)' : ''}`,
+        artist: voiceTitle,
         album: '619 Islam — The Holy Quran',
         artwork: [
           { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
@@ -259,11 +297,19 @@ const SurahReader: React.FC = () => {
     }
 
     player.onended = () => {
+      // 🌟 If Urdu voice is enabled and we just finished Arabic recitation, play Urdu translation for this Ayah next!
+      if (includeUrduAudio && phase === 'arabic' && !isQariUrdu) {
+        togglePlay(ayahNumber, undefined, qariToUse, 'urdu');
+        return;
+      }
+
+      // Otherwise advance to next Ayah (in Arabic)
       const nextAyah = surah.ayahs.find(a => a.numberInSurah === ayahNumber + 1);
       if (nextAyah) {
-        togglePlay(nextAyah.numberInSurah, undefined, qariToUse);
+        togglePlay(nextAyah.numberInSurah, undefined, qariToUse, 'arabic');
       } else {
         setPlayingAyah(null);
+        setPlayingPhase(null);
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = 'none';
         }
@@ -271,19 +317,35 @@ const SurahReader: React.FC = () => {
     };
 
     player.onerror = () => {
-      // Fallback to EveryAyah Alafasy if primary fails
-      const fallbackUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surah.number).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
-      if (targetUrl !== fallbackUrl && audioRef.current) {
-        audioRef.current.src = fallbackUrl;
-        audioRef.current.play().catch(() => setPlayingAyah(null));
+      if (phase === 'urdu') {
+        // If Urdu fails, advance to next ayah smoothly
+        const nextAyah = surah.ayahs.find(a => a.numberInSurah === ayahNumber + 1);
+        if (nextAyah) {
+          togglePlay(nextAyah.numberInSurah, undefined, qariToUse, 'arabic');
+        } else {
+          setPlayingAyah(null);
+          setPlayingPhase(null);
+        }
       } else {
-        setPlayingAyah(null);
+        // Fallback to EveryAyah Alafasy if primary fails
+        const fallbackUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surah.number).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
+        if (targetUrl !== fallbackUrl && audioRef.current) {
+          audioRef.current.src = fallbackUrl;
+          audioRef.current.play().catch(() => {
+            setPlayingAyah(null);
+            setPlayingPhase(null);
+          });
+        } else {
+          setPlayingAyah(null);
+          setPlayingPhase(null);
+        }
       }
     };
 
     player.play().catch((err) => {
       console.warn('Audio play was interrupted', err);
       setPlayingAyah(null);
+      setPlayingPhase(null);
     });
 
     // Scroll into view on mobile
@@ -309,7 +371,7 @@ const SurahReader: React.FC = () => {
 
     // Play immediately with new voice
     setTimeout(() => {
-      togglePlay(targetAyah, undefined, qariId);
+      togglePlay(targetAyah, undefined, qariId, 'arabic');
     }, 10);
   };
 
@@ -328,14 +390,14 @@ const SurahReader: React.FC = () => {
     if (!surah || surah.ayahs.length === 0) return;
     const current = playingAyah || 1;
     const nextAyah = surah.ayahs.find(a => a.numberInSurah === current + 1) || surah.ayahs[0];
-    togglePlay(nextAyah.numberInSurah, nextAyah.audio);
+    togglePlay(nextAyah.numberInSurah, nextAyah.audio, undefined, 'arabic');
   };
 
   const playPrev = () => {
     if (!surah || surah.ayahs.length === 0) return;
     const current = playingAyah || 1;
     const prevAyah = surah.ayahs.find(a => a.numberInSurah === current - 1) || surah.ayahs[surah.ayahs.length - 1];
-    togglePlay(prevAyah.numberInSurah, prevAyah.audio);
+    togglePlay(prevAyah.numberInSurah, prevAyah.audio, undefined, 'arabic');
   };
 
   useEffect(() => {
@@ -546,6 +608,16 @@ const SurahReader: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {isPlaying && (
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-sm ${
+                        playingPhase === 'urdu'
+                          ? 'bg-emerald-500 text-black animate-pulse'
+                          : 'bg-primary/20 text-primary border border-primary/30'
+                      }`}>
+                        <Volume2 size={12} />
+                        <span>{playingPhase === 'urdu' ? 'Urdu Voice' : 'Arabic Recitation'}</span>
+                      </span>
+                    )}
                     <button
                       onClick={() => togglePlay(ayah.numberInSurah, ayah.audio)}
                       className={`p-2.5 rounded-xl transition-all active:scale-90 ${
@@ -656,14 +728,26 @@ const SurahReader: React.FC = () => {
                     </button>
                   </div>
 
-                  <button
-                    onClick={() => togglePlay(ayah.numberInSurah, ayah.audio)}
-                    className={`p-2.5 rounded-xl transition-all active:scale-90 ${
-                      isPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface hover:bg-border text-text'
-                    }`}
-                  >
-                    {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {isPlaying && (
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-sm ${
+                        playingPhase === 'urdu'
+                          ? 'bg-emerald-500 text-black animate-pulse'
+                          : 'bg-primary/20 text-primary border border-primary/30'
+                      }`}>
+                        <Volume2 size={12} />
+                        <span>{playingPhase === 'urdu' ? 'Urdu Voice' : 'Arabic Recitation'}</span>
+                      </span>
+                    )}
+                    <button
+                      onClick={() => togglePlay(ayah.numberInSurah, ayah.audio)}
+                      className={`p-2.5 rounded-xl transition-all active:scale-90 ${
+                        isPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface hover:bg-border text-text'
+                      }`}
+                    >
+                      {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Clean Arabic Verse */}
@@ -789,9 +873,9 @@ const SurahReader: React.FC = () => {
           </div>
         )}
 
-        {/* Reciter Voice Picker Sheet */}
+        {/* Reciter Voice Picker Sheet with Arabic & Urdu Voice Translation */}
         {showQariMenu && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 max-h-[55vh] overflow-y-auto animate-in slide-in-from-bottom-4 z-50">
+          <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 max-h-[65vh] overflow-y-auto animate-in slide-in-from-bottom-4 z-50">
             <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-border">
               <h3 className="text-xs sm:text-sm font-bold text-text flex items-center gap-1.5">
                 <Mic size={15} className="text-primary" />
@@ -801,8 +885,72 @@ const SurahReader: React.FC = () => {
                 <X size={15} />
               </button>
             </div>
-            <div className="space-y-1">
-              {QARI_OPTIONS.map(qari => (
+
+            {/* 🌟 Urdu Voice After Arabic Recitation Setting */}
+            <div className="mb-3 p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base">🇵🇰</span>
+                  <div>
+                    <span className="text-xs font-black text-emerald-400 block leading-tight">Urdu Audio Translation</span>
+                    <span className="text-[10px] text-emerald-300/80">Play Urdu voice after Arabic Ayah</span>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeUrduAudio}
+                    onChange={(e) => {
+                      setIncludeUrduAudio(e.target.checked);
+                      localStorage.setItem('quran_include_urdu_audio', String(e.target.checked));
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+
+              {/* Urdu Voice Selection */}
+              {includeUrduAudio && (
+                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                  <button
+                    onClick={() => {
+                      setUrduVoiceId('urdu_jalandhari');
+                      localStorage.setItem('quran_urdu_voice_id', 'urdu_jalandhari');
+                    }}
+                    className={`p-2 rounded-xl text-[10px] font-bold text-left border transition-all ${
+                      urduVoiceId === 'urdu_jalandhari'
+                        ? 'bg-emerald-500 text-black border-emerald-500 font-black shadow-sm'
+                        : 'bg-card text-subtext border-border'
+                    }`}
+                  >
+                    <span>Fateh Jalandhari</span>
+                    <span className="block text-[8px] opacity-80">Shamshad Ali Khan</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUrduVoiceId('urdu_farhat');
+                      localStorage.setItem('quran_urdu_voice_id', 'urdu_farhat');
+                    }}
+                    className={`p-2 rounded-xl text-[10px] font-bold text-left border transition-all ${
+                      urduVoiceId === 'urdu_farhat'
+                        ? 'bg-emerald-500 text-black border-emerald-500 font-black shadow-sm'
+                        : 'bg-card text-subtext border-border'
+                    }`}
+                  >
+                    <span>Dr. Farhat Hashmi</span>
+                    <span className="block text-[8px] opacity-80">Word & Verse</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 1. Renowned Arabic Qaris */}
+            <div className="space-y-1 mb-3">
+              <span className="text-[10px] font-black uppercase text-subtext tracking-wider px-1 block mb-1">
+                🎙️ Arabic Reciters
+              </span>
+              {QARI_OPTIONS.filter(q => !q.isTranslation).map(qari => (
                 <button 
                   key={qari.id}
                   onClick={() => handleSelectQari(qari.id)}
@@ -814,6 +962,32 @@ const SurahReader: React.FC = () => {
                 >
                   <span className="text-xs font-semibold">{qari.name}</span>
                   {selectedQari === qari.id && <Check size={15} />}
+                </button>
+              ))}
+            </div>
+
+            {/* 2. Standalone Urdu Voice Translators */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider px-1 block mb-1">
+                🇵🇰 Direct Urdu Audio Reciters
+              </span>
+              {QARI_OPTIONS.filter(q => q.isTranslation).map(qari => (
+                <button 
+                  key={qari.id}
+                  onClick={() => handleSelectQari(qari.id)}
+                  className={`w-full text-left p-2.5 rounded-xl sm:rounded-2xl flex items-center justify-between transition-all ${
+                    selectedQari === qari.id 
+                      ? 'bg-emerald-500/15 border border-emerald-500 text-emerald-400 font-bold shadow-sm' 
+                      : 'bg-surface hover:bg-border text-text'
+                  }`}
+                >
+                  <div>
+                    <span className="text-xs font-bold block">{qari.name}</span>
+                    {qari.translator && (
+                      <span className="text-[9px] text-subtext">{qari.translator}</span>
+                    )}
+                  </div>
+                  {selectedQari === qari.id && <Check size={15} className="text-emerald-400" />}
                 </button>
               ))}
             </div>
@@ -883,7 +1057,26 @@ const SurahReader: React.FC = () => {
             <ChevronUp size={10} className={`text-muted shrink-0 transition-transform ${showQariMenu ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* 3. Speed Selector Button */}
+          {/* 3. 🇵🇰 1-Tap Urdu Translation Audio Toggle Pill */}
+          <button
+            onClick={() => {
+              const next = !includeUrduAudio;
+              setIncludeUrduAudio(next);
+              localStorage.setItem('quran_include_urdu_audio', String(next));
+            }}
+            className={`flex items-center gap-0.5 sm:gap-1 py-1 px-1.5 sm:px-2 rounded-xl text-[10px] sm:text-xs font-bold border transition-all shrink-0 active:scale-95 ${
+              includeUrduAudio 
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm' 
+                : 'bg-surface text-subtext border-border/60 hover:text-text'
+            }`}
+            title="Toggle Urdu Translation Voice Recitation"
+          >
+            <span>🇵🇰</span>
+            <span className="hidden sm:inline">Urdu Voice</span>
+            <span className="sm:hidden">{includeUrduAudio ? 'Urdu ON' : 'Urdu'}</span>
+          </button>
+
+          {/* 4. Speed Selector Button */}
           <button
             onClick={() => {
               setShowSpeedMenu(!showSpeedMenu);
@@ -901,7 +1094,7 @@ const SurahReader: React.FC = () => {
             <span>{playbackSpeed}x</span>
           </button>
 
-          {/* 4. Play/Pause & Skip Controls */}
+          {/* 5. Play/Pause & Skip Controls */}
           <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
             <button 
               onClick={playPrev}

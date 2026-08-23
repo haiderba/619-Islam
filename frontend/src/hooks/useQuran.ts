@@ -84,18 +84,44 @@ export const AVAILABLE_TRANSLATIONS: TranslationOption[] = [
   { id: "83", name: "Spanish (Sheikh Isa Garcia)", lang: "es", isRtl: false },
 ];
 
-export const QARI_OPTIONS = [
-  { id: '7', name: 'Mishary Rashid Alafasy' },
-  { id: '2', name: 'AbdulBaset AbdulSamad (Murattal)' },
-  { id: '1', name: 'AbdulBaset AbdulSamad (Mujawwad)' },
-  { id: '6', name: 'Mahmoud Khalil Al-Husary' },
-  { id: '9', name: 'Mohamed Siddiq al-Minshawi (Murattal)' },
-  { id: '8', name: 'Mohamed Siddiq al-Minshawi (Mujawwad)' },
-  { id: '3', name: 'Abdur-Rahman as-Sudais' },
-  { id: '4', name: 'Abu Bakr Al-Shatri' },
-  { id: '12', name: 'Maher Al-Muaiqly' },
-  { id: '5', name: 'Saad Al-Ghamdi' },
-  { id: '11', name: 'Yasser Ad-Dussary' },
+export interface QariOption {
+  id: string;
+  name: string;
+  arabicName?: string;
+  lang?: 'ar' | 'ur';
+  isTranslation?: boolean;
+  translator?: string;
+}
+
+export const QARI_OPTIONS: QariOption[] = [
+  // 🎙️ Renowned Arabic Qaris
+  { id: '7', name: 'Mishary Rashid Alafasy', lang: 'ar' },
+  { id: '2', name: 'AbdulBaset AbdulSamad (Murattal)', lang: 'ar' },
+  { id: '1', name: 'AbdulBaset AbdulSamad (Mujawwad)', lang: 'ar' },
+  { id: '3', name: 'Abdur-Rahman as-Sudais', lang: 'ar' },
+  { id: '9', name: 'Mohamed Siddiq al-Minshawi (Murattal)', lang: 'ar' },
+  { id: '8', name: 'Mohamed Siddiq al-Minshawi (Mujawwad)', lang: 'ar' },
+  { id: '6', name: 'Mahmoud Khalil Al-Husary', lang: 'ar' },
+  { id: '4', name: 'Abu Bakr Al-Shatri', lang: 'ar' },
+  { id: '12', name: 'Maher Al-Muaiqly', lang: 'ar' },
+  { id: '5', name: 'Saad Al-Ghamdi', lang: 'ar' },
+  { id: '11', name: 'Yasser Ad-Dussary', lang: 'ar' },
+
+  // 🇵🇰 Urdu Voice Translations
+  { 
+    id: 'urdu_jalandhari', 
+    name: 'Urdu Voice (Fateh Jalandhari - Shamshad Ali Khan)', 
+    lang: 'ur',
+    isTranslation: true,
+    translator: 'Fateh Muhammad Jalandhari'
+  },
+  { 
+    id: 'urdu_farhat', 
+    name: 'Urdu Voice (Dr. Farhat Hashmi)', 
+    lang: 'ur',
+    isTranslation: true,
+    translator: 'Dr. Farhat Hashmi'
+  },
 ];
 
 export const TAFSIR_OPTIONS = [
