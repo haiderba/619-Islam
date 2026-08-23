@@ -131,8 +131,70 @@ export const qazaService = {
     return data;
   },
 
+  getTodayLogs(): QazaLogEntry[] {
+    const today = new Date().toISOString().slice(0, 10);
+    return this.getLogs().filter(l => l.date === today);
+  },
+
+  getTodayCompletedCount(): number {
+    return this.getTodayLogs().reduce((acc, log) => {
+      if (log.prayer === 'full_day') {
+        return acc + (log.count * 6);
+      }
+      return acc + log.count;
+    }, 0);
+  },
+
+  setDailyGoal(goal: number): QazaData {
+    const data = this.getData();
+    data.dailyGoal = Math.max(1, goal);
+    this.saveData(data);
+    return data;
+  },
+
+  deleteLog(id: string): { data: QazaData; logs: QazaLogEntry[] } {
+    const logs = this.getLogs();
+    const targetLog = logs.find(l => l.id === id);
+    const data = this.getData();
+
+    if (targetLog) {
+      if (targetLog.prayer === 'full_day') {
+        const prayers: QazaPrayerKey[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'witr'];
+        prayers.forEach(p => {
+          data.completed[p] = Math.max(0, (data.completed[p] || 0) - targetLog.count);
+        });
+      } else {
+        data.completed[targetLog.prayer] = Math.max(0, (data.completed[targetLog.prayer] || 0) - targetLog.count);
+      }
+      this.saveData(data);
+    }
+
+    const updatedLogs = logs.filter(l => l.id !== id);
+    localStorage.setItem(QAZA_LOGS_KEY, JSON.stringify(updatedLogs));
+    return { data, logs: updatedLogs };
+  },
+
   resetAll(): void {
     localStorage.removeItem(QAZA_STORAGE_KEY);
     localStorage.removeItem(QAZA_LOGS_KEY);
+  },
+
+  resetData(mode: 'all' | 'completed' | 'targets'): QazaData {
+    const current = this.getData();
+    if (mode === 'all') {
+      localStorage.removeItem(QAZA_STORAGE_KEY);
+      localStorage.removeItem(QAZA_LOGS_KEY);
+      return DEFAULT_QAZA_DATA;
+    } else if (mode === 'completed') {
+      current.completed = { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 };
+      localStorage.removeItem(QAZA_LOGS_KEY);
+      this.saveData(current);
+      return current;
+    } else if (mode === 'targets') {
+      current.totalTarget = { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 };
+      this.saveData(current);
+      return current;
+    }
+    return current;
   }
 };
