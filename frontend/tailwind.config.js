@@ -8,7 +8,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        arabic: ['"Amiri"', '"Scheherazade New"', '"Traditional Arabic"', 'serif'],
+        arabic: ['"Amiri Quran"', '"Scheherazade New"', '"Amiri"', '"KFGQPC Uthmanic Script HAFS"', '"Traditional Arabic"', 'serif'],
+        quran: ['"Amiri Quran"', '"Scheherazade New"', '"Amiri"', '"Al Qalam Quran"', 'serif'],
+        urdu: ['"Noto Nastaliq Urdu"', '"Jameel Noori Nastaleeq"', '"Gulzar"', '"Urdu Typesetting"', '"Nafees Nastaleeq"', 'serif'],
+        nastaliq: ['"Noto Nastaliq Urdu"', '"Jameel Noori Nastaleeq"', '"Gulzar"', 'serif'],
       },
       colors: {
         // Shared colors

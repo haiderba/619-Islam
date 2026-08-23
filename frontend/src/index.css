@@ -1,8 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Gulzar&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Scheherazade+New:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .font-urdu, .font-nastaliq {
+    font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Gulzar', 'Urdu Typesetting', serif;
+    line-height: 2.2;
+  }
+  .font-arabic, .font-quran {
+    font-family: 'Amiri Quran', 'Scheherazade New', 'Amiri', serif;
+  }
+}
 
 @layer base {
   :root {

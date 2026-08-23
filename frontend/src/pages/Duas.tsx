@@ -260,7 +260,7 @@ export const Duas: React.FC = () => {
                 </p>
 
                 {/* Urdu Translation */}
-                <p className="text-xs sm:text-sm font-urdu text-emerald-600 dark:text-emerald-300 font-semibold leading-relaxed">
+                <p className="text-sm sm:text-base font-urdu text-right text-emerald-600 dark:text-emerald-300 font-medium leading-[2.2]" dir="rtl">
                   {dua.urdu}
                 </p>
 

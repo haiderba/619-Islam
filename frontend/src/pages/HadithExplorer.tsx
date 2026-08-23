@@ -178,7 +178,7 @@ export const HadithExplorer: React.FC = () => {
             </div>
 
             {/* Arabic Text */}
-            <p className="text-lg sm:text-xl font-black font-arabic text-amber-400 text-right leading-loose py-1">
+            <p className="text-lg sm:text-xl font-black font-arabic text-amber-400 text-right leading-loose py-1" dir="rtl">
               {h.arabic}
             </p>
 
@@ -188,7 +188,7 @@ export const HadithExplorer: React.FC = () => {
             </p>
 
             {/* Urdu Translation */}
-            <p className="text-xs sm:text-sm font-urdu text-emerald-600 dark:text-emerald-300 font-semibold leading-relaxed">
+            <p className="text-sm sm:text-base font-urdu text-right text-emerald-600 dark:text-emerald-300 font-medium leading-[2.2]" dir="rtl">
               {h.urdu}
             </p>
 
