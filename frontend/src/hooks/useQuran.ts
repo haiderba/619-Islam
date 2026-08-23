@@ -107,20 +107,12 @@ export const QARI_OPTIONS: QariOption[] = [
   { id: '5', name: 'Saad Al-Ghamdi', lang: 'ar' },
   { id: '11', name: 'Yasser Ad-Dussary', lang: 'ar' },
 
-  // 🇵🇰 Urdu Voice Translations
+  // 🇵🇰 Urdu Voice Translation
   { 
-    id: 'urdu_jalandhari', 
-    name: 'Urdu Voice (Fateh Jalandhari - Shamshad Ali Khan)', 
+    id: 'urdu_translation', 
+    name: 'Urdu Translation Voice (اردو ترجمہ آواز)', 
     lang: 'ur',
     isTranslation: true,
-    translator: 'Fateh Muhammad Jalandhari'
-  },
-  { 
-    id: 'urdu_farhat', 
-    name: 'Urdu Voice (Dr. Farhat Hashmi)', 
-    lang: 'ur',
-    isTranslation: true,
-    translator: 'Dr. Farhat Hashmi'
   },
 ];
 
