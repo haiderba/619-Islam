@@ -1,0 +1,30 @@
+# Cloudflare Edge & Browser Caching Policy for 619 Islam
+
+# 1. Zero Cache for HTML & Manifests (Guarantee instant updates on every deployment)
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+
+/version.json
+  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+
+/sw-custom.js
+  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+
+/manifest.webmanifest
+  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+  Pragma: no-cache
+
+# 2. Immutable Long-Term Cache for Versioned/Hashed Assets (JS/CSS)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

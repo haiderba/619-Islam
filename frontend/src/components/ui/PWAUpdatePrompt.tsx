@@ -12,6 +12,7 @@ const PWAUpdatePrompt: React.FC = () => {
     showWhatsNew,
     setShowWhatsNew,
     currentVersion,
+    serverVersion,
   } = useAppUpdate();
 
   return (
@@ -38,7 +39,7 @@ const PWAUpdatePrompt: React.FC = () => {
             </h3>
             
             <p className="text-xs text-subtext leading-relaxed mb-6">
-              A new version of <strong>619 Islam</strong> (v{currentVersion}) is ready with new features and performance enhancements.
+              A new version of <strong>619 Islam</strong> (v{serverVersion || currentVersion}) is ready with new features and enhancements.
             </p>
 
             <div className="space-y-2.5">

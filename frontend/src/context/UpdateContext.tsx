@@ -148,13 +148,12 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const ver = data.version;
         const needsReinstall = !!data.requiresReinstall;
 
-        // ONLY trigger update if server version is strictly newer than current running app version
+        // Trigger update if server version is strictly newer than current running app version
         if (ver && isNewerVersion(ver, CURRENT_APP_VERSION)) {
-          // If the user already tapped update or dismissed for this version in this session, do not prompt repeatedly
+          // If the user explicitly dismissed for this version in this active tab session, respect it
           const dismissed = sessionStorage.getItem('dismissed_update_version');
-          const applied = localStorage.getItem('applied_update_version');
           
-          if (dismissed === ver || applied === ver) {
+          if (dismissed === ver) {
             setManualUpdateAvailable(false);
             return {
               hasUpdate: false,
@@ -198,15 +197,14 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   };
 
-  // Poll for updates on load (500ms), on focus, on reconnect, and every 15s
+  // Poll for updates on load (0ms), on focus, on reconnect, and every 8s
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      checkLiveVersion();
-    }, 500);
+    // Immediate check
+    checkLiveVersion();
 
     const interval = setInterval(() => {
       checkLiveVersion();
-    }, 15 * 1000);
+    }, 8 * 1000);
 
     const handleVisibility = () => {
       checkLiveVersion();
@@ -223,7 +221,6 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     window.addEventListener('pageshow', handleVisibility);
 
     return () => {
-      clearTimeout(timeout);
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', handleVisibility);
@@ -252,7 +249,6 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const targetVer = serverVersion || CURRENT_APP_VERSION;
     sessionStorage.setItem('dismissed_update_version', targetVer);
-    localStorage.setItem('applied_update_version', targetVer);
     localStorage.setItem('show_whats_new_after_update', 'true');
     localStorage.setItem('last_seen_app_version', targetVer);
 
