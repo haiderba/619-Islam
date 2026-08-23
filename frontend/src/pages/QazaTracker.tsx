@@ -176,23 +176,23 @@ export const QazaTracker: React.FC = () => {
         </div>
 
         {/* Action Pills */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 text-xs font-bold shadow-sm active:scale-95 transition-all"
-            title="Open Qaza Calculator Wizard"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs sm:text-xs shadow-md shadow-amber-500/30 active:scale-95 transition-all border border-amber-400/50"
+            title="Calculate Qaza Namaz"
           >
-            <Calculator size={14} />
-            <span className="hidden sm:inline">Calculator Wizard</span>
-            <span className="sm:hidden">Wizard</span>
+            <Calculator size={15} className="shrink-0" />
+            <span className="font-black tracking-tight whitespace-nowrap">Calculate Qaza Namaz</span>
           </button>
 
           <button
             onClick={() => setShowResetModal(true)}
-            className="p-2 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-all active:scale-95"
+            className="p-2 sm:px-3 sm:py-2 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 hover:border-rose-500/50 shadow-sm transition-all active:scale-95 flex items-center gap-1 shrink-0"
             title="Reset Qaza Tracker"
           >
-            <RotateCcw size={16} />
+            <RotateCcw size={15} />
+            <span className="hidden sm:inline text-xs font-bold">Reset</span>
           </button>
         </div>
       </header>
