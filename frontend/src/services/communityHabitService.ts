@@ -1,10 +1,64 @@
-import { CommunityHabit, UserHabitRecord, UserHabitsSummary } from '../types/communityHabits';
+import { 
+  CommunityHabit, 
+  UserHabitRecord, 
+  UserHabitsSummary, 
+  NamazPrayerStatus 
+} from '../types/communityHabits';
 import { api } from '../config/api';
 
 const COMMUNITY_HABITS_STORAGE_KEY = '619_community_habits_store';
 const USER_HABITS_PROGRESS_KEY = '619_user_habits_progress';
 
+export const PRAYER_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+export type PrayerKey = typeof PRAYER_KEYS[number];
+
 export const INITIAL_CURATED_HABITS: CommunityHabit[] = [
+  {
+    id: 'habit_namaz_5daily',
+    title: 'The 5 Daily Prayers (On-Time & Jama\'ah)',
+    arabicTitle: 'إقامة الصلوات الخمس في أوقاتها',
+    urduTitle: 'پانچ وقت نماز کی پابندی و باجماعت ادائیگی',
+    category: 'namaz',
+    description: 'Track and fulfill your 5 obligatory daily prayers on time. Mark prayers as they arrive and record congregation (Jama\'ah) rewards.',
+    virtue: 'Prophet Muhammad (ﷺ) said: "The first thing for which a person will be brought to account on the Day of Judgment is prayer." (Sunan at-Tirmidhi 413)',
+    targetDays: 0,
+    durationLabel: 'Daily Obligatory Habit',
+    reminderTime: '05:00',
+    iconName: 'Flame',
+    colorTheme: 'amber',
+    isPinned: true,
+    memberCount: 4890,
+    todayCompletedCount: 3420,
+    totalAllTimeCompletions: 128400,
+    createdAt: new Date().toISOString(),
+    namazConfig: {
+      trackAll5: true,
+      includeWitr: true,
+    }
+  },
+  {
+    id: 'habit_quran_khatam_journey',
+    title: 'Daily Quran Journey (Sequential Bookmark)',
+    arabicTitle: 'ختمة القرآن الكريم اليومية',
+    urduTitle: 'روزانہ تلاوتِ قرآن مع ترجمہ و فہم',
+    category: 'quran',
+    description: 'A continuous personal Quran reading journey. Read your next assigned Ayahs daily with Urdu/English translation and audio recitation.',
+    virtue: '"A Book We have sent down to you, full of blessings, that they may ponder over its verses, and that men of understanding may remember." (Surah Sad 38:29)',
+    targetDays: 0,
+    durationLabel: 'Continuous Khatam Journey',
+    reminderTime: '07:30',
+    iconName: 'BookOpen',
+    colorTheme: 'cyan',
+    isPinned: true,
+    memberCount: 3950,
+    todayCompletedCount: 2680,
+    totalAllTimeCompletions: 94500,
+    createdAt: new Date().toISOString(),
+    quranConfig: {
+      mode: 'progressive_khatam',
+      targetPacePerDay: '1 Ruku / 1 Page Daily',
+    }
+  },
   {
     id: 'habit_surah_mulk',
     title: 'Surah Al-Mulk Before Sleep',
@@ -19,29 +73,17 @@ export const INITIAL_CURATED_HABITS: CommunityHabit[] = [
     iconName: 'Moon',
     colorTheme: 'indigo',
     isPinned: true,
-    memberCount: 2840,
-    todayCompletedCount: 1690,
-    totalAllTimeCompletions: 48920,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'habit_morning_adhkar',
-    title: 'Morning & Evening Adhkar',
-    arabicTitle: 'أذكار الصباح والمساء',
-    urduTitle: 'صبح و شام کے مسنون اذکار',
-    category: 'dhikr',
-    description: 'Recite authentic daily morning (after Fajr) and evening (after Asr) supplications for spiritual tranquility and divine protection.',
-    virtue: '"O you who have believed, remember Allah with much remembrance and glorify Him morning and afternoon." (Surah Al-Ahzab 33:41-42)',
-    targetDays: 0,
-    durationLabel: 'Daily Habit',
-    reminderTime: '05:30',
-    iconName: 'Sun',
-    colorTheme: 'amber',
-    isPinned: true,
     memberCount: 3120,
-    todayCompletedCount: 2210,
-    totalAllTimeCompletions: 64100,
+    todayCompletedCount: 1980,
+    totalAllTimeCompletions: 56700,
     createdAt: new Date().toISOString(),
+    quranConfig: {
+      mode: 'fixed_ayah',
+      surahNumber: 67,
+      surahName: 'Al-Mulk',
+      ayahStart: 1,
+      ayahEnd: 30,
+    }
   },
   {
     id: 'habit_daily_istighfar',
@@ -49,7 +91,7 @@ export const INITIAL_CURATED_HABITS: CommunityHabit[] = [
     arabicTitle: 'الاستغفار ١٠٠ مرة يومياً',
     urduTitle: 'روزانہ 100 مرتبہ استغفار',
     category: 'dhikr',
-    description: 'Recite Astaghfirullah wa Atubu Ilayh 100 times throughout the day to purify the heart and open doors of sustenance (Rizq).',
+    description: 'Tap the in-card Tasbeeh ring to recite Astaghfirullah 100 times throughout the day for forgiveness and peace of mind.',
     virtue: 'The Messenger of Allah (ﷺ) said: "By Allah, I seek the forgiveness of Allah and turn to Him in repentance more than seventy times a day." (Sahih al-Bukhari 6307)',
     targetDays: 30,
     durationLabel: '30-Day Challenge',
@@ -57,28 +99,61 @@ export const INITIAL_CURATED_HABITS: CommunityHabit[] = [
     iconName: 'Sparkles',
     colorTheme: 'emerald',
     isPinned: true,
-    memberCount: 1980,
-    todayCompletedCount: 1340,
-    totalAllTimeCompletions: 38200,
+    memberCount: 2780,
+    todayCompletedCount: 1840,
+    totalAllTimeCompletions: 48900,
     createdAt: new Date().toISOString(),
+    dhikrConfig: {
+      targetCount: 100,
+      phraseArabic: 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ',
+      phraseUrdu: 'میں اللہ سے اپنے گناہوں کی معافی مانگتا ہوں اور اسی کی طرف توبہ کرتا ہوں',
+      phraseTransliteration: 'Astaghfirullah wa Atubu Ilayh',
+    }
   },
   {
-    id: 'habit_tahajjud_7days',
-    title: '7-Day Tahajjud & Night Prayer Challenge',
-    arabicTitle: 'تحدي قيام الليل ٧ أيام',
-    urduTitle: '7 دن کی نمازِ تہجد کا چیلنج',
-    category: 'namaz',
-    description: 'Wake up 15-20 minutes before Fajr Adhan to pray at least 2 Rakah of Tahajjud and pour your heart out in Dua.',
-    virtue: '"And in some parts of the night offer the Tahajjud prayer as an additional prayer for yourself; it may be that your Lord will raise you to a praised station." (Surah Al-Isra 17:79)',
-    targetDays: 7,
-    durationLabel: '7-Day Challenge',
-    reminderTime: '04:15',
-    iconName: 'Flame',
-    colorTheme: 'purple',
-    memberCount: 1450,
-    todayCompletedCount: 680,
-    totalAllTimeCompletions: 19400,
+    id: 'habit_morning_adhkar',
+    title: 'Morning & Evening Adhkar (Protection Shield)',
+    arabicTitle: 'أذكار الصباح والمساء',
+    urduTitle: 'صبح و شام کے مسنون اذکار',
+    category: 'dhikr',
+    description: 'Recite SubhanAllah wa Bihamdihi and protective authentic Azkar in the morning after Fajr and evening after Asr.',
+    virtue: '"O you who have believed, remember Allah with much remembrance and glorify Him morning and afternoon." (Surah Al-Ahzab 33:41-42)',
+    targetDays: 0,
+    durationLabel: 'Daily Sunnah Habit',
+    reminderTime: '05:30',
+    iconName: 'Sun',
+    colorTheme: 'amber',
+    memberCount: 3410,
+    todayCompletedCount: 2450,
+    totalAllTimeCompletions: 78200,
     createdAt: new Date().toISOString(),
+    dhikrConfig: {
+      targetCount: 33,
+      phraseArabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ ، سُبْحَانَ اللَّهِ الْعَظِيمِ',
+      phraseUrdu: 'پاک ہے اللہ اپنی تمام تعریفوں کے ساتھ، پاک ہے اللہ جو بڑی عظمت والا ہے',
+      phraseTransliteration: 'SubhanAllahi wa bihamdihi, SubhanAllahil Azeem',
+    }
+  },
+  {
+    id: 'habit_sunnah_fasting',
+    title: 'Monday & Thursday Sunnah Fasting',
+    arabicTitle: 'صيام الإثنين والخميس',
+    urduTitle: 'پیر اور جمعرات کا مسنون روزہ',
+    category: 'fasting',
+    description: 'Revive the Sunnah of fasting on Mondays and Thursdays. Track your Sehri and Iftar intentions easily.',
+    virtue: 'Prophet Muhammad (ﷺ) said: "Deeds are shown (to Allah) on Mondays and Thursdays, and I love that my deeds be shown while I am fasting." (Jami` at-Tirmidhi 747)',
+    targetDays: 0,
+    durationLabel: 'Weekly Sunnah Fast',
+    reminderTime: '04:30',
+    iconName: 'Moon',
+    colorTheme: 'purple',
+    memberCount: 1650,
+    todayCompletedCount: 720,
+    totalAllTimeCompletions: 21300,
+    createdAt: new Date().toISOString(),
+    fastingConfig: {
+      fastType: 'monday_thursday'
+    }
   },
   {
     id: 'habit_friday_salawat',
@@ -93,46 +168,16 @@ export const INITIAL_CURATED_HABITS: CommunityHabit[] = [
     reminderTime: '09:00',
     iconName: 'Heart',
     colorTheme: 'teal',
-    memberCount: 2200,
-    todayCompletedCount: 1120,
-    totalAllTimeCompletions: 31000,
+    memberCount: 2900,
+    todayCompletedCount: 1540,
+    totalAllTimeCompletions: 43200,
     createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'habit_daily_quran_ruku',
-    title: 'Daily Quran: 1 Ruku / 1 Page with Meaning',
-    arabicTitle: 'تلاوة ركوع يومي مع التدبر',
-    urduTitle: 'روزانہ ایک رکوع قرآن مع ترجمہ و فہم',
-    category: 'quran',
-    description: 'Connect with the words of Allah daily by reading at least 1 Ruku with Urdu or English translation.',
-    virtue: '"A Book We have sent down to you, full of blessings, that they may ponder over its verses, and that men of understanding may remember." (Surah Sad 38:29)',
-    targetDays: 30,
-    durationLabel: '30-Day Challenge',
-    reminderTime: '07:30',
-    iconName: 'BookOpen',
-    colorTheme: 'cyan',
-    memberCount: 2650,
-    todayCompletedCount: 1840,
-    totalAllTimeCompletions: 51200,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'habit_daily_sadaqah',
-    title: 'Daily Micro-Sadaqah (Charity & Kindness)',
-    arabicTitle: 'صدقة يومية ولو بكلمة طيبة',
-    urduTitle: 'روزانہ صدقہ و نیکی کا عمل',
-    category: 'charity',
-    description: 'Give charity daily—whether through financial aid, helping someone, feeding an animal, or offering a warm smile.',
-    virtue: 'The Prophet (ﷺ) said: "Charity does not decrease wealth, and a kind word is a charity." (Sahih Muslim 2588)',
-    targetDays: 21,
-    durationLabel: '21-Day Habit',
-    reminderTime: '12:30',
-    iconName: 'Heart',
-    colorTheme: 'rose',
-    memberCount: 1320,
-    todayCompletedCount: 890,
-    totalAllTimeCompletions: 22400,
-    createdAt: new Date().toISOString(),
+    dhikrConfig: {
+      targetCount: 500,
+      phraseArabic: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ',
+      phraseUrdu: 'اے اللہ! رحمتیں نازل فرما حضرت محمد ﷺ پر اور ان کی آل پر',
+      phraseTransliteration: 'Allahumma Salli Ala Muhammadin Wa Ala Aali Muhammad',
+    }
   }
 ];
 
@@ -195,21 +240,10 @@ export const communityHabitService = {
     return newHabit;
   },
 
-  updateHabit(id: string, updates: Partial<CommunityHabit>): CommunityHabit | null {
-    const habits = this.getHabits();
-    const idx = habits.findIndex(h => h.id === id);
-    if (idx === -1) return null;
-
-    habits[idx] = { ...habits[idx], ...updates };
-    this.saveHabits(habits);
-    return habits[idx];
-  },
-
   deleteHabit(id: string): void {
     const habits = this.getHabits().filter(h => h.id !== id);
     this.saveHabits(habits);
 
-    // Remove from user progress if joined
     const progress = this.getUserProgressMap();
     if (progress[id]) {
       delete progress[id];
@@ -221,7 +255,7 @@ export const communityHabitService = {
     } catch (e) {}
   },
 
-  // ── 2. USER PROGRESS & CHECK-IN ENGINE ──
+  // ── 2. USER PROGRESS & JOINING ──
   getUserProgressMap(): Record<string, UserHabitRecord> {
     try {
       const raw = localStorage.getItem(USER_HABITS_PROGRESS_KEY);
@@ -230,35 +264,53 @@ export const communityHabitService = {
       }
     } catch (e) {}
 
-    // Default join 2 starter habits for immediate engagement
+    // Default join initial starter habits
+    const today = this.getDateString(new Date());
+    const yesterday = this.getDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+
     const defaultMap: Record<string, UserHabitRecord> = {
-      'habit_surah_mulk': {
-        habitId: 'habit_surah_mulk',
-        joinedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        completedDates: [
-          this.getDateString(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)),
-          this.getDateString(new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)),
-        ],
-        currentStreak: 2,
-        longestStreak: 2,
-        lastCompletedDate: this.getDateString(new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)),
-      },
-      'habit_morning_adhkar': {
-        habitId: 'habit_morning_adhkar',
+      'habit_namaz_5daily': {
+        habitId: 'habit_namaz_5daily',
         joinedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        completedDates: [
-          this.getDateString(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)),
-          this.getDateString(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)),
-          this.getDateString(new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)),
-        ],
+        completedDates: [yesterday],
+        currentStreak: 1,
+        longestStreak: 4,
+        namazHistory: {
+          [yesterday]: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
+          [today]: { fajr: true, dhuhr: true }
+        }
+      },
+      'habit_quran_khatam_journey': {
+        habitId: 'habit_quran_khatam_journey',
+        joinedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+        completedDates: [yesterday],
+        currentStreak: 2,
+        longestStreak: 5,
+        quranProgress: {
+          currentSurah: 2, // Al-Baqarah
+          currentAyah: 142,
+          totalAyahsRead: 148,
+          lastReadDate: yesterday,
+        }
+      },
+      'habit_daily_istighfar': {
+        habitId: 'habit_daily_istighfar',
+        joinedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        completedDates: [yesterday],
         currentStreak: 3,
         longestStreak: 3,
-        lastCompletedDate: this.getDateString(new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)),
+        dhikrProgress: {
+          [today]: 45
+        }
       }
     };
 
     localStorage.setItem(USER_HABITS_PROGRESS_KEY, JSON.stringify(defaultMap));
     return defaultMap;
+  },
+
+  saveUserProgressMap(map: Record<string, UserHabitRecord>): void {
+    localStorage.setItem(USER_HABITS_PROGRESS_KEY, JSON.stringify(map));
   },
 
   toggleJoin(habitId: string): boolean {
@@ -267,9 +319,8 @@ export const communityHabitService = {
 
     if (isCurrentlyJoined) {
       delete progress[habitId];
-      localStorage.setItem(USER_HABITS_PROGRESS_KEY, JSON.stringify(progress));
+      this.saveUserProgressMap(progress);
       
-      // Decrement member count
       const habits = this.getHabits();
       const target = habits.find(h => h.id === habitId);
       if (target) {
@@ -289,10 +340,16 @@ export const communityHabitService = {
         completedDates: [],
         currentStreak: 0,
         longestStreak: 0,
+        namazHistory: {},
+        quranProgress: {
+          currentSurah: 1,
+          currentAyah: 1,
+          totalAyahsRead: 0,
+        },
+        dhikrProgress: {},
       };
-      localStorage.setItem(USER_HABITS_PROGRESS_KEY, JSON.stringify(progress));
+      this.saveUserProgressMap(progress);
 
-      // Increment member count
       const habits = this.getHabits();
       const target = habits.find(h => h.id === habitId);
       if (target) {
@@ -308,6 +365,219 @@ export const communityHabitService = {
     }
   },
 
+  // ── 3. NAMAZ 5-PRAYER DYNAMIC ENGINE & TIME-LOCK 🔒 ──
+
+  // Returns approximate/calculated prayer times for time locking
+  getPrayerTimesForToday(): Record<PrayerKey, string> {
+    try {
+      const rawTimes = localStorage.getItem('619_prayer_times_today');
+      if (rawTimes) {
+        const parsed = JSON.parse(rawTimes);
+        return {
+          fajr: parsed.fajr || '05:15',
+          dhuhr: parsed.dhuhr || '12:45',
+          asr: parsed.asr || '16:30',
+          maghrib: parsed.maghrib || '18:45',
+          isha: parsed.isha || '20:15',
+        };
+      }
+    } catch (e) {}
+
+    // Safe standard defaults
+    return {
+      fajr: '05:15',
+      dhuhr: '12:45',
+      asr: '16:30',
+      maghrib: '18:45',
+      isha: '20:15',
+    };
+  },
+
+  isPrayerUnlocked(prayer: PrayerKey, targetDateStr: string): { unlocked: boolean; unlocksAt: string } {
+    const today = this.getDateString(new Date());
+    const times = this.getPrayerTimesForToday();
+    const prayerTime = times[prayer] || '12:00';
+
+    // Past dates are always unlocked for history viewing / logging
+    if (targetDateStr < today) {
+      return { unlocked: true, unlocksAt: prayerTime };
+    }
+
+    // Future dates are locked
+    if (targetDateStr > today) {
+      return { unlocked: false, unlocksAt: `${prayerTime} (${targetDateStr})` };
+    }
+
+    // Today: Compare current time with prayer Adhan time
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const [pHours, pMins] = prayerTime.split(':').map(n => parseInt(n, 10));
+    const prayerMinutes = (pHours || 0) * 60 + (pMins || 0);
+
+    const unlocked = currentMinutes >= prayerMinutes;
+    return { unlocked, unlocksAt: prayerTime };
+  },
+
+  getNamazStatusForDate(habitId: string, dateStr: string): NamazPrayerStatus {
+    const progress = this.getUserProgressMap();
+    const rec = progress[habitId];
+    return rec?.namazHistory?.[dateStr] || {};
+  },
+
+  togglePrayerForDate(
+    habitId: string, 
+    dateStr: string, 
+    prayer: PrayerKey, 
+    isJamaah: boolean = false
+  ): { status: NamazPrayerStatus; allCompleted: boolean } {
+    const progress = this.getUserProgressMap();
+    let rec = progress[habitId];
+    if (!rec) {
+      rec = {
+        habitId,
+        joinedAt: new Date().toISOString(),
+        completedDates: [],
+        currentStreak: 0,
+        longestStreak: 0,
+        namazHistory: {},
+      };
+    }
+
+    if (!rec.namazHistory) rec.namazHistory = {};
+    const dateRecord = rec.namazHistory[dateStr] || {};
+    const isCurrentlyPrayed = !!dateRecord[prayer];
+
+    dateRecord[prayer] = !isCurrentlyPrayed;
+    if (!dateRecord.isJamaah) dateRecord.isJamaah = {};
+    dateRecord.isJamaah[prayer] = isJamaah;
+
+    rec.namazHistory[dateStr] = dateRecord;
+
+    // Check if all 5 prayers are completed for this date
+    const all5Done = PRAYER_KEYS.every(p => !!dateRecord[p]);
+    if (all5Done) {
+      if (!rec.completedDates.includes(dateStr)) {
+        rec.completedDates.push(dateStr);
+        rec.currentStreak += 1;
+        rec.longestStreak = Math.max(rec.longestStreak, rec.currentStreak);
+      }
+    } else {
+      rec.completedDates = rec.completedDates.filter(d => d !== dateStr);
+    }
+
+    progress[habitId] = rec;
+    this.saveUserProgressMap(progress);
+
+    return { status: dateRecord, allCompleted: all5Done };
+  },
+
+  // ── 4. PROGRESSIVE QURAN READING ENGINE ──
+  getQuranPosition(habitId: string) {
+    const progress = this.getUserProgressMap();
+    const rec = progress[habitId];
+    const qProg = rec?.quranProgress || {
+      currentSurah: 2,
+      currentAyah: 142,
+      totalAyahsRead: 148,
+    };
+
+    // Surah Metadata helper
+    const surahNames = [
+      '', 'Al-Fatihah', 'Al-Baqarah', 'Ali \'Imran', 'An-Nisa', 'Al-Ma\'idah', 'Al-An\'am', 
+      'Al-A\'raf', 'Al-Anfal', 'At-Tawbah', 'Yunus', 'Hud', 'Yusuf', 'Ar-Ra\'d', 'Ibrahim'
+    ];
+
+    const currentSurahName = surahNames[qProg.currentSurah] || `Surah ${qProg.currentSurah}`;
+    const juzNumber = Math.min(30, Math.ceil(qProg.currentSurah / 3.8));
+
+    return {
+      ...qProg,
+      surahName: currentSurahName,
+      juzNumber,
+    };
+  },
+
+  advanceQuranAyahs(habitId: string, ayahsCount: number = 5): void {
+    const progress = this.getUserProgressMap();
+    const today = this.getDateString(new Date());
+    let rec = progress[habitId];
+    if (!rec) return;
+
+    if (!rec.quranProgress) {
+      rec.quranProgress = { currentSurah: 1, currentAyah: 1, totalAyahsRead: 0 };
+    }
+
+    rec.quranProgress.currentAyah += ayahsCount;
+    rec.quranProgress.totalAyahsRead += ayahsCount;
+    rec.quranProgress.lastReadDate = today;
+
+    // Check if Ayah exceeds standard surah length (simple wrap to next surah)
+    if (rec.quranProgress.currentAyah > 150) {
+      rec.quranProgress.currentSurah = Math.min(114, rec.quranProgress.currentSurah + 1);
+      rec.quranProgress.currentAyah = 1;
+    }
+
+    if (!rec.completedDates.includes(today)) {
+      rec.completedDates.push(today);
+      rec.currentStreak += 1;
+      rec.longestStreak = Math.max(rec.longestStreak, rec.currentStreak);
+    }
+
+    progress[habitId] = rec;
+    this.saveUserProgressMap(progress);
+  },
+
+  // ── 5. IN-CARD DHIKR MICRO-TASBEEH ENGINE ──
+  getDhikrCountForDate(habitId: string, dateStr: string): number {
+    const progress = this.getUserProgressMap();
+    return progress[habitId]?.dhikrProgress?.[dateStr] || 0;
+  },
+
+  incrementDhikr(habitId: string, step: number = 1, targetGoal: number = 100): { currentCount: number; isGoalReached: boolean } {
+    const progress = this.getUserProgressMap();
+    const today = this.getDateString(new Date());
+
+    let rec = progress[habitId];
+    if (!rec) {
+      rec = {
+        habitId,
+        joinedAt: new Date().toISOString(),
+        completedDates: [],
+        currentStreak: 0,
+        longestStreak: 0,
+        dhikrProgress: {},
+      };
+    }
+
+    if (!rec.dhikrProgress) rec.dhikrProgress = {};
+    const current = (rec.dhikrProgress[today] || 0) + step;
+    rec.dhikrProgress[today] = current;
+
+    const isGoalReached = current >= targetGoal;
+    if (isGoalReached && !rec.completedDates.includes(today)) {
+      rec.completedDates.push(today);
+      rec.currentStreak += 1;
+      rec.longestStreak = Math.max(rec.longestStreak, rec.currentStreak);
+    }
+
+    progress[habitId] = rec;
+    this.saveUserProgressMap(progress);
+
+    return { currentCount: current, isGoalReached };
+  },
+
+  resetDhikr(habitId: string): void {
+    const progress = this.getUserProgressMap();
+    const today = this.getDateString(new Date());
+    if (progress[habitId]?.dhikrProgress) {
+      progress[habitId].dhikrProgress![today] = 0;
+      progress[habitId].completedDates = progress[habitId].completedDates.filter(d => d !== today);
+      this.saveUserProgressMap(progress);
+    }
+  },
+
+  // ── 6. GENERAL CHECK-IN & STATS SUMMARY ──
   markCompletedToday(habitId: string): UserHabitRecord {
     const progress = this.getUserProgressMap();
     const today = this.getDateString(new Date());
@@ -328,7 +598,6 @@ export const communityHabitService = {
       record.completedDates.push(today);
       record.lastCompletedDate = today;
 
-      // Calculate streak
       const hadYesterday = record.completedDates.includes(yesterday);
       if (hadYesterday || record.currentStreak === 0) {
         record.currentStreak += 1;
@@ -340,9 +609,8 @@ export const communityHabitService = {
     }
 
     progress[habitId] = record;
-    localStorage.setItem(USER_HABITS_PROGRESS_KEY, JSON.stringify(progress));
+    this.saveUserProgressMap(progress);
 
-    // Increment today completed count for this habit
     const habits = this.getHabits();
     const habit = habits.find(h => h.id === habitId);
     if (habit) {
@@ -363,7 +631,7 @@ export const communityHabitService = {
       record.completedDates = record.completedDates.filter(d => d !== today);
       record.currentStreak = Math.max(0, record.currentStreak - 1);
       progress[habitId] = record;
-      localStorage.setItem(USER_HABITS_PROGRESS_KEY, JSON.stringify(progress));
+      this.saveUserProgressMap(progress);
     }
 
     const habits = this.getHabits();
@@ -407,6 +675,25 @@ export const communityHabitService = {
     const pendingToday = Math.max(0, joinedHabits.length - completedToday);
     const rate = joinedHabits.length > 0 ? Math.round((completedToday / joinedHabits.length) * 100) : 0;
 
+    // Dynamic Level & Istiqamah Tier Calculation
+    let levelTitle = 'Seeker of Light (مبتدئ)';
+    let levelNumber = 1;
+    let levelProgressPercent = Math.min(100, Math.round((totalDeeds / 10) * 100));
+
+    if (totalDeeds >= 50) {
+      levelTitle = 'Istiqamah Champion (صاحب الاستقامة)';
+      levelNumber = 4;
+      levelProgressPercent = 100;
+    } else if (totalDeeds >= 25) {
+      levelTitle = 'Guardian of Sunnah (حافظ السنة)';
+      levelNumber = 3;
+      levelProgressPercent = Math.round(((totalDeeds - 25) / 25) * 100);
+    } else if (totalDeeds >= 10) {
+      levelTitle = 'Consistent Believer (مؤمن مواظب)';
+      levelNumber = 2;
+      levelProgressPercent = Math.round(((totalDeeds - 10) / 15) * 100);
+    }
+
     return {
       totalJoined: joinedHabits.length,
       completedTodayCount: completedToday,
@@ -414,6 +701,9 @@ export const communityHabitService = {
       overallCompletionRate: rate,
       bestStreak: maxStreak,
       totalDeedsCompleted: totalDeeds,
+      levelTitle,
+      levelNumber,
+      levelProgressPercent,
     };
   },
 

@@ -12,35 +12,41 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '2.5.0';
+export const CURRENT_APP_VERSION = '2.5.5';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
   releaseDate: 'August 2026',
-  headline: "What's New in Update v2.5.0",
+  headline: "What's New in Update v2.5.5",
   features: [
     {
-      icon: 'Users',
-      title: 'Ummah Community Habit Hub & Challenges',
-      description: 'Join collective spiritual challenges like Surah Al-Mulk, Morning Adhkar, Tahajjud, and Daily Istighfar. Track your daily good deeds alongside thousands of believers worldwide.',
-      badge: 'Major'
+      icon: 'Flame',
+      title: 'Dynamic Namaz 5-Prayer Card with Real-Time Adhan Time-Lock',
+      description: 'Check off Fajr, Dhuhr, Asr, Maghrib, and Isha individually. Future prayers are locked until their Adhan time arrives based on live prayer timetables.',
+      badge: 'Flagship'
     },
     {
-      icon: 'Flame',
-      title: 'Daily Check-Ins, Streaks & Motivation',
-      description: '1-tap daily check-in with live Completed vs Pending counters, streak milestones, and live peer completion activity.',
+      icon: 'Calendar',
+      title: 'Namaz History & Missed Prayer Audit Calendar',
+      description: 'Audit any past date to see which prayers were performed vs missed, with 1-tap make-up logging syncing directly with Qaza Tracker.',
       badge: 'New'
     },
     {
-      icon: 'Bell',
-      title: 'Automated Daily Habit Push Notifications',
-      description: 'Receive personalized daily notifications at your habit reminder times to never break your spiritual consistency.',
+      icon: 'BookOpen',
+      title: 'Progressive Quran Reading & Khatam Bookmark',
+      description: 'Dynamically computes your next assigned Ayahs with Arabic calligraphy, Urdu/English translation, audio recitation, and Global Ummah 30-Juz distribution radar.',
+      badge: 'Major'
+    },
+    {
+      icon: 'Sparkles',
+      title: 'In-Card Interactive Micro-Tasbeeh Counter',
+      description: 'Tap the circular Tasbeeh ring directly inside the challenge card with haptic vibrations, +10 quick boost, and instant completion celebrations.',
       badge: 'New'
     },
     {
       icon: 'ShieldAlert',
-      title: 'Admin Portal Challenge Publisher',
-      description: 'Admins can now publish, customize, and feature community challenges with Hadith references, reminder times, and target durations.',
+      title: 'Contextual Admin Studio for Challenge Creators',
+      description: 'Admin portal dynamically adjusts forms for Namaz rules, Quran Surah/Ayah pickers, Dhikr target counts, and Sunnah Fasting schedules.',
       badge: 'Admin'
     }
   ]

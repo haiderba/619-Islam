@@ -43,6 +43,24 @@ const Admin: React.FC = () => {
   const [iconName, setIconName] = useState<string>('Moon');
   const [isPinned, setIsPinned] = useState<boolean>(false);
 
+  // Dynamic Module Specific States
+  const [namazTrackAll5, setNamazTrackAll5] = useState(true);
+  const [namazIncludeWitr, setNamazIncludeWitr] = useState(true);
+
+  const [quranMode, setQuranMode] = useState<'fixed_ayah' | 'progressive_khatam'>('fixed_ayah');
+  const [quranSurahNum, setQuranSurahNum] = useState<number>(67);
+  const [quranSurahName, setQuranSurahName] = useState<string>('Al-Mulk');
+  const [quranAyahStart, setQuranAyahStart] = useState<number>(1);
+  const [quranAyahEnd, setQuranAyahEnd] = useState<number>(30);
+  const [quranTargetPace, setQuranTargetPace] = useState<string>('1 Ruku / 1 Page Daily');
+
+  const [dhikrTargetCount, setDhikrTargetCount] = useState<number>(100);
+  const [dhikrPhraseArabic, setDhikrPhraseArabic] = useState<string>('أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ');
+  const [dhikrPhraseUrdu, setDhikrPhraseUrdu] = useState<string>('میں اللہ سے اپنے گناہوں کی معافی مانگتا ہوں');
+  const [dhikrTransliteration, setDhikrTransliteration] = useState<string>('Astaghfirullah wa Atubu Ilayh');
+
+  const [fastingType, setFastingType] = useState<'monday_thursday' | 'ayyam_al_beed' | 'ashura' | 'arafah' | 'custom'>('monday_thursday');
+
   useEffect(() => {
     loadData();
   }, [adminTab, feedbackStatusFilter]);
@@ -93,6 +111,27 @@ const Admin: React.FC = () => {
         iconName,
         colorTheme,
         isPinned,
+        namazConfig: category === 'namaz' ? {
+          trackAll5: namazTrackAll5,
+          includeWitr: namazIncludeWitr,
+        } : undefined,
+        quranConfig: category === 'quran' ? {
+          mode: quranMode,
+          surahNumber: quranSurahNum,
+          surahName: quranSurahName,
+          ayahStart: quranAyahStart,
+          ayahEnd: quranAyahEnd,
+          targetPacePerDay: quranTargetPace,
+        } : undefined,
+        dhikrConfig: category === 'dhikr' ? {
+          targetCount: dhikrTargetCount,
+          phraseArabic: dhikrPhraseArabic,
+          phraseUrdu: dhikrPhraseUrdu,
+          phraseTransliteration: dhikrTransliteration,
+        } : undefined,
+        fastingConfig: category === 'fasting' ? {
+          fastType: fastingType,
+        } : undefined,
       });
 
       setHabits(communityHabitService.getHabits());
@@ -126,7 +165,7 @@ const Admin: React.FC = () => {
             <ShieldAlert size={26} />
             <span>Admin Portal</span>
           </h1>
-          <p className="text-subtext mt-0.5 text-xs">Manage Community Challenges, Feedback, and Digital Library.</p>
+          <p className="text-subtext mt-0.5 text-xs">Manage Dynamic Challenges, User Feedback, and Digital Library.</p>
         </div>
       </header>
 
@@ -177,7 +216,7 @@ const Admin: React.FC = () => {
               <h2 className="text-xs font-extrabold uppercase text-subtext tracking-wider">
                 Ummah Community Challenges & Habits
               </h2>
-              <p className="text-[11px] text-muted">Published challenges are visible to all users to join and track.</p>
+              <p className="text-[11px] text-muted">Published challenges are visible to all users with live interactive module cards.</p>
             </div>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
@@ -193,18 +232,19 @@ const Admin: React.FC = () => {
               <div className="flex items-center justify-between border-b border-border/60 pb-3">
                 <h3 className="text-sm font-black text-amber-500 flex items-center gap-2">
                   <Sparkles size={16} />
-                  <span>Publish New Ummah Challenge</span>
+                  <span>Publish Interactive Ummah Challenge</span>
                 </h3>
-                <span className="text-[11px] text-muted">Visible to all app users</span>
+                <span className="text-[11px] text-muted">Live Module Studio</span>
               </div>
 
+              {/* Basic Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-subtext uppercase">Title (English) *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Surah Al-Mulk Before Sleep"
+                    placeholder="e.g. The 5 Daily Prayers"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-3 py-2 bg-surface border border-border rounded-xl text-text text-xs font-bold outline-none focus:border-amber-500"
@@ -212,30 +252,227 @@ const Admin: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-subtext uppercase">Category *</label>
+                  <label className="block text-[10px] font-bold text-subtext uppercase">Category (Module Engine) *</label>
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as HabitCategory)}
+                    onChange={(e) => {
+                      const newCat = e.target.value as HabitCategory;
+                      setCategory(newCat);
+                      if (newCat === 'namaz') {
+                        setIconName('Flame');
+                        setColorTheme('amber');
+                      } else if (newCat === 'quran') {
+                        setIconName('BookOpen');
+                        setColorTheme('cyan');
+                      } else if (newCat === 'dhikr') {
+                        setIconName('Sparkles');
+                        setColorTheme('emerald');
+                      } else if (newCat === 'fasting') {
+                        setIconName('Moon');
+                        setColorTheme('purple');
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-surface border border-border rounded-xl text-text text-xs font-bold outline-none focus:border-amber-500"
                   >
-                    <option value="quran">📖 Quran Recitation</option>
-                    <option value="dhikr">📿 Dhikr & Remembrance</option>
-                    <option value="namaz">🕌 Namaz & Tahajjud</option>
-                    <option value="sunnah">✨ Daily Sunnah</option>
-                    <option value="charity">🤲 Sadaqah & Charity</option>
-                    <option value="fasting">🌙 Sunnah Fasting</option>
+                    <option value="namaz">🕌 Namaz (5 Daily Prayers + Time-Lock & Calendar)</option>
+                    <option value="quran">📖 Quran (Ayah Assignment / Progressive Khatam)</option>
+                    <option value="dhikr">📿 Dhikr (Interactive In-Card Micro-Tasbeeh)</option>
+                    <option value="fasting">🌙 Fasting (Sunnah Fasting Tracker & Countdown)</option>
+                    <option value="sunnah">✨ Daily Sunnah Action</option>
+                    <option value="charity">🤲 Sadaqah & Micro-Charity</option>
                     <option value="character">💚 Good Character & Akhlaq</option>
                   </select>
                 </div>
               </div>
 
+              {/* ── Contextual Category-Specific Module Settings ── */}
+              {category === 'namaz' && (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-2">
+                  <strong className="text-xs font-bold text-amber-400 block">🕌 Namaz Module Settings:</strong>
+                  <div className="flex items-center gap-4 text-xs font-semibold text-text flex-wrap">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={namazTrackAll5}
+                        onChange={(e) => setNamazTrackAll5(e.target.checked)}
+                        className="accent-amber-500"
+                      />
+                      <span>Track All 5 Prayers Individually (Fajr to Isha)</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={namazIncludeWitr}
+                        onChange={(e) => setNamazIncludeWitr(e.target.checked)}
+                        className="accent-amber-500"
+                      />
+                      <span>Include Witr Prayer</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {category === 'quran' && (
+                <div className="p-3.5 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl space-y-3">
+                  <strong className="text-xs font-bold text-cyan-400 block">📖 Quran Reading Module Settings:</strong>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Reading Mode</label>
+                      <select
+                        value={quranMode}
+                        onChange={(e) => setQuranMode(e.target.value as any)}
+                        className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text outline-none"
+                      >
+                        <option value="fixed_ayah">Fixed Daily Surah / Ayah (e.g. Surah Mulk)</option>
+                        <option value="progressive_khatam">Progressive Khatam Journey (Sequential Bookmark)</option>
+                      </select>
+                    </div>
+
+                    {quranMode === 'progressive_khatam' ? (
+                      <div>
+                        <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Target Pace / Day</label>
+                        <input
+                          type="text"
+                          value={quranTargetPace}
+                          onChange={(e) => setQuranTargetPace(e.target.value)}
+                          placeholder="e.g. 1 Ruku / 1 Page Daily"
+                          className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text outline-none"
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        <div>
+                          <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Surah #</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="114"
+                            value={quranSurahNum}
+                            onChange={(e) => setQuranSurahNum(parseInt(e.target.value, 10) || 1)}
+                            className="w-full px-2 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text text-center outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Ayah Start</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={quranAyahStart}
+                            onChange={(e) => setQuranAyahStart(parseInt(e.target.value, 10) || 1)}
+                            className="w-full px-2 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text text-center outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Ayah End</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={quranAyahEnd}
+                            onChange={(e) => setQuranAyahEnd(parseInt(e.target.value, 10) || 30)}
+                            className="w-full px-2 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text text-center outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Surah Name</label>
+                          <input
+                            type="text"
+                            value={quranSurahName}
+                            onChange={(e) => setQuranSurahName(e.target.value)}
+                            placeholder="e.g. Al-Mulk"
+                            className="w-full px-2 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {category === 'dhikr' && (
+                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-3">
+                  <strong className="text-xs font-bold text-emerald-400 block">📿 In-Card Micro-Tasbeeh Settings:</strong>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Target Count</label>
+                      <select
+                        value={dhikrTargetCount}
+                        onChange={(e) => setDhikrTargetCount(parseInt(e.target.value, 10))}
+                        className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text outline-none"
+                      >
+                        <option value={33}>33x Repetitions</option>
+                        <option value={100}>100x Daily Goal</option>
+                        <option value={300}>300x Goal</option>
+                        <option value={500}>500x Goal</option>
+                        <option value={1000}>1000x Goal</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Arabic Phrase</label>
+                      <input
+                        type="text"
+                        dir="rtl"
+                        value={dhikrPhraseArabic}
+                        onChange={(e) => setDhikrPhraseArabic(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs font-arabic text-text outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Urdu Translation</label>
+                      <input
+                        type="text"
+                        dir="rtl"
+                        value={dhikrPhraseUrdu}
+                        onChange={(e) => setDhikrPhraseUrdu(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs font-urdu text-text outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Transliteration</label>
+                      <input
+                        type="text"
+                        value={dhikrTransliteration}
+                        onChange={(e) => setDhikrTransliteration(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {category === 'fasting' && (
+                <div className="p-3.5 bg-purple-500/10 border border-purple-500/20 rounded-2xl space-y-2">
+                  <strong className="text-xs font-bold text-purple-400 block">🌙 Fasting Module Settings:</strong>
+                  <div>
+                    <label className="block text-[10px] font-bold text-subtext uppercase mb-1">Fasting Schedule Type</label>
+                    <select
+                      value={fastingType}
+                      onChange={(e) => setFastingType(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text outline-none"
+                    >
+                      <option value="monday_thursday">Mondays & Thursdays Sunnah Fast</option>
+                      <option value="ayyam_al_beed">White Days (13th, 14th, 15th of Hijri Month)</option>
+                      <option value="ashura">Day of Ashura (10th Muharram)</option>
+                      <option value="arafah">Day of Arafah (9th Dhul Hijjah)</option>
+                      <option value="custom">Custom Fasting Challenge</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Language Titles */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-subtext uppercase">Urdu Title (Optional)</label>
                   <input
                     type="text"
                     dir="rtl"
-                    placeholder="سونے سے پہلے سورۃ الملک کی تلاوت"
+                    placeholder="پانچ وقت نماز کی پابندی"
                     value={urduTitle}
                     onChange={(e) => setUrduTitle(e.target.value)}
                     className="w-full px-3 py-2 bg-surface border border-border rounded-xl text-text text-xs font-urdu outline-none focus:border-amber-500"
@@ -247,7 +484,7 @@ const Admin: React.FC = () => {
                   <input
                     type="text"
                     dir="rtl"
-                    placeholder="سورة الملك قبل النوم"
+                    placeholder="إقامة الصلوات الخمس"
                     value={arabicTitle}
                     onChange={(e) => setArabicTitle(e.target.value)}
                     className="w-full px-3 py-2 bg-surface border border-border rounded-xl text-text text-xs font-arabic outline-none focus:border-amber-500"
@@ -255,6 +492,7 @@ const Admin: React.FC = () => {
                 </div>
               </div>
 
+              {/* Duration & Reminder Row */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-subtext uppercase">Target Duration</label>
@@ -305,11 +543,11 @@ const Admin: React.FC = () => {
                     onChange={(e) => setIconName(e.target.value)}
                     className="w-full px-3 py-2 bg-surface border border-border rounded-xl text-text text-xs font-bold outline-none focus:border-amber-500"
                   >
-                    <option value="Moon">🌙 Moon / Night</option>
+                    <option value="Flame">🕌 / 🔥 Namaz / Sprint</option>
+                    <option value="BookOpen">📖 Quran / Study</option>
+                    <option value="Sparkles">📿 / ✨ Dhikr / Sunnah</option>
+                    <option value="Moon">🌙 Moon / Night / Fasting</option>
                     <option value="Sun">☀️ Sun / Morning</option>
-                    <option value="Sparkles">✨ Sparkles / Sunnah</option>
-                    <option value="BookOpen">📖 Book / Quran</option>
-                    <option value="Flame">🔥 Flame / Challenge</option>
                     <option value="Heart">🤲 Heart / Charity</option>
                   </select>
                 </div>
@@ -330,7 +568,7 @@ const Admin: React.FC = () => {
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold text-subtext uppercase">Spiritual Virtue / Hadith Reference (Optional)</label>
                 <textarea
-                  placeholder="e.g. Prophet (ﷺ) said: Surah Al-Mulk rescues from the punishment of the grave (Tirmidhi 2890)"
+                  placeholder="e.g. Prophet (ﷺ) said: The first thing for which a person will be brought to account is prayer (Tirmidhi 413)"
                   value={virtue}
                   onChange={(e) => setVirtue(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-border rounded-xl text-text text-xs outline-none focus:border-amber-500 leading-relaxed"
@@ -355,7 +593,7 @@ const Admin: React.FC = () => {
                 type="submit"
                 className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black rounded-2xl text-xs font-black shadow-lg shadow-amber-500/25 active:scale-95 transition-all"
               >
-                Publish Challenge to All Believers
+                Publish Interactive Challenge for All Believers
               </button>
             </form>
           )}

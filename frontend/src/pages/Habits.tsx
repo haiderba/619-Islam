@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   Plus, 
@@ -15,20 +16,33 @@ import {
   ShieldCheck, 
   Search, 
   Bell, 
-  Star 
+  Star,
+  Lock,
+  Calendar as CalendarIcon,
+  Play,
+  Pause,
+  ExternalLink
 } from 'lucide-react';
-import { communityHabitService } from '../services/communityHabitService';
-import { CommunityHabit, HabitCategory, UserHabitsSummary } from '../types/communityHabits';
+import { 
+  communityHabitService, 
+  PRAYER_KEYS, 
+  PrayerKey 
+} from '../services/communityHabitService';
+import { 
+  CommunityHabit, 
+  HabitCategory, 
+  UserHabitsSummary 
+} from '../types/communityHabits';
 import { notificationService } from '../services/notificationService';
 
 const CATEGORIES: { key: HabitCategory | 'all'; label: string; icon: string }[] = [
   { key: 'all', label: 'All Challenges', icon: '🌟' },
-  { key: 'quran', label: 'Quran', icon: '📖' },
-  { key: 'dhikr', label: 'Dhikr', icon: '📿' },
-  { key: 'namaz', label: 'Namaz', icon: '🕌' },
+  { key: 'namaz', label: 'Namaz (5 Prayers)', icon: '🕌' },
+  { key: 'quran', label: 'Quran Journey', icon: '📖' },
+  { key: 'dhikr', label: 'Dhikr & Tasbeeh', icon: '📿' },
   { key: 'sunnah', label: 'Sunnah', icon: '✨' },
-  { key: 'charity', label: 'Charity', icon: '🤲' },
   { key: 'fasting', label: 'Fasting', icon: '🌙' },
+  { key: 'charity', label: 'Charity', icon: '🤲' },
 ];
 
 const THEME_COLORS: Record<string, { bg: string; border: string; text: string; lightBg: string }> = {
@@ -41,12 +55,33 @@ const THEME_COLORS: Record<string, { bg: string; border: string; text: string; l
   cyan: { bg: 'from-cyan-900/60 to-blue-950/80', border: 'border-cyan-500/30', text: 'text-cyan-400', lightBg: 'bg-cyan-500/10' },
 };
 
+const PRAYER_DISPLAY: Record<PrayerKey, { name: string; arabic: string; icon: string }> = {
+  fajr: { name: 'Fajr', arabic: 'الفجر', icon: '🌅' },
+  dhuhr: { name: 'Dhuhr', arabic: 'الظهر', icon: '☀️' },
+  asr: { name: 'Asr', arabic: 'العصر', icon: '🌤️' },
+  maghrib: { name: 'Maghrib', arabic: 'المغرب', icon: '🌇' },
+  isha: { name: 'Isha', arabic: 'العشاء', icon: '🌙' },
+};
+
 export const Habits: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'my_habits' | 'discover' | 'impact'>('my_habits');
   const [habits, setHabits] = useState<CommunityHabit[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedVirtueId, setExpandedVirtueId] = useState<string | null>(null);
+  
+  // Date Picker & History Drawer State for Namaz
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState<string>(
+    communityHabitService.getDateString(new Date())
+  );
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+
+  // Audio Playback for Quran in-card preview
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [audioInstance, setAudioInstance] = useState<HTMLAudioElement | null>(null);
+
+  // Summary & Stats
   const [summary, setSummary] = useState<UserHabitsSummary>({
     totalJoined: 0,
     completedTodayCount: 0,
@@ -54,6 +89,9 @@ export const Habits: React.FC = () => {
     overallCompletionRate: 0,
     bestStreak: 0,
     totalDeedsCompleted: 0,
+    levelTitle: 'Seeker of Light',
+    levelNumber: 1,
+    levelProgressPercent: 10,
   });
 
   const [notificationStatus, setNotificationStatus] = useState<string>('default');
@@ -61,6 +99,11 @@ export const Habits: React.FC = () => {
   useEffect(() => {
     loadData();
     checkNotificationPermission();
+    return () => {
+      if (audioInstance) {
+        audioInstance.pause();
+      }
+    };
   }, []);
 
   const checkNotificationPermission = () => {
@@ -87,6 +130,52 @@ export const Habits: React.FC = () => {
     loadData();
   };
 
+  // ── NAMAZ ACTIONS ──
+  const handleTogglePrayer = (habitId: string, prayer: PrayerKey, targetDateStr: string) => {
+    const lockCheck = communityHabitService.isPrayerUnlocked(prayer, targetDateStr);
+    if (!lockCheck.unlocked) return;
+
+    communityHabitService.togglePrayerForDate(habitId, targetDateStr, prayer);
+    loadData();
+  };
+
+  // ── QURAN ACTIONS ──
+  const handleAdvanceQuran = (habitId: string, ayahsCount: number = 5) => {
+    communityHabitService.advanceQuranAyahs(habitId, ayahsCount);
+    loadData();
+  };
+
+  const handleToggleAudio = (habitId: string, audioUrl: string) => {
+    if (playingAudioId === habitId && audioInstance) {
+      audioInstance.pause();
+      setPlayingAudioId(null);
+    } else {
+      if (audioInstance) {
+        audioInstance.pause();
+      }
+      const audio = new Audio(audioUrl);
+      audio.play();
+      audio.onended = () => setPlayingAudioId(null);
+      setAudioInstance(audio);
+      setPlayingAudioId(habitId);
+    }
+  };
+
+  // ── DHIKR IN-CARD TASBEEH ACTIONS ──
+  const handleTapDhikr = (habitId: string, step: number = 1, targetGoal: number = 100) => {
+    if (navigator.vibrate) {
+      navigator.vibrate(20);
+    }
+    communityHabitService.incrementDhikr(habitId, step, targetGoal);
+    loadData();
+  };
+
+  const handleResetDhikr = (habitId: string) => {
+    communityHabitService.resetDhikr(habitId);
+    loadData();
+  };
+
+  // ── GENERAL CHECK-IN ──
   const handleCheckIn = (habitId: string) => {
     communityHabitService.markCompletedToday(habitId);
     loadData();
@@ -107,14 +196,14 @@ export const Habits: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Calculate Community Total Completions
   const totalCommunityCompletions = habits.reduce((acc, h) => acc + (h.totalAllTimeCompletions || 0), 0) + summary.totalDeedsCompleted;
   const totalCommunityToday = habits.reduce((acc, h) => acc + (h.todayCompletedCount || 0), 0);
+  const todayDateStr = communityHabitService.getDateString(new Date());
 
   return (
     <div className="p-4 sm:p-6 pb-36 max-w-5xl mx-auto w-full space-y-5 sm:space-y-6 animate-in fade-in duration-300">
       
-      {/* ── Top Header ── */}
+      {/* ── Top Navigation Header ── */}
       <header className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -124,7 +213,7 @@ export const Habits: React.FC = () => {
             <span className="text-sm font-arabic text-amber-500 font-bold hidden sm:inline">(مجتمع العبادة)</span>
           </div>
           <p className="text-xs sm:text-sm text-subtext font-medium mt-0.5">
-            Join collective spiritual challenges, build lifelong Sunnah habits, and grow together.
+            Interactive spiritual challenges, real-time prayer time-locking, Quran Khatam, and in-card Tasbeeh.
           </p>
         </div>
 
@@ -146,12 +235,12 @@ export const Habits: React.FC = () => {
             className="text-[11px] bg-surface text-subtext hover:text-text px-3 py-1.5 rounded-xl font-bold border border-border hover:bg-border transition-colors flex items-center gap-1"
           >
             <ShieldCheck size={13} />
-            <span>Admin Portal</span>
+            <span>Admin Studio</span>
           </a>
         </div>
       </header>
 
-      {/* ── Top 3 Navigation Tabs ── */}
+      {/* ── 3 Main Navigation Tabs ── */}
       <div className="grid grid-cols-3 gap-1.5 p-1 bg-surface border border-border rounded-2xl">
         <button
           onClick={() => setActiveTab('my_habits')}
@@ -191,7 +280,7 @@ export const Habits: React.FC = () => {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════ */}
-      {/* ── TAB 1: MY DAILY HABITS & ACTION HUB ── */}
+      {/* ── TAB 1: MY ACTIVE HABITS & DYNAMIC MODULES ── */}
       {/* ══════════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'my_habits' && (
         <div className="space-y-4 sm:space-y-5 animate-in fade-in">
@@ -202,15 +291,22 @@ export const Habits: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/30 inline-block">
-                  Today's Daily Checklist
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/30 inline-block">
+                    Level {summary.levelNumber}: {summary.levelTitle}
+                  </span>
+                  <span className="text-xs text-white/60 font-mono">
+                    {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
+
                 <h3 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
                   <span>{summary.completedTodayCount} of {summary.totalJoined} Completed</span>
                   {summary.pendingTodayCount === 0 && summary.totalJoined > 0 && (
                     <span className="text-xl">🎉</span>
                   )}
                 </h3>
+
                 <p className="text-xs text-white/80 font-medium">
                   {summary.pendingTodayCount > 0 
                     ? `✨ ${summary.pendingTodayCount} more spiritual good deed${summary.pendingTodayCount > 1 ? 's' : ''} to complete today.`
@@ -220,12 +316,12 @@ export const Habits: React.FC = () => {
                 </p>
               </div>
 
-              {/* Stats Pills */}
+              {/* Stats Badges */}
               <div className="flex items-center gap-2">
                 <div className="bg-black/30 border border-white/10 rounded-2xl px-3.5 py-2 flex items-center gap-2">
                   <Flame size={20} className="text-amber-400 fill-amber-400" />
                   <div>
-                    <span className="block text-[10px] uppercase font-bold text-white/60">Best Streak</span>
+                    <span className="block text-[10px] uppercase font-bold text-white/60">Active Streak</span>
                     <strong className="text-sm font-black text-white">{summary.bestStreak} Days</strong>
                   </div>
                 </div>
@@ -240,7 +336,7 @@ export const Habits: React.FC = () => {
               </div>
             </div>
 
-            {/* Today Progress Bar */}
+            {/* Today Linear Progress Bar */}
             <div className="space-y-1.5 pt-1">
               <div className="flex justify-between text-[11px] font-bold text-white/80">
                 <span>Today's Consistency</span>
@@ -255,14 +351,14 @@ export const Habits: React.FC = () => {
             </div>
           </div>
 
-          {/* List of Active Habits */}
+          {/* List of Joined Habits with Rich Contextual Engines */}
           {joinedHabits.length === 0 ? (
             <div className="text-center py-12 px-4 bg-card border border-dashed border-border rounded-3xl space-y-3">
               <Sparkles size={36} className="mx-auto text-amber-500 opacity-60" />
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-text">No Challenges Joined Yet</h3>
                 <p className="text-xs text-subtext max-w-md mx-auto">
-                  Browse through community challenges like Surah Al-Mulk, Daily Istighfar, and Tahajjud to begin your daily journey.
+                  Browse through community challenges like The 5 Daily Prayers, Daily Quran Journey, and 100x Istighfar to begin your daily journey.
                 </p>
               </div>
               <button
@@ -274,7 +370,7 @@ export const Habits: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4">
               {joinedHabits.map((habit) => {
                 const isCompleted = communityHabitService.isCompletedToday(habit.id);
                 const progressMap = communityHabitService.getUserProgressMap();
@@ -288,7 +384,7 @@ export const Habits: React.FC = () => {
                     key={habit.id}
                     className={`bg-card border ${isCompleted ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-border'} rounded-3xl p-4 sm:p-5 shadow-sm space-y-4 transition-all`}
                   >
-                    {/* Top Row */}
+                    {/* Header Row */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
                         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 ${theme.lightBg} border ${theme.border}`}>
@@ -333,56 +429,274 @@ export const Habits: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Action Description */}
-                    <p className="text-xs text-subtext leading-relaxed bg-surface/60 p-3 rounded-2xl border border-border/60">
-                      {habit.description}
-                    </p>
+                    {/* ══════════════════════════════════════════════════════════════ */}
+                    {/* ── 🕌 DYNAMIC MODULE 1: NAMAZ 5-PRAYER TIME-LOCKED GRID ── */}
+                    {/* ══════════════════════════════════════════════════════════════ */}
+                    {habit.category === 'namaz' && (
+                      <div className="space-y-3 p-3.5 bg-surface/80 rounded-2xl border border-border/80">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-text flex items-center gap-1.5">
+                            <span>🕌 Daily 5 Prayers Check-In</span>
+                          </span>
+
+                          {/* Date History Button */}
+                          <button
+                            onClick={() => setShowHistoryModal(true)}
+                            className="flex items-center gap-1 text-[11px] text-amber-500 font-bold hover:underline"
+                          >
+                            <CalendarIcon size={12} />
+                            <span>Prayer History & Missed Audit</span>
+                          </button>
+                        </div>
+
+                        {/* 5 Prayers Grid */}
+                        <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+                          {PRAYER_KEYS.map((pKey) => {
+                            const dateStatus = communityHabitService.getNamazStatusForDate(habit.id, todayDateStr);
+                            const isPrayed = !!dateStatus[pKey];
+                            const lockCheck = communityHabitService.isPrayerUnlocked(pKey, todayDateStr);
+                            const pInfo = PRAYER_DISPLAY[pKey];
+
+                            return (
+                              <button
+                                key={pKey}
+                                disabled={!lockCheck.unlocked}
+                                onClick={() => handleTogglePrayer(habit.id, pKey, todayDateStr)}
+                                className={`p-2 sm:p-2.5 rounded-2xl border flex flex-col items-center justify-between text-center transition-all relative ${
+                                  isPrayed 
+                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-sm'
+                                    : lockCheck.unlocked
+                                      ? 'bg-card border-border hover:border-amber-500/40 text-text active:scale-95'
+                                      : 'bg-surface/40 border-border/40 text-muted opacity-60 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-base sm:text-lg mb-0.5">{pInfo.icon}</span>
+                                <strong className="text-[11px] sm:text-xs font-bold block">{pInfo.name}</strong>
+                                <span className="text-[9px] opacity-75">{lockCheck.unlocksAt}</span>
+
+                                {/* Status Icon */}
+                                <div className="mt-1.5">
+                                  {isPrayed ? (
+                                    <div className="w-5 h-5 rounded-full bg-emerald-500 text-black flex items-center justify-center">
+                                      <Check size={12} className="stroke-[3]" />
+                                    </div>
+                                  ) : lockCheck.unlocked ? (
+                                    <div className="w-5 h-5 rounded-full border border-border bg-surface flex items-center justify-center text-[10px] text-subtext">
+                                      +
+                                    </div>
+                                  ) : (
+                                    <div className="w-5 h-5 rounded-full bg-black/20 flex items-center justify-center text-muted">
+                                      <Lock size={10} />
+                                    </div>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Namaz Progress Hint */}
+                        <div className="flex items-center justify-between text-[11px] text-subtext pt-1">
+                          <span>
+                            {Object.values(communityHabitService.getNamazStatusForDate(habit.id, todayDateStr)).filter(Boolean).length} / 5 Prayers Prayed Today
+                          </span>
+                          <span className="text-amber-500 font-bold">
+                            🔒 Future prayers unlock at Adhan time
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════════════ */}
+                    {/* ── 📖 DYNAMIC MODULE 2: QURAN PROGRESSIVE READING ── */}
+                    {/* ══════════════════════════════════════════════════════════════ */}
+                    {habit.category === 'quran' && (
+                      <div className="space-y-3 p-3.5 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl">
+                        {habit.quranConfig?.mode === 'progressive_khatam' ? (
+                          <>
+                            {/* Progressive Khatam Bookmark Engine */}
+                            {(() => {
+                              const qPos = communityHabitService.getQuranPosition(habit.id);
+                              return (
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                                      <BookOpen size={14} />
+                                      <span>Next Assigned Reading: <strong>{qPos.surahName} (Ayah {qPos.currentAyah})</strong></span>
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">
+                                      Juz {qPos.juzNumber}
+                                    </span>
+                                  </div>
+
+                                  <div className="p-3 bg-card rounded-2xl border border-border space-y-2">
+                                    <p className="text-sm font-arabic text-text leading-loose text-right" dir="rtl">
+                                      وَإِذَا سَأَلَكَ عِبَادِي عَنِّي فَإِنِّي قَرِيبٌ ۖ أُجِيبُ دَعْوَةَ الدَّاعِ إِذَا دَعَانِ
+                                    </p>
+                                    <p className="text-xs font-urdu text-subtext leading-relaxed text-right" dir="rtl">
+                                      اور جب میرے بندے آپ سے میرے بارے میں پوچھیں تو میں قریب ہوں، پکارنے والے کی دعا قبول کرتا ہوں۔
+                                    </p>
+                                  </div>
+
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => navigate(`/quran/${qPos.currentSurah}`)}
+                                      className="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                                    >
+                                      <ExternalLink size={14} />
+                                      <span>Read in Quran Reader</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleAdvanceQuran(habit.id, 5)}
+                                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md active:scale-95 transition-all flex items-center gap-1"
+                                    >
+                                      <Check size={14} />
+                                      <span>Mark 1 Ruku Read (+5 Ayahs)</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </>
+                        ) : (
+                          <>
+                            {/* Fixed Daily Surah (e.g. Surah Mulk) */}
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-cyan-400">
+                                  📖 Assigned: {habit.quranConfig?.surahName || 'Surah'} (Verses {habit.quranConfig?.ayahStart || 1}–{habit.quranConfig?.ayahEnd || 30})
+                                </span>
+                                <button
+                                  onClick={() => handleToggleAudio(habit.id, 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/67.mp3')}
+                                  className="flex items-center gap-1 text-xs text-amber-400 font-bold bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/20"
+                                >
+                                  {playingAudioId === habit.id ? <Pause size={12} /> : <Play size={12} />}
+                                  <span>{playingAudioId === habit.id ? 'Pause Audio' : 'Listen Surah'}</span>
+                                </button>
+                              </div>
+
+                              <button
+                                onClick={() => navigate(`/quran/${habit.quranConfig?.surahNumber || 67}`)}
+                                className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                              >
+                                <ExternalLink size={14} />
+                                <span>Open Full Surah in Reader</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════════════ */}
+                    {/* ── 📿 DYNAMIC MODULE 3: IN-CARD MICRO-TASBEEH COUNTER ── */}
+                    {/* ══════════════════════════════════════════════════════════════ */}
+                    {habit.category === 'dhikr' && habit.dhikrConfig && (
+                      <div className="space-y-3 p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl">
+                        {(() => {
+                          const currentDhikr = communityHabitService.getDhikrCountForDate(habit.id, todayDateStr);
+                          const target = habit.dhikrConfig.targetCount || 100;
+                          const percent = Math.min(100, Math.round((currentDhikr / target) * 100));
+
+                          return (
+                            <div className="space-y-3">
+                              <div className="text-center space-y-1">
+                                <p className="text-base font-arabic font-bold text-text" dir="rtl">
+                                  {habit.dhikrConfig.phraseArabic}
+                                </p>
+                                <p className="text-xs font-urdu text-amber-500 font-bold" dir="rtl">
+                                  {habit.dhikrConfig.phraseUrdu}
+                                </p>
+                              </div>
+
+                              {/* Interactive Tap Ring */}
+                              <div className="flex items-center justify-center gap-4 pt-1">
+                                <button
+                                  onClick={() => handleTapDhikr(habit.id, 1, target)}
+                                  className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-xl shadow-emerald-500/30 flex flex-col items-center justify-center active:scale-90 transition-all border-4 border-white/20"
+                                >
+                                  <span className="text-xl font-black font-mono leading-none">{currentDhikr}</span>
+                                  <span className="text-[9px] uppercase font-bold tracking-wider opacity-80">/ {target}</span>
+                                </button>
+
+                                <div className="space-y-1.5">
+                                  <button
+                                    onClick={() => handleTapDhikr(habit.id, 10, target)}
+                                    className="px-3 py-1.5 bg-surface border border-border hover:bg-border rounded-xl text-xs font-bold text-text active:scale-95 transition-all block w-full text-center"
+                                  >
+                                    +10 Quick
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleResetDhikr(habit.id)}
+                                    className="px-3 py-1 bg-surface/50 border border-border/50 text-subtext hover:text-rose-400 rounded-xl text-[10px] font-bold active:scale-95 transition-all block w-full text-center"
+                                  >
+                                    Reset
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Progress bar */}
+                              <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* General Check-In Row (For non-dynamic habits or simple complete button) */}
+                    {habit.category !== 'namaz' && habit.category !== 'dhikr' && habit.category !== 'quran' && (
+                      <div className="flex items-center gap-2 pt-1 border-t border-border/60">
+                        {isCompleted ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <div className="flex-1 py-2.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-black flex items-center justify-center gap-1.5">
+                              <CheckCircle2 size={16} />
+                              <span>Completed Today (+1 Good Deed)</span>
+                            </div>
+
+                            <button
+                              onClick={() => handleUndoCheckIn(habit.id)}
+                              className="p-2.5 rounded-2xl bg-surface hover:bg-border text-subtext hover:text-rose-400 border border-border transition-colors active:scale-95"
+                              title="Undo today's check-in"
+                            >
+                              <RotateCcw size={15} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleCheckIn(habit.id)}
+                            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <Check size={16} />
+                            <span>Mark Completed for Today</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     {/* Peer Motivation & Community Pulse */}
-                    <div className="flex items-center justify-between text-[11px] text-muted pt-0.5">
+                    <div className="flex items-center justify-between text-[11px] text-muted pt-1 border-t border-border/40">
                       <div className="flex items-center gap-1.5">
                         <Users size={13} className="text-primary" />
                         <span>
                           <strong>{habit.memberCount.toLocaleString()}</strong> Believers joined • <strong>{habit.todayCompletedCount.toLocaleString()}</strong> completed today
                         </span>
                       </div>
-                      <span className="text-emerald-400 font-bold">You've got this!</span>
-                    </div>
-
-                    {/* Action Row */}
-                    <div className="flex items-center gap-2 pt-1 border-t border-border/60">
-                      {isCompleted ? (
-                        <div className="flex-1 flex items-center gap-2">
-                          <div className="flex-1 py-2.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-black flex items-center justify-center gap-1.5">
-                            <CheckCircle2 size={16} />
-                            <span>Completed Today (+1 Good Deed)</span>
-                          </div>
-
-                          <button
-                            onClick={() => handleUndoCheckIn(habit.id)}
-                            className="p-2.5 rounded-2xl bg-surface hover:bg-border text-subtext hover:text-rose-400 border border-border transition-colors active:scale-95"
-                            title="Undo today's check-in"
-                          >
-                            <RotateCcw size={15} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleCheckIn(habit.id)}
-                          className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <Check size={16} />
-                          <span>Mark Completed for Today</span>
-                        </button>
-                      )}
 
                       {habit.virtue && (
                         <button
                           onClick={() => setExpandedVirtueId(isVirtueExpanded ? null : habit.id)}
-                          className="p-2.5 rounded-2xl bg-surface hover:bg-border text-subtext hover:text-text border border-border transition-colors active:scale-95"
-                          title="Read Spiritual Virtue & Hadith"
+                          className="text-amber-500 font-bold hover:underline flex items-center gap-1 text-[11px]"
                         >
-                          <BookOpen size={16} />
+                          <BookOpen size={12} />
+                          <span>Hadith & Virtue</span>
                         </button>
                       )}
                     </div>
@@ -415,19 +729,17 @@ export const Habits: React.FC = () => {
           
           {/* Search & Category Filter */}
           <div className="space-y-3">
-            {/* Search Input */}
             <div className="relative">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtext" />
               <input
                 type="text"
-                placeholder="Search challenges (e.g. Surah Mulk, Tahajjud, Istighfar)..."
+                placeholder="Search challenges (e.g. Namaz, Quran, Istighfar, Tahajjud)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-2xl text-xs sm:text-sm text-text font-bold outline-none focus:border-amber-500 transition-colors"
               />
             </div>
 
-            {/* Category Chips */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               {CATEGORIES.map((cat) => (
                 <button
@@ -458,7 +770,6 @@ export const Habits: React.FC = () => {
                   className="bg-card border border-border rounded-3xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:border-amber-500/30 transition-colors"
                 >
                   <div className="space-y-2.5">
-                    {/* Header */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-2.5">
                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg shrink-0 ${theme.lightBg} border ${theme.border}`}>
@@ -496,7 +807,6 @@ export const Habits: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Footer & Join Button */}
                   <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-3">
                     <div className="text-[11px] text-muted flex items-center gap-1.5">
                       <Users size={13} className="text-primary" />
@@ -552,7 +862,7 @@ export const Habits: React.FC = () => {
             </h2>
 
             <p className="text-xs sm:text-sm text-white/80 max-w-lg mx-auto leading-relaxed">
-              Every Surah recited, Dhikr uttered, and good deed completed brings light to the global Ummah.
+              Every prayer on time, Quran verse recited, and Dhikr uttered builds light for the global Ummah.
             </p>
 
             <div className="pt-2 flex items-center justify-center gap-6 text-xs text-teal-200">
@@ -564,6 +874,34 @@ export const Habits: React.FC = () => {
               <div>
                 <strong className="block text-base font-black text-white font-mono">{habits.reduce((a, b) => a + b.memberCount, 0).toLocaleString()}+</strong>
                 <span className="text-[10px] uppercase opacity-75">Active Believers</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Ummah Quran Reading Heatmap Radar */}
+          <div className="bg-card border border-border p-5 rounded-3xl space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-text flex items-center gap-2">
+                <BookOpen size={16} className="text-cyan-400" />
+                <span>Global Quran Khatam Radar (Where Believers Are Reading)</span>
+              </h3>
+              <span className="text-[10px] text-muted">Across 30 Juz</span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
+              <div className="p-3 bg-surface rounded-2xl border border-border space-y-1">
+                <strong className="text-base font-black text-cyan-400">1,420</strong>
+                <span className="text-[10px] text-subtext block">Juz 1 – 10 (Early Stage)</span>
+              </div>
+
+              <div className="p-3 bg-surface rounded-2xl border border-border space-y-1">
+                <strong className="text-base font-black text-amber-400">890</strong>
+                <span className="text-[10px] text-subtext block">Juz 11 – 20 (Midway)</span>
+              </div>
+
+              <div className="p-3 bg-surface rounded-2xl border border-border space-y-1">
+                <strong className="text-base font-black text-emerald-400">640</strong>
+                <span className="text-[10px] text-subtext block">Juz 21 – 30 (Near Khatam)</span>
               </div>
             </div>
           </div>
@@ -628,6 +966,118 @@ export const Habits: React.FC = () => {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* ── 🗓️ PRAYER HISTORY AUDIT & MISSED PRAYERS DRAWER MODAL ── */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+          <div 
+            className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-amber-600 to-amber-700 p-5 text-white relative flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarIcon size={20} />
+                <div>
+                  <h3 className="text-base font-black">Namaz History & Missed Audit</h3>
+                  <p className="text-[11px] text-white/80">Audit which prayers were prayed vs missed on any date.</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {/* Date Selector Row */}
+              <div className="flex items-center justify-between bg-surface p-3 rounded-2xl border border-border">
+                <span className="text-xs font-bold text-text">Select Date to Audit:</span>
+                <input
+                  type="date"
+                  value={selectedHistoryDate}
+                  max={todayDateStr}
+                  onChange={(e) => setSelectedHistoryDate(e.target.value)}
+                  className="px-3 py-1.5 bg-card border border-border rounded-xl text-xs font-bold text-text outline-none"
+                />
+              </div>
+
+              {/* Prayer Matrix for Selected Date */}
+              {(() => {
+                const habitId = 'habit_namaz_5daily';
+                const status = communityHabitService.getNamazStatusForDate(habitId, selectedHistoryDate);
+
+                return (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-extrabold uppercase text-subtext tracking-wider">
+                      Prayers on {new Date(selectedHistoryDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}:
+                    </h4>
+
+                    <div className="space-y-2">
+                      {PRAYER_KEYS.map((pKey) => {
+                        const isPrayed = !!status[pKey];
+                        const pInfo = PRAYER_DISPLAY[pKey];
+
+                        return (
+                          <div 
+                            key={pKey}
+                            className={`p-3 rounded-2xl border flex items-center justify-between ${
+                              isPrayed 
+                                ? 'bg-emerald-500/10 border-emerald-500/30' 
+                                : 'bg-surface border-border'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-xl">{pInfo.icon}</span>
+                              <div>
+                                <strong className="text-xs font-bold text-text block">{pInfo.name} Prayer</strong>
+                                <span className="text-[10px] text-muted">{pInfo.arabic}</span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                handleTogglePrayer(habitId, pKey, selectedHistoryDate);
+                              }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                isPrayed
+                                  ? 'bg-emerald-500 text-black font-black'
+                                  : 'bg-surface hover:bg-border text-subtext border border-border'
+                              }`}
+                            >
+                              {isPrayed ? '✅ Prayed' : '❌ Missed (Tap to Mark)'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Direct Link to Qaza Tracker */}
+              <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-2xl flex items-center justify-between text-xs text-amber-300">
+                <div>
+                  <strong className="block font-bold text-amber-400">Need to make up missed prayers?</strong>
+                  <span className="text-[11px] opacity-80">Log your fulfilled missed prayers in Qaza Tracker.</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowHistoryModal(false);
+                    navigate('/qaza');
+                  }}
+                  className="px-3 py-1.5 bg-amber-500 text-black rounded-xl font-bold text-xs shadow-sm hover:bg-amber-400"
+                >
+                  Open Qaza
+                </button>
+              </div>
+
+            </div>
+          </div>
         </div>
       )}
 
