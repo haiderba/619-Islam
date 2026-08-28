@@ -9,8 +9,11 @@ const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
   const { updateUser } = useAuth();
 
-  const token = searchParams.get('token') || '';
-  const email = searchParams.get('email') || '';
+  const rawToken = searchParams.get('token') || '';
+  const rawEmail = searchParams.get('email') || '';
+
+  const token = decodeURIComponent(rawToken).trim();
+  const email = decodeURIComponent(rawEmail).trim().toLowerCase();
 
   const [verifying, setVerifying] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
@@ -27,7 +30,7 @@ const ResetPassword: React.FC = () => {
   useEffect(() => {
     const checkToken = async () => {
       if (!token || !email) {
-        setTokenError('Invalid or missing password reset link.');
+        setTokenError('Invalid or missing password reset link. Please request a new one.');
         setVerifying(false);
         return;
       }
@@ -36,7 +39,7 @@ const ResetPassword: React.FC = () => {
         await api.get(`/verify-reset-token?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`);
         setTokenValid(true);
       } catch (err: any) {
-        setTokenError(err.response?.data?.detail || 'This reset link has expired (5-minute limit) or is invalid.');
+        setTokenError(err.response?.data?.detail || 'This reset link has expired (15-minute limit) or has already been used.');
         setTokenValid(false);
       } finally {
         setVerifying(false);
@@ -137,7 +140,7 @@ const ResetPassword: React.FC = () => {
           /* Invalid / Expired Token View */
           <div className="space-y-4 text-center">
             <p className="text-xs text-subtext leading-relaxed">
-              This password reset link is either invalid, already used, or has exceeded its 5-minute security limit.
+              This password reset link is either invalid, already used, or has exceeded its 15-minute security limit.
             </p>
             <Link
               to="/forgot-password"

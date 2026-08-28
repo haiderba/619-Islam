@@ -90,7 +90,7 @@ const ForgotPassword: React.FC = () => {
           </h1>
           <p className="text-subtext mt-1 text-xs max-w-xs">
             {isSent 
-              ? 'Check your email inbox for your secure 5-minute reset link.' 
+              ? 'Check your email inbox for your secure 15-minute reset link.' 
               : 'Enter your account email and we will send you a password reset link.'}
           </p>
         </div>
@@ -151,13 +151,13 @@ const ForgotPassword: React.FC = () => {
               </div>
             </div>
 
-            {/* 5-minute Expiry Alert Box */}
+            {/* 15-minute Expiry Alert Box */}
             <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3">
               <Clock size={20} className="text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-bold text-amber-300">Valid for 5 Minutes</p>
+                <p className="text-xs font-bold text-amber-300">Valid for 15 Minutes</p>
                 <p className="text-[11px] text-subtext mt-0.5 leading-relaxed">
-                  For your security, the reset link expires in 5 minutes. Please open your email and click the button now.
+                  For your security, the reset link is valid for 15 minutes. Please open your email and click the button now.
                 </p>
               </div>
             </div>

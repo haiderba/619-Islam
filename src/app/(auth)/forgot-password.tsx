@@ -11,32 +11,42 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
-import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { api } from '@/config/api';
 
-export default function LoginScreen() {
+export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const handleSignIn = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Required Fields', 'Please enter your email and password.');
+  const handleRequestReset = async () => {
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your account email address.');
       return;
     }
 
     setLoading(true);
     try {
-      const userProfile = await signIn(email, password);
-      Alert.alert('Welcome Back! 👋', `Logged in as @${userProfile.username}`);
-      router.replace('/(tabs)');
+      const res = await api.post('/forgot-password', {
+        email: email.trim().toLowerCase(),
+        origin_url: 'https://619-islam.bsf1802210.workers.dev'
+      });
+
+      if (res.data.status === 'success') {
+        setSent(true);
+        Alert.alert(
+          'Reset Link Sent! ✉️',
+          'A secure 15-minute password reset link has been dispatched to your email address.'
+        );
+      } else {
+        Alert.alert('Error', res.data.message || 'Failed to send reset link.');
+      }
     } catch (err: any) {
-      Alert.alert('Login Error', err.message || 'Invalid email or password.');
+      Alert.alert('Request Failed', err.response?.data?.detail || 'Could not send reset link. Please check your email.');
     } finally {
       setLoading(false);
     }
@@ -47,17 +57,19 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={[styles.brandLogo, { color: colors.primary }]}>619</Text>
-          <Text style={[styles.title, { color: colors.text }]}>Sign In</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Reset Password</Text>
           <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
-            Welcome back to 619 Discipline Daily
+            {sent 
+              ? 'Check your inbox for your 15-minute reset link.' 
+              : 'Enter your email to receive a password reset link.'}
           </Text>
         </View>
 
         <Card style={styles.card}>
-          <Text style={[styles.label, { color: colors.text }]}>Email Address</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Account Email Address</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-            placeholder="usman@example.com"
+            placeholder="yourname@example.com"
             keyboardType="email-address"
             autoCapitalize="none"
             placeholderTextColor={colors.mutedText}
@@ -65,37 +77,18 @@ export default function LoginScreen() {
             onChangeText={setEmail}
           />
 
-          <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-            placeholder="••••••••"
-            secureTextEntry
-            placeholderTextColor={colors.mutedText}
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          <View style={{ alignItems: 'flex-end', marginTop: 8 }}>
-            <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password' as any)}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary }}>
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
-          </View>
-
           <Button
-            title="Sign In"
+            title={sent ? "Resend Reset Link" : "Send Reset Link"}
             variant="primary"
             size="large"
             loading={loading}
-            onPress={handleSignIn}
-            style={{ marginTop: 20 }}
+            onPress={handleRequestReset}
+            style={{ marginTop: 24 }}
           />
 
           <View style={styles.footerRow}>
-            <Text style={[styles.footerText, { color: colors.secondaryText }]}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
-              <Text style={[styles.linkText, { color: colors.primary }]}> Create Account</Text>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={[styles.linkText, { color: colors.primary }]}>← Back to Sign In</Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -129,6 +122,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     marginTop: 4,
+    textAlign: 'center',
   },
   card: {
     padding: 20,
@@ -151,11 +145,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 20,
   },
-  footerText: {
-    fontSize: 14,
-  },
   linkText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
 });

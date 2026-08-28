@@ -119,8 +119,8 @@ def send_verification_email(recipient_email: str, recipient_name: str, otp_code:
         print(f"Failed to send email via Brevo: {err}")
         return False, err
 
-def send_password_reset_email(recipient_email: str, recipient_name: str, reset_link: str, expire_minutes: int = 5):
-    """Send a transactional password reset email with a 5-minute expiry link via Brevo API."""
+def send_password_reset_email(recipient_email: str, recipient_name: str, reset_link: str, expire_minutes: int = 15):
+    """Send a transactional password reset email with a 15-minute expiry link via Brevo API."""
     api_key = os.getenv("BREVO_API_KEY", "").strip()
     sender_email = os.getenv("BREVO_SENDER_EMAIL", "uhaider695@gmail.com").strip()
     sender_name = os.getenv("BREVO_SENDER_NAME", "619 Islam").strip()
@@ -176,7 +176,7 @@ def send_password_reset_email(recipient_email: str, recipient_name: str, reset_l
               </tr>
             </table>
             <span style="display:block; margin-top:14px; font-size:12px; font-weight:600; color:#fbbf24; letter-spacing:0.5px;">
-              ⏳ This link expires in {expire_minutes} minutes
+              ⏳ This link is valid for {expire_minutes} minutes
             </span>
           </td>
         </tr>
@@ -212,7 +212,7 @@ def send_password_reset_email(recipient_email: str, recipient_name: str, reset_l
     payload = {
         "sender": {"name": sender_name, "email": sender_email},
         "to": [{"email": recipient_email, "name": recipient_name}],
-        "subject": "619 Islam - Password Reset Request (Expires in 5 Minutes)",
+        "subject": f"619 Islam - Password Reset Request (Valid for {expire_minutes} Minutes)",
         "htmlContent": html_content
     }
 

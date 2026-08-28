@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from typing import List, Optional
 
 import secrets
+import urllib.parse
 import models, schemas, auth, email_service
 from database import engine, get_db
 import datetime
@@ -106,36 +107,39 @@ def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme_optio
 
 @app.post("/signup")
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    norm_email = user.email.strip().lower()
+    norm_username = user.username.strip()
+
     # Check if username or email is already in use
-    existing_user = db.query(models.User).filter(models.User.username == user.username).first()
+    existing_user = db.query(models.User).filter(models.User.username == norm_username).first()
     if existing_user:
         if existing_user.is_verified:
             raise HTTPException(status_code=400, detail="Username already registered")
         else:
             # Update unverified user details
-            existing_user.email = user.email
-            existing_user.name = user.name or user.username
+            existing_user.email = norm_email
+            existing_user.name = user.name or norm_username
             existing_user.fiqh = user.fiqh
             existing_user.hashed_password = auth.get_password_hash(user.password)
             db_user = existing_user
     else:
         # Check email
-        existing_email = db.query(models.User).filter(models.User.email == user.email).first()
+        existing_email = db.query(models.User).filter(models.User.email == norm_email).first()
         if existing_email:
             if existing_email.is_verified:
                 raise HTTPException(status_code=400, detail="Email already registered")
             else:
-                existing_email.username = user.username
-                existing_email.name = user.name or user.username
+                existing_email.username = norm_username
+                existing_email.name = user.name or norm_username
                 existing_email.fiqh = user.fiqh
                 existing_email.hashed_password = auth.get_password_hash(user.password)
                 db_user = existing_email
         else:
             hashed_password = auth.get_password_hash(user.password)
             db_user = models.User(
-                email=user.email,
-                username=user.username,
-                name=user.name or user.username,
+                email=norm_email,
+                username=norm_username,
+                name=user.name or norm_username,
                 fiqh=user.fiqh,
                 hashed_password=hashed_password,
                 is_verified=False
@@ -145,19 +149,19 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
 
-    # Generate 6-digit OTP
+    # Generate 6-digit OTP (Valid for 15 minutes)
     otp_code = email_service.generate_otp_code()
-    expires_at = datetime.datetime.utcnow() + timedelta(minutes=10)
+    expires_at = datetime.datetime.utcnow() + timedelta(minutes=15)
 
     # Invalidate previous unused codes for this email
     db.query(models.EmailVerification).filter(
-        models.EmailVerification.email == user.email,
+        models.EmailVerification.email == norm_email,
         models.EmailVerification.is_used == False
     ).update({"is_used": True})
 
     # Save new OTP record
     verification_entry = models.EmailVerification(
-        email=user.email,
+        email=norm_email,
         otp_code=otp_code,
         expires_at=expires_at,
         is_used=False
@@ -167,15 +171,15 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     # Send verification email via Brevo
     email_sent, email_msg = email_service.send_verification_email(
-        recipient_email=user.email,
-        recipient_name=user.name or user.username,
+        recipient_email=norm_email,
+        recipient_name=user.name or norm_username,
         otp_code=otp_code
     )
 
     return {
         "status": "pending_verification",
-        "email": user.email,
-        "username": user.username,
+        "email": norm_email,
+        "username": norm_username,
         "message": "Verification code sent to your email." if email_sent else f"Failed to send email: {email_msg}",
         "email_sent": email_sent,
         "email_msg": email_msg
@@ -183,24 +187,27 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/verify-otp", response_model=schemas.AuthTokenResponse)
 def verify_otp(req: schemas.VerifyOtpRequest, db: Session = Depends(get_db)):
+    norm_email = req.email.strip().lower()
+    norm_code = req.otp_code.strip()
+
     # Find matching active verification record
     record = db.query(models.EmailVerification).filter(
-        models.EmailVerification.email == req.email,
-        models.EmailVerification.otp_code == req.otp_code.strip(),
+        models.EmailVerification.email == norm_email,
+        models.EmailVerification.otp_code == norm_code,
         models.EmailVerification.is_used == False
     ).order_by(models.EmailVerification.id.desc()).first()
 
     if not record:
-        raise HTTPException(status_code=400, detail="Invalid verification code")
+        raise HTTPException(status_code=400, detail="Invalid verification code. Please check and try again.")
 
     if record.expires_at < datetime.datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
+        raise HTTPException(status_code=400, detail="Verification code has expired (15-minute limit). Please request a new code.")
 
     # Mark OTP as used
     record.is_used = True
 
     # Mark User as verified
-    user = db.query(models.User).filter(models.User.email == req.email).first()
+    user = db.query(models.User).filter(models.User.email == norm_email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -222,22 +229,23 @@ def verify_otp(req: schemas.VerifyOtpRequest, db: Session = Depends(get_db)):
 
 @app.post("/resend-otp")
 def resend_otp(req: schemas.ResendOtpRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == req.email).first()
+    norm_email = req.email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == norm_email).first()
     if not user:
         raise HTTPException(status_code=404, detail="No user found with this email")
 
     # Invalidate previous unused codes
     db.query(models.EmailVerification).filter(
-        models.EmailVerification.email == req.email,
+        models.EmailVerification.email == norm_email,
         models.EmailVerification.is_used == False
     ).update({"is_used": True})
 
-    # Generate fresh OTP
+    # Generate fresh OTP (Valid for 15 minutes)
     otp_code = email_service.generate_otp_code()
-    expires_at = datetime.datetime.utcnow() + timedelta(minutes=10)
+    expires_at = datetime.datetime.utcnow() + timedelta(minutes=15)
 
     verification_entry = models.EmailVerification(
-        email=req.email,
+        email=norm_email,
         otp_code=otp_code,
         expires_at=expires_at,
         is_used=False
@@ -246,7 +254,7 @@ def resend_otp(req: schemas.ResendOtpRequest, db: Session = Depends(get_db)):
     db.commit()
 
     email_sent, email_msg = email_service.send_verification_email(
-        recipient_email=req.email,
+        recipient_email=norm_email,
         recipient_name=user.name or user.username,
         otp_code=otp_code
     )
@@ -273,7 +281,8 @@ def debug_email(to: str = "uhaider695@gmail.com"):
 
 @app.post("/forgot-password")
 def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == req.email.strip().lower()).first()
+    norm_email = req.email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == norm_email).first()
     if not user:
         return {
             "status": "success",
@@ -286,9 +295,9 @@ def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(ge
         models.PasswordResetToken.is_used == False
     ).update({"is_used": True})
 
-    # Generate cryptographically secure 32-byte token
+    # Generate cryptographically secure 32-byte token (Valid for 15 minutes)
     reset_token = secrets.token_urlsafe(32)
-    expires_at = datetime.datetime.utcnow() + timedelta(minutes=5)
+    expires_at = datetime.datetime.utcnow() + timedelta(minutes=15)
 
     token_entry = models.PasswordResetToken(
         email=user.email,
@@ -300,27 +309,32 @@ def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(ge
     db.commit()
 
     base_origin = req.origin_url.rstrip("/") if req.origin_url else "https://619-islam.bsf1802210.workers.dev"
-    reset_link = f"{base_origin}/reset-password?token={reset_token}&email={user.email}"
+    encoded_token = urllib.parse.quote_plus(reset_token)
+    encoded_email = urllib.parse.quote_plus(user.email)
+    reset_link = f"{base_origin}/reset-password?token={encoded_token}&email={encoded_email}"
 
     email_sent, email_msg = email_service.send_password_reset_email(
         recipient_email=user.email,
         recipient_name=user.name or user.username,
         reset_link=reset_link,
-        expire_minutes=5
+        expire_minutes=15
     )
 
     return {
         "status": "success",
-        "message": "A password reset link (valid for 5 minutes) has been sent to your email.",
+        "message": "A password reset link (valid for 15 minutes) has been sent to your email.",
         "email_sent": email_sent,
         "email_msg": email_msg
     }
 
 @app.get("/verify-reset-token")
 def verify_reset_token(token: str, email: str, db: Session = Depends(get_db)):
+    norm_email = email.strip().lower()
+    norm_token = token.strip()
+
     record = db.query(models.PasswordResetToken).filter(
-        models.PasswordResetToken.email == email.strip().lower(),
-        models.PasswordResetToken.token == token.strip(),
+        models.PasswordResetToken.email == norm_email,
+        models.PasswordResetToken.token == norm_token,
         models.PasswordResetToken.is_used == False
     ).first()
 
@@ -328,15 +342,18 @@ def verify_reset_token(token: str, email: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid or already used password reset link.")
 
     if record.expires_at < datetime.datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Password reset link has expired (5-minute limit). Please request a new one.")
+        raise HTTPException(status_code=400, detail="Password reset link has expired (15-minute limit). Please request a new one.")
 
-    return {"status": "valid", "email": email}
+    return {"status": "valid", "email": norm_email}
 
 @app.post("/reset-password", response_model=schemas.AuthTokenResponse)
 def reset_password(req: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    norm_email = req.email.strip().lower()
+    norm_token = req.token.strip()
+
     record = db.query(models.PasswordResetToken).filter(
-        models.PasswordResetToken.email == req.email.strip().lower(),
-        models.PasswordResetToken.token == req.token.strip(),
+        models.PasswordResetToken.email == norm_email,
+        models.PasswordResetToken.token == norm_token,
         models.PasswordResetToken.is_used == False
     ).first()
 
@@ -344,12 +361,12 @@ def reset_password(req: schemas.ResetPasswordRequest, db: Session = Depends(get_
         raise HTTPException(status_code=400, detail="Invalid or already used reset link.")
 
     if record.expires_at < datetime.datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Reset link has expired (5-minute limit). Please request a new link.")
+        raise HTTPException(status_code=400, detail="Reset link has expired (15-minute limit). Please request a new link.")
 
     if len(req.new_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
 
-    user = db.query(models.User).filter(models.User.email == req.email.strip().lower()).first()
+    user = db.query(models.User).filter(models.User.email == norm_email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User account not found.")
 

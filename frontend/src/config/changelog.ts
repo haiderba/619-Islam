@@ -12,13 +12,25 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '2.6.0';
+export const CURRENT_APP_VERSION = '2.6.5';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
   releaseDate: 'August 2026',
-  headline: "What's New in Update v2.6.0",
+  headline: "What's New in Update v2.6.5",
   features: [
+    {
+      icon: 'ShieldCheck',
+      title: 'Resilient 15-Minute Password Reset Engine',
+      description: 'Extended password reset token validity to 15 minutes with URL parameter sanitization and special character encoding.',
+      badge: 'Security'
+    },
+    {
+      icon: 'Mail',
+      title: 'In-Place Email OTP Verification on Sign In',
+      description: 'Unverified accounts now trigger an immediate in-place 6-digit OTP verification prompt with 1-tap resend.',
+      badge: 'Auth'
+    },
     {
       icon: 'Share2',
       title: 'Weekly Spiritual Wrap & WhatsApp Status Cards',
