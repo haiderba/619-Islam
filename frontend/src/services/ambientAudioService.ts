@@ -1,150 +1,178 @@
-// Web Audio Synthesizer for Natural Ambient Soundscapes (Zero buffering, 100% offline, infinitely loopable)
+// Ambient Haram & Peaceful Masjid Audio Soundscapes for 619 Islam
 
-class AmbientAudioEngine {
-  private ctx: AudioContext | null = null;
-  private rainNode: AudioNode | null = null;
-  private breezeNode: AudioNode | null = null;
-  private riverNode: AudioNode | null = null;
-  private masterGain: GainNode | null = null;
-  private isRunning: boolean = false;
-  private currentVolume: number = 0.5;
+export interface AmbientTrack {
+  id: string;
+  name: string;
+  arabicName: string;
+  description: string;
+  url: string;
+  icon: string;
+}
 
-  private initContext() {
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      this.ctx = new AudioCtx();
-    }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
-    if (!this.masterGain && this.ctx) {
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(this.currentVolume, this.ctx.currentTime);
-      this.masterGain.connect(this.ctx.destination);
-    }
+export const AMBIENT_TRACKS: AmbientTrack[] = [
+  {
+    id: 'madinah_birds',
+    name: 'Madinah Munawwarah Courtyard',
+    arabicName: 'رحاب المسجد النبوي الشريف',
+    description: 'Tranquil birds, gentle breeze, and serene atmosphere in the Prophet\'s Mosque.',
+    url: 'https://cdn.freesound.org/previews/518/518882_6142149-lq.mp3',
+    icon: '🕊️',
+  },
+  {
+    id: 'makkah_rain',
+    name: 'Rain on Haram Marble (Makkah)',
+    arabicName: 'مطر وسكينة الحرم المكي',
+    description: 'Gentle raindrops falling on the white marble around the Holy Ka\'bah.',
+    url: 'https://cdn.freesound.org/previews/243/243628_3509815-lq.mp3',
+    icon: '🌧️',
+  },
+  {
+    id: 'alaqsa_garden',
+    name: 'Al-Aqsa Peaceful Evening Breeze',
+    arabicName: 'نسيم ساحات المسجد الأقصى',
+    description: 'Deep contemplation and tranquil garden ambiance of Bayt al-Maqdis.',
+    url: 'https://cdn.freesound.org/previews/568/568853_9497060-lq.mp3',
+    icon: '🌿',
+  },
+];
+
+type AmbientListener = (state: {
+  isPlaying: boolean;
+  activeTrackId: string | null;
+  volume: number;
+  remainingSeconds: number | null;
+}) => void;
+
+class AmbientAudioService {
+  private audio: HTMLAudioElement;
+  private isPlaying: boolean = false;
+  private activeTrackId: string | null = null;
+  private volume: number = 0.5;
+  private timerInterval: any = null;
+  private remainingSeconds: number | null = null;
+  private listeners: Set<AmbientListener> = new Set();
+
+  constructor() {
+    this.audio = new Audio();
+    this.audio.loop = true;
+    this.audio.volume = this.volume;
+
+    this.audio.addEventListener('play', () => {
+      this.isPlaying = true;
+      this.notify();
+    });
+
+    this.audio.addEventListener('pause', () => {
+      this.isPlaying = false;
+      this.notify();
+    });
   }
 
-  // Generate pink noise buffer for realistic rain & wind
-  private createPinkNoiseBuffer(): AudioBuffer | null {
-    if (!this.ctx) return null;
-    const bufferSize = this.ctx.sampleRate * 2;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.96900 * b2 + white * 0.1538520;
-      b3 = 0.86650 * b3 + white * 0.3104856;
-      b4 = 0.55000 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.0168980;
-      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-      b6 = white * 0.115926;
-    }
-    return buffer;
+  public subscribe(listener: AmbientListener): () => void {
+    this.listeners.add(listener);
+    listener(this.getState());
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
-  public startSound(type: 'rain' | 'breeze' | 'river' | 'none', volume: number = 0.5) {
-    try {
-      this.stop();
-      if (type === 'none') return;
+  private notify() {
+    const state = this.getState();
+    this.listeners.forEach(l => l(state));
+  }
 
-      this.initContext();
-      if (!this.ctx || !this.masterGain) return;
+  public getState() {
+    return {
+      isPlaying: this.isPlaying,
+      activeTrackId: this.activeTrackId,
+      volume: this.volume,
+      remainingSeconds: this.remainingSeconds,
+    };
+  }
 
-      this.setVolume(volume);
-      const noiseBuffer = this.createPinkNoiseBuffer();
-      if (!noiseBuffer) return;
+  public playTrack(trackId: string, durationMinutes: number | null = 15): void {
+    const track = AMBIENT_TRACKS.find(t => t.id === trackId);
+    if (!track) return;
 
-      const noiseSource = this.ctx.createBufferSource();
-      noiseSource.buffer = noiseBuffer;
-      noiseSource.loop = true;
+    if (this.activeTrackId === trackId && this.isPlaying) {
+      this.pause();
+      return;
+    }
 
-      if (type === 'rain') {
-        // Bandpass filtered pink noise for gentle rain drops
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
-        filter.Q.setValueAtTime(0.7, this.ctx.currentTime);
+    this.activeTrackId = trackId;
+    this.audio.src = track.url;
+    this.audio.currentTime = 0;
+    this.audio.volume = this.volume;
 
-        const highpass = this.ctx.createBiquadFilter();
-        highpass.type = 'highpass';
-        highpass.frequency.setValueAtTime(200, this.ctx.currentTime);
+    this.audio.play().catch(err => {
+      console.warn('Ambient audio play blocked', err);
+    });
 
-        noiseSource.connect(filter);
-        filter.connect(highpass);
-        highpass.connect(this.masterGain);
-        this.rainNode = noiseSource;
-      } else if (type === 'breeze') {
-        // Modulated gentle breeze / desert night wind
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(400, this.ctx.currentTime);
-        filter.Q.setValueAtTime(2.0, this.ctx.currentTime);
+    // Setup timer if specified
+    if (durationMinutes) {
+      this.setTimer(durationMinutes);
+    } else {
+      this.clearTimer();
+    }
 
-        // Low frequency oscillator for wind gusts
-        const lfo = this.ctx.createOscillator();
-        lfo.frequency.setValueAtTime(0.15, this.ctx.currentTime);
-        const lfoGain = this.ctx.createGain();
-        lfoGain.gain.setValueAtTime(250, this.ctx.currentTime);
-        lfo.connect(lfoGain);
-        lfoGain.connect(filter.frequency);
-        lfo.start();
+    this.notify();
+  }
 
-        noiseSource.connect(filter);
-        filter.connect(this.masterGain);
-        this.breezeNode = noiseSource;
-      } else if (type === 'river') {
-        // Soft flowing stream
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(650, this.ctx.currentTime);
+  public startSound(soundKey: string, volume: number = 0.5): void {
+    const soundMap: Record<string, string> = {
+      rain: 'makkah_rain',
+      birds: 'madinah_birds',
+      wind: 'alaqsa_garden',
+      makkah_rain: 'makkah_rain',
+      madinah_birds: 'madinah_birds',
+      alaqsa_garden: 'alaqsa_garden',
+    };
 
-        noiseSource.connect(filter);
-        filter.connect(this.masterGain);
-        this.riverNode = noiseSource;
+    const targetId = soundMap[soundKey] || 'madinah_birds';
+    this.setVolume(volume);
+    this.playTrack(targetId, null);
+  }
+
+  public stop(): void {
+    this.pause();
+  }
+
+  public pause(): void {
+    this.audio.pause();
+    this.isPlaying = false;
+    this.clearTimer();
+    this.notify();
+  }
+
+  public setVolume(vol: number): void {
+    this.volume = Math.max(0, Math.min(1, vol));
+    this.audio.volume = this.volume;
+    this.notify();
+  }
+
+  public setTimer(minutes: number): void {
+    this.clearTimer();
+    this.remainingSeconds = minutes * 60;
+
+    this.timerInterval = setInterval(() => {
+      if (this.remainingSeconds !== null && this.remainingSeconds > 0) {
+        this.remainingSeconds -= 1;
+        this.notify();
+      } else {
+        this.pause();
       }
+    }, 1000);
 
-      noiseSource.start();
-      this.isRunning = true;
-    } catch (e) {
-      console.warn('Ambient sound start ignored', e);
+    this.notify();
+  }
+
+  public clearTimer(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
     }
-  }
-
-  public setVolume(volume: number) {
-    this.currentVolume = volume;
-    if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), this.ctx.currentTime);
-    }
-  }
-
-  public stop() {
-    try {
-      if (this.rainNode) {
-        (this.rainNode as any).stop();
-        this.rainNode.disconnect();
-        this.rainNode = null;
-      }
-      if (this.breezeNode) {
-        (this.breezeNode as any).stop();
-        this.breezeNode.disconnect();
-        this.breezeNode = null;
-      }
-      if (this.riverNode) {
-        (this.riverNode as any).stop();
-        this.riverNode.disconnect();
-        this.riverNode = null;
-      }
-    } catch (e) {}
-    this.isRunning = false;
-  }
-
-  public isPlaying(): boolean {
-    return this.isRunning;
+    this.remainingSeconds = null;
   }
 }
 
-export const ambientAudioService = new AmbientAudioEngine();
+export const ambientAudioService = new AmbientAudioService();

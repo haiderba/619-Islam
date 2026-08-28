@@ -21,7 +21,8 @@ import {
   Calendar as CalendarIcon,
   Play,
   Pause,
-  ExternalLink
+  ExternalLink,
+  Share2
 } from 'lucide-react';
 import { 
   communityHabitService, 
@@ -34,6 +35,11 @@ import {
   UserHabitsSummary 
 } from '../types/communityHabits';
 import { notificationService } from '../services/notificationService';
+import { microSunnahService } from '../services/microSunnahService';
+import { WeeklyWrapModal } from '../components/habits/WeeklyWrapModal';
+import { VirtualJannahGarden } from '../components/habits/VirtualJannahGarden';
+import { AmbientAudioBar } from '../components/habits/AmbientAudioBar';
+import { RamadanBootcampCard } from '../components/habits/RamadanBootcampCard';
 
 const CATEGORIES: { key: HabitCategory | 'all'; label: string; icon: string }[] = [
   { key: 'all', label: 'All Challenges', icon: '🌟' },
@@ -71,6 +77,11 @@ export const Habits: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedVirtueId, setExpandedVirtueId] = useState<string | null>(null);
   
+  // Weekly Wrap & Modals
+  const [showWeeklyWrap, setShowWeeklyWrap] = useState<boolean>(false);
+  const [todayMicroSunnah, setTodayMicroSunnah] = useState(microSunnahService.getTodayMicroSunnah());
+  const [isMicroSunnahDone, setIsMicroSunnahDone] = useState<boolean>(microSunnahService.isCompletedToday());
+
   // Date Picker & History Drawer State for Namaz
   const [selectedHistoryDate, setSelectedHistoryDate] = useState<string>(
     communityHabitService.getDateString(new Date())
@@ -123,11 +134,25 @@ export const Habits: React.FC = () => {
     const list = communityHabitService.getHabits();
     setHabits(list);
     setSummary(communityHabitService.getUserHabitsSummary());
+    setTodayMicroSunnah(microSunnahService.getTodayMicroSunnah());
+    setIsMicroSunnahDone(microSunnahService.isCompletedToday());
   };
 
   const handleToggleJoin = (habitId: string) => {
     communityHabitService.toggleJoin(habitId);
     loadData();
+  };
+
+  // ── MICRO SUNNAH ACTIONS ──
+  const handleToggleMicroSunnah = () => {
+    if (navigator.vibrate) navigator.vibrate(25);
+    if (isMicroSunnahDone) {
+      microSunnahService.unmarkCompleted();
+      setIsMicroSunnahDone(false);
+    } else {
+      microSunnahService.markCompleted();
+      setIsMicroSunnahDone(true);
+    }
   };
 
   // ── NAMAZ ACTIONS ──
@@ -218,7 +243,15 @@ export const Habits: React.FC = () => {
         </div>
 
         {/* Action Header Pills */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <button
+            onClick={() => setShowWeeklyWrap(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-black shadow-md shadow-amber-500/20 active:scale-95 transition-all"
+          >
+            <Share2 size={13} />
+            <span>Weekly Deen Wrap</span>
+          </button>
+
           {notificationStatus !== 'granted' && (
             <button
               onClick={handleEnableNotifications}
@@ -291,7 +324,7 @@ export const Habits: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/30 inline-block">
                     Level {summary.levelNumber}: {summary.levelTitle}
                   </span>
@@ -350,6 +383,66 @@ export const Habits: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* ── ✨ 1. DAILY ROTATING MICRO-SUNNAH OF THE DAY (UNDER 60S) ── */}
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-600/5 to-transparent border border-amber-500/30 rounded-3xl p-4 sm:p-5 shadow-sm space-y-3 relative overflow-hidden">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">{todayMicroSunnah.icon}</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
+                      ⚡ Micro-Sunnah of the Day (&lt; 60s)
+                    </span>
+                    {isMicroSunnahDone && (
+                      <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                        <Check size={12} /> Revived
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="text-sm sm:text-base font-black text-text mt-0.5">
+                    {todayMicroSunnah.title}
+                  </h4>
+                  <p className="text-xs font-urdu text-amber-500 font-bold leading-relaxed">
+                    {todayMicroSunnah.urduTitle}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleToggleMicroSunnah}
+                className={`px-4 py-2 rounded-2xl text-xs font-black transition-all active:scale-95 shrink-0 flex items-center gap-1.5 ${
+                  isMicroSunnahDone
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black shadow-md shadow-amber-500/20'
+                }`}
+              >
+                {isMicroSunnahDone ? (
+                  <>
+                    <Check size={14} />
+                    <span>Revived Today 👑</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={14} />
+                    <span>I Revived This Sunnah</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <p className="text-xs text-subtext leading-relaxed">
+              👉 {todayMicroSunnah.actionText}
+            </p>
+
+            <div className="flex items-center justify-between text-[10px] text-muted pt-1 border-t border-border/60">
+              <span className="italic">{todayMicroSunnah.virtue}</span>
+              <span className="font-bold">— {todayMicroSunnah.hadithReference}</span>
+            </div>
+          </div>
+
+          {/* ── 🎧 2. HARAM & MASJID AMBIENT AUDIO SOUNDSCAPES ── */}
+          <AmbientAudioBar />
 
           {/* List of Joined Habits with Rich Contextual Engines */}
           {joinedHabits.length === 0 ? (
@@ -539,7 +632,7 @@ export const Habits: React.FC = () => {
                                   </div>
 
                                   {/* Action Buttons */}
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <button
                                       onClick={() => navigate(`/quran/${qPos.currentSurah}`)}
                                       className="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all"
@@ -727,6 +820,9 @@ export const Habits: React.FC = () => {
       {activeTab === 'discover' && (
         <div className="space-y-4 sm:space-y-5 animate-in fade-in">
           
+          {/* Ramadan & Khatam Bootcamp Banner */}
+          <RamadanBootcampCard />
+
           {/* Search & Category Filter */}
           <div className="space-y-3">
             <div className="relative">
@@ -849,6 +945,9 @@ export const Habits: React.FC = () => {
       {activeTab === 'impact' && (
         <div className="space-y-4 sm:space-y-5 animate-in fade-in">
           
+          {/* Virtual Jannah Ummah Tree of Good Deeds */}
+          <VirtualJannahGarden totalDeeds={totalCommunityCompletions} />
+
           {/* Collective Ummah Counter */}
           <div className="bg-gradient-to-br from-[#041c1d] via-[#062e31] to-[#031516] border border-teal-500/40 rounded-3xl p-6 text-white text-center space-y-3 relative overflow-hidden shadow-xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -877,6 +976,9 @@ export const Habits: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Ramadan & Khatam Bootcamp Card */}
+          <RamadanBootcampCard />
 
           {/* Ummah Quran Reading Heatmap Radar */}
           <div className="bg-card border border-border p-5 rounded-3xl space-y-3">
@@ -1079,6 +1181,14 @@ export const Habits: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── ✨ WEEKLY SPIRITUAL WRAP MODAL ── */}
+      {showWeeklyWrap && (
+        <WeeklyWrapModal
+          summary={summary}
+          onClose={() => setShowWeeklyWrap(false)}
+        />
       )}
 
     </div>

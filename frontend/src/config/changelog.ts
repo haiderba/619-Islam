@@ -12,35 +12,41 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '2.5.6';
+export const CURRENT_APP_VERSION = '2.6.0';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
   releaseDate: 'August 2026',
-  headline: "What's New in Update v2.5.6",
+  headline: "What's New in Update v2.6.0",
   features: [
     {
-      icon: 'Volume2',
-      title: 'Voice Adhan Notification & Aloud Prayer Call',
-      description: 'Prayer time notifications now speak aloud ("Allahu Akbar, it is now time for Maghrib prayer. Come to prayer") and play full authentic Adhan audio.',
-      badge: 'Voice'
+      icon: 'Share2',
+      title: 'Weekly Spiritual Wrap & WhatsApp Status Cards',
+      description: 'Generate luxury gold report cards summarizing your weekly prayers, Quran pages, Dhikr count, and streaks with 1-tap sharing to WhatsApp Status and Instagram Stories.',
+      badge: 'Major'
     },
     {
-      icon: 'Radio',
-      title: 'Resilient Multi-CDN Adhan Audio Engine',
-      description: 'Removed strict CORS restrictions and added automated fallback mirrors ensuring Adhan audio plays reliably across all browsers and devices.',
+      icon: 'Headphones',
+      title: 'Ambient Haram & Masjid Focus Soundscapes',
+      description: 'Immerse in peaceful ambient audio while reciting Quran or Dhikr (Madinah Munawwarah birds, Makkah rain on Ka\'bah marble, Al-Aqsa garden breeze).',
       badge: 'Audio'
     },
     {
-      icon: 'Flame',
-      title: 'Dynamic Namaz 5-Prayer Card with Real-Time Adhan Time-Lock',
-      description: 'Check off Fajr, Dhuhr, Asr, Maghrib, and Isha individually. Future prayers are locked until their Adhan time arrives based on live prayer timetables.',
-      badge: 'Flagship'
+      icon: 'Sparkles',
+      title: 'Daily Micro-Sunnah of the Day (< 60 Seconds)',
+      description: 'Revive 30 authentic daily micro-Sunnahs with Hadith references and 1-tap "I Revived This Sunnah Today 👑" tracking.',
+      badge: 'New'
     },
     {
-      icon: 'Calendar',
-      title: 'Namaz History & Missed Prayer Audit Calendar',
-      description: 'Audit any past date to see which prayers were performed vs missed, with 1-tap make-up logging syncing directly with Qaza Tracker.',
+      icon: 'Droplets',
+      title: 'Virtual Jannah Ummah Tree of Good Deeds',
+      description: 'Watch an animated SVG tree blossom with radiant leaves and golden fruits as the global Ummah fulfills prayers, dhikr, and Quran verses together.',
+      badge: 'Visual'
+    },
+    {
+      icon: 'Moon',
+      title: 'Sacred Seasons & Khatam 30-Day Bootcamp',
+      description: 'Calculate exact Quran pacing (4 pages/prayer = 1 Juz/day = Khatam in 30 days) and GPS-accurate Last Third of Night (Tahajjud) prime prayer window.',
       badge: 'New'
     }
   ]
