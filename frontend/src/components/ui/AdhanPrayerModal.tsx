@@ -25,8 +25,13 @@ export const AdhanPrayerModal: React.FC = () => {
       }
     });
 
-    const handleAdhanEvent = () => {
+    const handleAdhanEvent = (e: any) => {
       setIsVisible(true);
+      const detail = e.detail || {};
+      // Ensure Adhan audio & voice are playing
+      if (!adhanService.getState().isPlaying) {
+        adhanService.playAdhan(detail.prayerName || 'Salah', detail.arabicName || 'الصلاة');
+      }
     };
 
     window.addEventListener('619_adhan_alert', handleAdhanEvent);
@@ -94,7 +99,7 @@ export const AdhanPrayerModal: React.FC = () => {
           </div>
 
           {/* Adhan Controls */}
-          <div className="flex items-center justify-center gap-3 pt-1">
+          <div className="flex items-center justify-center gap-3 pt-1 flex-wrap">
             {adhanState.isPlaying ? (
               <button
                 onClick={() => adhanService.stopAdhan()}
@@ -106,16 +111,16 @@ export const AdhanPrayerModal: React.FC = () => {
             ) : (
               <button
                 onClick={() => adhanService.playAdhan(adhanState.prayerName, adhanState.arabicName)}
-                className="px-5 py-2.5 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-black transition-all active:scale-95 flex items-center gap-2"
+                className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black border border-amber-400 text-xs font-black shadow-lg shadow-amber-500/30 transition-all active:scale-95 flex items-center gap-2"
               >
                 <Volume2 size={16} />
-                <span>Replay Adhan</span>
+                <span>🔊 Play Adhan Aloud</span>
               </button>
             )}
 
             <button
               onClick={handleGoToNamaz}
-              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-black shadow-md shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-1.5"
+              className="px-5 py-2.5 rounded-2xl bg-surface border border-border hover:bg-border text-white text-xs font-black shadow-md active:scale-95 transition-all flex items-center gap-1.5"
             >
               <span>Namaz Times</span>
               <ArrowRight size={14} />

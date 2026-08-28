@@ -1,10 +1,11 @@
-// Adhan Audio Engine & Islamic Prayer Notification Player for 619 Islam
+// Adhan Audio Engine & Islamic Voice Notification Player for 619 Islam
 
 export interface AdhanOption {
   id: string;
   name: string;
   location: string;
   url: string;
+  fallbacks: string[];
   isFajrSpecial?: boolean;
 }
 
@@ -14,24 +15,37 @@ export const ADHAN_STYLES: AdhanOption[] = [
     name: 'Makkah Al-Mukarramah Adhan',
     location: 'Masjid Al-Haram (Sheikh Ali Ahmed Mulla)',
     url: 'https://www.islamcan.com/audio/adhan/azan1.mp3',
+    fallbacks: [
+      'https://ia800204.us.archive.org/3/items/AzanMakkah_201601/Azan_Makkah.mp3',
+      'https://media.sd.ma/assabile/adhan_3748/001.mp3',
+    ],
   },
   {
     id: 'madinah',
     name: 'Madinah Al-Munawwarah Adhan',
     location: 'Al-Masjid an-Nabawi',
     url: 'https://www.islamcan.com/audio/adhan/azan2.mp3',
+    fallbacks: [
+      'https://ia800204.us.archive.org/3/items/AzanMakkah_201601/Azan_Makkah.mp3',
+    ],
   },
   {
     id: 'alafasy',
     name: 'Mishary Rashid Alafasy Adhan',
     location: 'Kuwait',
     url: 'https://www.islamcan.com/audio/adhan/azan3.mp3',
+    fallbacks: [
+      'https://www.islamcan.com/audio/adhan/azan1.mp3',
+    ],
   },
   {
     id: 'fajr',
     name: 'Fajr Special Adhan',
     location: 'With "As-Salatu Khayrun Minan-Nawm"',
     url: 'https://www.islamcan.com/audio/adhan/azan13.mp3',
+    fallbacks: [
+      'https://www.islamcan.com/audio/adhan/azan1.mp3',
+    ],
     isFajrSpecial: true,
   },
 ];
@@ -56,12 +70,16 @@ class AdhanService {
   private currentPrayer: string = '';
   private currentArabic: string = '';
   private currentStyleName: string = '';
+  private currentFallbackIndex: number = 0;
+  private currentFallbacks: string[] = [];
   private listeners: Set<AdhanListener> = new Set();
+  private audioContextUnlocked: boolean = false;
+  private audioCtx: AudioContext | null = null;
 
   constructor() {
     this.audio = new Audio();
     this.audio.preload = 'auto';
-    this.audio.crossOrigin = 'anonymous';
+    // NOTE: Removed crossOrigin = 'anonymous' to prevent strict CORS rejection on audio CDNs
 
     this.audio.addEventListener('play', () => {
       this.isPlayingAdhan = true;
@@ -79,10 +97,44 @@ class AdhanService {
     });
 
     this.audio.addEventListener('error', (e) => {
-      console.warn('Adhan audio failed', e);
-      this.isPlayingAdhan = false;
-      this.notify();
+      console.warn('Adhan audio failed on current source, trying fallback...', e);
+      this.tryNextFallback();
     });
+
+    this.setupAudioUnlocker();
+  }
+
+  // Permanently unlocks browser media permissions on user interaction
+  private setupAudioUnlocker() {
+    if (typeof window === 'undefined') return;
+
+    const unlockHandler = () => {
+      if (this.audioContextUnlocked) return;
+
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          if (!this.audioCtx) {
+            this.audioCtx = new AudioContextClass();
+          }
+          if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+          }
+        }
+        this.audioContextUnlocked = true;
+
+        // Remove listeners once unlocked
+        window.removeEventListener('click', unlockHandler);
+        window.removeEventListener('touchstart', unlockHandler);
+        window.removeEventListener('keydown', unlockHandler);
+      } catch (err) {
+        console.warn('Could not unlock AudioContext', err);
+      }
+    };
+
+    window.addEventListener('click', unlockHandler, { passive: true });
+    window.addEventListener('touchstart', unlockHandler, { passive: true });
+    window.addEventListener('keydown', unlockHandler, { passive: true });
   }
 
   public subscribe(listener: AdhanListener): () => void {
@@ -107,6 +159,47 @@ class AdhanService {
     };
   }
 
+  // Voice Speech Announcement Aloud
+  public speakVoiceNotification(prayerName: string, arabicName: string = '') {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    try {
+      window.speechSynthesis.cancel(); // Clear any queued speech
+
+      const announcement = `Allahu Akbar, Allahu Akbar. It is now time for ${prayerName} prayer ${arabicName ? `(${arabicName})` : ''}. Come to prayer, come to success. Hayya alas-Salah.`;
+      const utterance = new SpeechSynthesisUtterance(announcement);
+      utterance.volume = 1.0; // Maximum volume aloud
+      utterance.rate = 0.92;  // Natural rhythmic pace
+      utterance.pitch = 1.0;
+
+      // Try picking an English or Arabic voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => v.lang.startsWith('en') || v.lang.startsWith('ar'));
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech synthesis failed', e);
+    }
+  }
+
+  private tryNextFallback() {
+    if (this.currentFallbackIndex < this.currentFallbacks.length) {
+      const nextUrl = this.currentFallbacks[this.currentFallbackIndex];
+      this.currentFallbackIndex += 1;
+      this.audio.src = nextUrl;
+      this.audio.currentTime = 0;
+      this.audio.play().catch((err) => {
+        console.warn('Fallback adhan audio play failed', err);
+      });
+    } else {
+      this.isPlayingAdhan = false;
+      this.notify();
+    }
+  }
+
   public playAdhan(prayerName: string = 'Salah', arabicName: string = 'الصلاة', styleId: string = 'makkah'): void {
     let adhan = ADHAN_STYLES.find((a) => a.id === styleId);
     
@@ -120,7 +213,20 @@ class AdhanService {
     this.currentPrayer = prayerName;
     this.currentArabic = arabicName;
     this.currentStyleName = adhan.name;
+    this.currentFallbacks = adhan.fallbacks || [];
+    this.currentFallbackIndex = 0;
 
+    // 1. Trigger Voice Announcement Aloud
+    this.speakVoiceNotification(prayerName, arabicName);
+
+    // 2. Vibrate mobile device in rhythmic Adhan pulses
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([400, 200, 400, 200, 800]);
+      } catch (e) {}
+    }
+
+    // 3. Configure and start HTML5 Audio
     this.audio.src = adhan.url;
     this.audio.currentTime = 0;
     this.audio.volume = 1.0;
@@ -142,12 +248,13 @@ class AdhanService {
     }
 
     this.audio.play().catch((err) => {
-      console.warn('Adhan playback could not start automatically', err);
+      console.warn('Adhan audio play blocked by browser autoplay policy, attempting fallback...', err);
+      this.tryNextFallback();
     });
 
     this.notify();
 
-    // Also trigger UI popup event
+    // 4. Trigger UI popup modal event
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('619_adhan_alert', {
@@ -162,6 +269,12 @@ class AdhanService {
   }
 
   public stopAdhan(): void {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+
     this.audio.pause();
     this.audio.currentTime = 0;
     this.isPlayingAdhan = false;

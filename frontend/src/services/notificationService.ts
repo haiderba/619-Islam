@@ -1,3 +1,5 @@
+import { adhanService } from './adhanService';
+
 export interface NotificationSettings {
   enabled: boolean;
   namaz: {
@@ -171,9 +173,7 @@ export const notificationService = {
 
     switch (type) {
       case 'namaz':
-        import('./adhanService').then(({ adhanService }) => {
-          adhanService.playAdhan('Dhuhr', 'الظهر');
-        }).catch(() => {});
+        adhanService.playAdhan('Dhuhr', 'الظهر');
         return this.sendNotification('🕌 Adhan: Dhuhr Prayer Time (الظهر)', {
           body: 'حي على الصلاة • Time to pause Dunya, perform Wudu, and stand before Allah 🤍',
           url: '/namaz',
@@ -274,11 +274,9 @@ export const notificationService = {
             requireInteraction: true,
           });
 
-          // Play Adhan Sound on prayer time
+          // Play Adhan Sound & Voice Notification on prayer time
           if (settings.namaz.playAdhanAudio !== false) {
-            import('./adhanService').then(({ adhanService }) => {
-              adhanService.playAdhan(p.name, p.arabic);
-            }).catch(() => {});
+            adhanService.playAdhan(p.name, p.arabic);
           }
 
           markSent(exactLogKey);
