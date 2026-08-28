@@ -108,48 +108,70 @@ def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme_optio
 @app.post("/signup")
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     norm_email = user.email.strip().lower()
-    norm_username = user.username.strip()
+    norm_username = user.username.strip().lower()
 
-    # Check if username or email is already in use
-    existing_user = db.query(models.User).filter(models.User.username == norm_username).first()
-    if existing_user:
-        if existing_user.is_verified:
-            raise HTTPException(status_code=400, detail="Username already registered")
-        else:
-            # Update unverified user details
-            existing_user.email = norm_email
-            existing_user.name = user.name or norm_username
-            existing_user.fiqh = user.fiqh
-            existing_user.hashed_password = auth.get_password_hash(user.password)
-            db_user = existing_user
-    else:
-        # Check email
-        existing_email = db.query(models.User).filter(models.User.email == norm_email).first()
-        if existing_email:
-            if existing_email.is_verified:
-                raise HTTPException(status_code=400, detail="Email already registered")
-            else:
-                existing_email.username = norm_username
-                existing_email.name = user.name or norm_username
-                existing_email.fiqh = user.fiqh
-                existing_email.hashed_password = auth.get_password_hash(user.password)
-                db_user = existing_email
-        else:
-            hashed_password = auth.get_password_hash(user.password)
-            db_user = models.User(
-                email=norm_email,
-                username=norm_username,
-                name=user.name or norm_username,
-                fiqh=user.fiqh,
-                hashed_password=hashed_password,
-                is_verified=False
+    if not norm_email or "@" not in norm_email:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    if not norm_username or len(norm_username) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters long.")
+
+    if len(user.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+
+    # 1. Check if email is already registered to an active verified account
+    existing_by_email = db.query(models.User).filter(models.User.email == norm_email).first()
+    if existing_by_email and existing_by_email.is_verified:
+        raise HTTPException(
+            status_code=400, 
+            detail="An account with this email is already registered. Please sign in or reset your password."
+        )
+
+    # 2. Check if username is already registered and taken by another user
+    existing_by_username = db.query(models.User).filter(models.User.username == norm_username).first()
+    if existing_by_username:
+        if existing_by_username.is_verified:
+            raise HTTPException(
+                status_code=400, 
+                detail="This username is already registered. Please choose another username."
             )
-            db.add(db_user)
+        # If unverified, ensure it doesn't collide with another unverified account's email
+        if existing_by_email and existing_by_username.id != existing_by_email.id:
+            raise HTTPException(
+                status_code=400, 
+                detail="This username is already registered. Please choose another username."
+            )
+        if not existing_by_email and existing_by_username.email != norm_email:
+            raise HTTPException(
+                status_code=400, 
+                detail="This username is already registered. Please choose another username."
+            )
+
+    # 3. Handle unverified user record reuse or create new
+    if existing_by_email:
+        # Update unverified record for this email
+        existing_by_email.username = norm_username
+        existing_by_email.name = user.name or norm_username
+        existing_by_email.fiqh = user.fiqh
+        existing_by_email.hashed_password = auth.get_password_hash(user.password)
+        db_user = existing_by_email
+    else:
+        # Create new unverified user
+        hashed_password = auth.get_password_hash(user.password)
+        db_user = models.User(
+            email=norm_email,
+            username=norm_username,
+            name=user.name or norm_username,
+            fiqh=user.fiqh,
+            hashed_password=hashed_password,
+            is_verified=False
+        )
+        db.add(db_user)
 
     db.commit()
     db.refresh(db_user)
 
-    # Generate 6-digit OTP (Valid for 15 minutes)
+    # 4. Generate 6-digit OTP (Valid for 15 minutes)
     otp_code = email_service.generate_otp_code()
     expires_at = datetime.datetime.utcnow() + timedelta(minutes=15)
 
@@ -286,7 +308,7 @@ def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(ge
     if not user:
         return {
             "status": "success",
-            "message": "If an account with this email exists, a password reset link has been sent."
+            "message": "If an account with this email exists, a 6-digit password reset code has been sent."
         }
 
     # Invalidate previous unused reset tokens for this email
@@ -295,13 +317,13 @@ def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(ge
         models.PasswordResetToken.is_used == False
     ).update({"is_used": True})
 
-    # Generate cryptographically secure 32-byte token (Valid for 15 minutes)
-    reset_token = secrets.token_urlsafe(32)
+    # Generate 6-digit numeric reset OTP (Valid for 15 minutes)
+    reset_otp = email_service.generate_otp_code()
     expires_at = datetime.datetime.utcnow() + timedelta(minutes=15)
 
     token_entry = models.PasswordResetToken(
         email=user.email,
-        token=reset_token,
+        token=reset_otp,
         expires_at=expires_at,
         is_used=False
     )
@@ -309,20 +331,20 @@ def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(ge
     db.commit()
 
     base_origin = req.origin_url.rstrip("/") if req.origin_url else "https://619-islam.bsf1802210.workers.dev"
-    encoded_token = urllib.parse.quote_plus(reset_token)
     encoded_email = urllib.parse.quote_plus(user.email)
-    reset_link = f"{base_origin}/reset-password?token={encoded_token}&email={encoded_email}"
+    reset_link = f"{base_origin}/reset-password?token={reset_otp}&email={encoded_email}"
 
     email_sent, email_msg = email_service.send_password_reset_email(
         recipient_email=user.email,
         recipient_name=user.name or user.username,
+        reset_code=reset_otp,
         reset_link=reset_link,
         expire_minutes=15
     )
 
     return {
         "status": "success",
-        "message": "A password reset link (valid for 15 minutes) has been sent to your email.",
+        "message": "A 6-digit password reset code (valid for 15 minutes) has been sent to your email.",
         "email_sent": email_sent,
         "email_msg": email_msg
     }
@@ -339,10 +361,10 @@ def verify_reset_token(token: str, email: str, db: Session = Depends(get_db)):
     ).first()
 
     if not record:
-        raise HTTPException(status_code=400, detail="Invalid or already used password reset link.")
+        raise HTTPException(status_code=400, detail="Invalid reset code. Please check and try again.")
 
     if record.expires_at < datetime.datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Password reset link has expired (15-minute limit). Please request a new one.")
+        raise HTTPException(status_code=400, detail="Password reset code has expired (15-minute limit). Please request a new code.")
 
     return {"status": "valid", "email": norm_email}
 
@@ -358,10 +380,10 @@ def reset_password(req: schemas.ResetPasswordRequest, db: Session = Depends(get_
     ).first()
 
     if not record:
-        raise HTTPException(status_code=400, detail="Invalid or already used reset link.")
+        raise HTTPException(status_code=400, detail="Invalid or already used reset code.")
 
     if record.expires_at < datetime.datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Reset link has expired (15-minute limit). Please request a new link.")
+        raise HTTPException(status_code=400, detail="Reset code has expired (15-minute limit). Please request a new code.")
 
     if len(req.new_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")

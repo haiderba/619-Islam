@@ -119,8 +119,8 @@ def send_verification_email(recipient_email: str, recipient_name: str, otp_code:
         print(f"Failed to send email via Brevo: {err}")
         return False, err
 
-def send_password_reset_email(recipient_email: str, recipient_name: str, reset_link: str, expire_minutes: int = 15):
-    """Send a transactional password reset email with a 15-minute expiry link via Brevo API."""
+def send_password_reset_email(recipient_email: str, recipient_name: str, reset_code: str, reset_link: str, expire_minutes: int = 15):
+    """Send a transactional password reset email with a 6-digit reset code and 15-minute expiry link via Brevo API."""
     api_key = os.getenv("BREVO_API_KEY", "").strip()
     sender_email = os.getenv("BREVO_SENDER_EMAIL", "uhaider695@gmail.com").strip()
     sender_name = os.getenv("BREVO_SENDER_NAME", "619 Islam").strip()
@@ -159,35 +159,36 @@ def send_password_reset_email(recipient_email: str, recipient_name: str, reset_l
         <tr>
           <td style="padding:0 35px 20px 35px; color:#e2e8f0; font-size:15px; line-height:1.6; text-align:center;">
             <p style="margin:0 0 12px 0;">Assalamu Alaikum <strong>{recipient_name}</strong>,</p>
-            <p style="margin:0; color:#94a3b8; font-size:14px;">We received a request to reset the password for your 619 Islam account. Click the button below to choose a new password:</p>
+            <p style="margin:0; color:#94a3b8; font-size:14px;">We received a request to reset your 619 Islam account password. Please use the 6-digit reset code below or tap the reset button:</p>
+          </td>
+        </tr>
+
+        <!-- 6-Digit Reset Code Box -->
+        <tr>
+          <td align="center" style="padding:5px 35px 20px 35px;">
+            <div style="background-color:rgba(245,158,11,0.1); border:2px dashed #f59e0b; border-radius:18px; padding:20px; max-width:320px;">
+              <span style="font-size:36px; font-weight:900; letter-spacing:10px; color:#fbbf24; display:block; font-family:Courier, monospace;">
+                {reset_code}
+              </span>
+              <span style="display:block; margin-top:8px; font-size:11px; color:#94a3b8; letter-spacing:1px; text-transform:uppercase;">
+                ⏳ Valid for {expire_minutes} minutes
+              </span>
+            </div>
           </td>
         </tr>
 
         <!-- Action Button -->
         <tr>
-          <td align="center" style="padding:10px 35px 25px 35px;">
+          <td align="center" style="padding:5px 35px 25px 35px;">
             <table border="0" cellspacing="0" cellpadding="0">
               <tr>
                 <td align="center" style="border-radius:16px; background:linear-gradient(135deg, #f59e0b, #d97706); box-shadow:0 10px 20px rgba(245,158,11,0.3);">
-                  <a href="{reset_link}" target="_blank" style="display:inline-block; padding:16px 36px; font-size:16px; font-weight:bold; color:#071e20; text-decoration:none; border-radius:16px; letter-spacing:0.5px;">
-                    Reset Password
+                  <a href="{reset_link}" target="_blank" style="display:inline-block; padding:15px 34px; font-size:15px; font-weight:bold; color:#071e20; text-decoration:none; border-radius:16px; letter-spacing:0.5px;">
+                    Reset Password Directly
                   </a>
                 </td>
               </tr>
             </table>
-            <span style="display:block; margin-top:14px; font-size:12px; font-weight:600; color:#fbbf24; letter-spacing:0.5px;">
-              ⏳ This link is valid for {expire_minutes} minutes
-            </span>
-          </td>
-        </tr>
-
-        <!-- Fallback Link -->
-        <tr>
-          <td style="padding:0 35px 25px 35px; color:#94a3b8; font-size:12px; line-height:1.5; text-align:center;">
-            <p style="margin:0 0 6px 0;">Or copy and paste this link in your browser:</p>
-            <p style="margin:0; word-break:break-all; color:#38bdf8; font-size:11px;">
-              <a href="{reset_link}" style="color:#38bdf8; text-decoration:underline;">{reset_link}</a>
-            </p>
           </td>
         </tr>
 
@@ -212,7 +213,7 @@ def send_password_reset_email(recipient_email: str, recipient_name: str, reset_l
     payload = {
         "sender": {"name": sender_name, "email": sender_email},
         "to": [{"email": recipient_email, "name": recipient_name}],
-        "subject": f"619 Islam - Password Reset Request (Valid for {expire_minutes} Minutes)",
+        "subject": f"619 Islam - Your Password Reset Code is {reset_code}",
         "htmlContent": html_content
     }
 
@@ -224,7 +225,7 @@ def send_password_reset_email(recipient_email: str, recipient_name: str, reset_l
         with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
             resp_body = resp.read().decode("utf-8", errors="ignore")
             if resp.status in [200, 201, 202]:
-                print(f"Password reset email sent to {recipient_email}")
+                print(f"Password reset email sent to {recipient_email} (Code: {reset_code})")
                 return True, "Email sent successfully"
             return False, f"Unexpected response status: {resp.status} - {resp_body}"
     except urllib.error.HTTPError as e:
