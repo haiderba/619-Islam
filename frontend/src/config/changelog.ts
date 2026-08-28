@@ -12,42 +12,36 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '2.4.5';
+export const CURRENT_APP_VERSION = '2.5.0';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
   releaseDate: 'August 2026',
-  headline: "What's New in Update v2.4.5",
+  headline: "What's New in Update v2.5.0",
   features: [
     {
-      icon: 'BookOpen',
-      title: 'Dual Quran Translations (Primary & Secondary)',
-      description: 'Display two languages simultaneously (e.g. English + Urdu or Urdu + Pashto). Primary language remains prominent and high-contrast, while secondary is displayed subtly.',
+      icon: 'Users',
+      title: 'Ummah Community Habit Hub & Challenges',
+      description: 'Join collective spiritual challenges like Surah Al-Mulk, Morning Adhkar, Tahajjud, and Daily Istighfar. Track your daily good deeds alongside thousands of believers worldwide.',
       badge: 'Major'
     },
     {
-      icon: 'Play',
-      title: 'Grand Mosque Video Splash Screen',
-      description: 'Startup animation centered in the illuminated mosque archway with audio playback, sound controls, and fast skip.',
-      badge: 'Visual'
-    },
-    {
-      icon: 'Smartphone',
-      title: 'Universal Multi-Device Responsiveness',
-      description: 'Adaptive 12-column layouts and responsive multi-column cards across Mobile, Tablets, Laptops & Desktop monitors.',
+      icon: 'Flame',
+      title: 'Daily Check-Ins, Streaks & Motivation',
+      description: '1-tap daily check-in with live Completed vs Pending counters, streak milestones, and live peer completion activity.',
       badge: 'New'
     },
     {
-      icon: 'Zap',
-      title: 'Smart Pull-to-Refresh & Session Resume',
-      description: 'Pulling down to refresh or switching apps now opens instantly with zero splash delay and remembers where you left off.',
+      icon: 'Bell',
+      title: 'Automated Daily Habit Push Notifications',
+      description: 'Receive personalized daily notifications at your habit reminder times to never break your spiritual consistency.',
       badge: 'New'
     },
     {
-      icon: 'RefreshCw',
-      title: 'In-App Update Checker & Reinstall Tool',
-      description: 'Check live server updates in real-time, receive mobile push alerts, and easily troubleshoot or reset cache from Settings.',
-      badge: 'New'
+      icon: 'ShieldAlert',
+      title: 'Admin Portal Challenge Publisher',
+      description: 'Admins can now publish, customize, and feature community challenges with Hadith references, reminder times, and target durations.',
+      badge: 'Admin'
     }
   ]
 };

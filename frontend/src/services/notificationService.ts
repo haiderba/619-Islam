@@ -384,5 +384,32 @@ export const notificationService = {
         markSent(eveningLogKey);
       }
     }
+
+    // 8. Community Habits & Spiritual Challenges Reminders
+    try {
+      const habitsRaw = localStorage.getItem('619_community_habits_store');
+      const userProgressRaw = localStorage.getItem('619_user_habits_progress');
+      if (habitsRaw && userProgressRaw) {
+        const habits = JSON.parse(habitsRaw);
+        const progressMap = JSON.parse(userProgressRaw);
+        
+        habits.forEach((habit: any) => {
+          if (progressMap[habit.id] && habit.reminderTime) {
+            const isDone = progressMap[habit.id]?.completedDates?.includes(todayKey);
+            const habitLogKey = `community_habit_${habit.id}_${todayKey}`;
+
+            if (!isDone && !sentLog[habitLogKey] && currentTimeStr === habit.reminderTime) {
+              this.sendNotification(`✨ Ummah Challenge: ${habit.title}`, {
+                body: habit.description || 'Time to complete your joined community challenge and keep your streak alive!',
+                url: '/habits',
+                tag: `habit-${habit.id}`,
+              });
+              markSent(habitLogKey);
+            }
+          }
+        });
+      }
+    } catch (e) {}
   }
 };
+
