@@ -38,7 +38,6 @@ import { notificationService } from '../services/notificationService';
 import { microSunnahService } from '../services/microSunnahService';
 import { WeeklyWrapModal } from '../components/habits/WeeklyWrapModal';
 import { VirtualJannahGarden } from '../components/habits/VirtualJannahGarden';
-import { AmbientAudioBar } from '../components/habits/AmbientAudioBar';
 import { RamadanBootcampCard } from '../components/habits/RamadanBootcampCard';
 
 const CATEGORIES: { key: HabitCategory | 'all'; label: string; icon: string }[] = [
@@ -440,9 +439,6 @@ export const Habits: React.FC = () => {
               <span className="font-bold">— {todayMicroSunnah.hadithReference}</span>
             </div>
           </div>
-
-          {/* ── 🎧 2. HARAM & MASJID AMBIENT AUDIO SOUNDSCAPES ── */}
-          <AmbientAudioBar />
 
           {/* List of Joined Habits with Rich Contextual Engines */}
           {joinedHabits.length === 0 ? (
