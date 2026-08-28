@@ -36,6 +36,7 @@ import {
 } from '../types/communityHabits';
 import { notificationService } from '../services/notificationService';
 import { microSunnahService } from '../services/microSunnahService';
+import { useAuth } from '../context/AuthContext';
 import { WeeklyWrapModal } from '../components/habits/WeeklyWrapModal';
 import { VirtualJannahGarden } from '../components/habits/VirtualJannahGarden';
 import { RamadanBootcampCard } from '../components/habits/RamadanBootcampCard';
@@ -70,12 +71,26 @@ const PRAYER_DISPLAY: Record<PrayerKey, { name: string; arabic: string; icon: st
 
 export const Habits: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'my_habits' | 'discover' | 'impact'>('my_habits');
   const [habits, setHabits] = useState<CommunityHabit[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedVirtueId, setExpandedVirtueId] = useState<string | null>(null);
   
+  // Auth Prompt Modal for Guest Users
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authActionTitle, setAuthActionTitle] = useState<string>('Join Ummah Challenges');
+
+  const requireAuth = (actionName: string = 'Join Ummah Challenges'): boolean => {
+    if (!user) {
+      setAuthActionTitle(actionName);
+      setShowAuthModal(true);
+      return false;
+    }
+    return true;
+  };
+
   // Weekly Wrap & Modals
   const [showWeeklyWrap, setShowWeeklyWrap] = useState<boolean>(false);
   const [todayMicroSunnah, setTodayMicroSunnah] = useState(microSunnahService.getTodayMicroSunnah());
@@ -138,12 +153,14 @@ export const Habits: React.FC = () => {
   };
 
   const handleToggleJoin = (habitId: string) => {
+    if (!requireAuth('Join This Spiritual Challenge')) return;
     communityHabitService.toggleJoin(habitId);
     loadData();
   };
 
   // ── MICRO SUNNAH ACTIONS ──
   const handleToggleMicroSunnah = () => {
+    if (!requireAuth('Revive Daily Sunnah')) return;
     if (navigator.vibrate) navigator.vibrate(25);
     if (isMicroSunnahDone) {
       microSunnahService.unmarkCompleted();
@@ -156,6 +173,7 @@ export const Habits: React.FC = () => {
 
   // ── NAMAZ ACTIONS ──
   const handleTogglePrayer = (habitId: string, prayer: PrayerKey, targetDateStr: string) => {
+    if (!requireAuth('Log Daily Prayer Completion')) return;
     const lockCheck = communityHabitService.isPrayerUnlocked(prayer, targetDateStr);
     if (!lockCheck.unlocked) return;
 
@@ -165,6 +183,7 @@ export const Habits: React.FC = () => {
 
   // ── QURAN ACTIONS ──
   const handleAdvanceQuran = (habitId: string, ayahsCount: number = 5) => {
+    if (!requireAuth('Track Quran Journey')) return;
     communityHabitService.advanceQuranAyahs(habitId, ayahsCount);
     loadData();
   };
@@ -187,6 +206,7 @@ export const Habits: React.FC = () => {
 
   // ── DHIKR IN-CARD TASBEEH ACTIONS ──
   const handleTapDhikr = (habitId: string, step: number = 1, targetGoal: number = 100) => {
+    if (!requireAuth('Track Dhikr Progress')) return;
     if (navigator.vibrate) {
       navigator.vibrate(20);
     }
@@ -195,17 +215,20 @@ export const Habits: React.FC = () => {
   };
 
   const handleResetDhikr = (habitId: string) => {
+    if (!requireAuth('Reset Dhikr Progress')) return;
     communityHabitService.resetDhikr(habitId);
     loadData();
   };
 
   // ── GENERAL CHECK-IN ──
   const handleCheckIn = (habitId: string) => {
+    if (!requireAuth('Mark Habit Completed')) return;
     communityHabitService.markCompletedToday(habitId);
     loadData();
   };
 
   const handleUndoCheckIn = (habitId: string) => {
+    if (!requireAuth('Undo Habit Check-in')) return;
     communityHabitService.unmarkCompletedToday(habitId);
     loadData();
   };
@@ -227,6 +250,38 @@ export const Habits: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 pb-36 max-w-5xl mx-auto w-full space-y-5 sm:space-y-6 animate-in fade-in duration-300">
       
+      {/* ── Guest User Invitation Banner ── */}
+      {!user && (
+        <div className="p-4 rounded-3xl bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-amber-500/15 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl shrink-0">
+              🌟
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-black text-text">Welcome to The Ummah Habit Hub</h4>
+              <p className="text-[11px] text-subtext leading-relaxed">
+                You are browsing as a guest. Sign in or create a free account to join challenges, save streaks & water the deeds tree.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => navigate('/login')}
+              className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold shadow-md shadow-primary/20 transition-all active:scale-95"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => navigate('/signup')}
+              className="px-4 py-2 rounded-xl bg-surface hover:bg-card border border-border text-text text-xs font-bold transition-all active:scale-95"
+            >
+              Create Account
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Top Navigation Header ── */}
       <header className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -1185,6 +1240,52 @@ export const Habits: React.FC = () => {
           summary={summary}
           onClose={() => setShowWeeklyWrap(false)}
         />
+      )}
+
+      {/* ── 🔒 GUEST ACCOUNT REQUIRED MODAL ── */}
+      {showAuthModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setShowAuthModal(false)}
+        >
+          <div 
+            className="relative w-full max-w-sm bg-card border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden p-6 text-center space-y-4 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 bg-amber-500/15 rounded-2xl flex items-center justify-center text-2xl mx-auto border border-amber-500/30">
+              🌟
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-text">{authActionTitle}</h3>
+              <p className="text-xs text-subtext leading-relaxed">
+                Sign in or create a free account to join Ummah challenges, save your daily prayer streaks, and contribute to the global good deeds tree!
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black rounded-2xl text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all"
+              >
+                Sign In to Existing Account
+              </button>
+              <button
+                onClick={() => navigate('/signup')}
+                className="w-full py-3 bg-surface hover:bg-border text-text font-bold rounded-2xl text-xs border border-border active:scale-95 transition-all"
+              >
+                Create Free Account
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="text-[11px] font-bold text-muted hover:text-text block w-full pt-1"
+            >
+              Continue Browsing as Guest
+            </button>
+          </div>
+        </div>
       )}
 
     </div>

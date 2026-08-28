@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { UpdateProvider } from './context/UpdateContext';
 
 // Pages
@@ -61,25 +61,6 @@ const RoutePersistenceListener: React.FC = () => {
   return null;
 };
 
-// Protected Route Wrapper
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#062426]">
-        <div className="w-8 h-8 rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin" />
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
 const AppRoutes = () => {
   return (
     <>
@@ -91,11 +72,11 @@ const AppRoutes = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Full screen readers */}
-        <Route path="/books/:id/read" element={<ProtectedRoute><BookReader /></ProtectedRoute>} />
-        <Route path="/books/:id/pdf" element={<ProtectedRoute><PdfReader /></ProtectedRoute>} />
+        <Route path="/books/:id/read" element={<BookReader />} />
+        <Route path="/books/:id/pdf" element={<PdfReader />} />
         
-        {/* Protected App Routes inside a Layout */}
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        {/* Open-Access App Routes inside a Layout */}
+        <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="namaz" element={<Namaz />} />
           <Route path="qaza" element={<QazaTracker />} />

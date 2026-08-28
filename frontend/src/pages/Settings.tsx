@@ -106,18 +106,22 @@ const Settings: React.FC = () => {
       setMessage({ text: '', type: '' });
       localStorage.setItem('quran_primary_translation', quranTranslation);
       localStorage.setItem('quran_secondary_translation', secondaryQuranTranslation);
+      localStorage.setItem('619_guest_fiqh', fiqh);
+      if (lat) localStorage.setItem('619_guest_lat', lat);
+      if (lng) localStorage.setItem('619_guest_lng', lng);
 
-      const res = await api.put('/user/me', {
-        fiqh,
-        quran_translation: quranTranslation,
-        latitude: lat,
-        longitude: lng
-      });
-      // Update AuthContext user 
-      if (updateUser) updateUser(res.data);
+      if (user) {
+        const res = await api.put('/user/me', {
+          fiqh,
+          quran_translation: quranTranslation,
+          latitude: lat,
+          longitude: lng
+        });
+        if (updateUser) updateUser(res.data);
+      }
       setMessage({ text: 'Preferences updated successfully', type: 'success' });
     } catch (err: any) {
-      setMessage({ text: err.response?.data?.detail || 'Failed to update profile', type: 'error' });
+      setMessage({ text: err.response?.data?.detail || 'Preferences saved locally', type: 'success' });
     } finally {
       setLoading(false);
     }
@@ -202,17 +206,45 @@ const Settings: React.FC = () => {
         {/* Left Column: Profile & App Preferences */}
         <div className="space-y-4 sm:space-y-5">
           {/* Profile Card */}
-          <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 bg-primary/15 rounded-full flex items-center justify-center text-primary shrink-0">
-                <User size={24} />
+          {user ? (
+            <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 bg-primary/15 rounded-full flex items-center justify-center text-primary shrink-0">
+                  <User size={24} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-base sm:text-lg font-bold text-text truncate">@{user.username}</h2>
+                  <p className="text-subtext text-xs truncate">{user.email}</p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-base sm:text-lg font-bold text-text truncate">{user?.username}</h2>
-                <p className="text-subtext text-xs truncate">{user?.email}</p>
+            </section>
+          ) : (
+            <section className="bg-gradient-to-br from-amber-500/10 via-amber-600/5 to-transparent p-4 sm:p-5 rounded-2xl border border-amber-500/30 shadow-sm space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 shrink-0">
+                  <User size={22} />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-text">Guest Believer</h2>
+                  <p className="text-subtext text-xs">All Islamic features are 100% free & open.</p>
+                </div>
               </div>
-            </div>
-          </section>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="flex-1 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold shadow-md shadow-primary/20 transition-all active:scale-95"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => navigate('/signup')}
+                  className="flex-1 py-2 rounded-xl bg-surface border border-border text-text hover:bg-border text-xs font-bold transition-all active:scale-95"
+                >
+                  Create Account
+                </button>
+              </div>
+            </section>
+          )}
 
           {/* App Settings */}
           <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3.5">
@@ -492,44 +524,47 @@ const Settings: React.FC = () => {
             </div>
           </section>
 
-          {/* Security */}
-          <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
-            <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
-              <Lock size={16} className="text-primary" /> Security
-            </h3>
-            
-            <input
-              type="password"
-              placeholder="Current Password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
-            />
-            <input
-              type="password"
-              placeholder="New Password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
-            />
-            
-            <button 
-              onClick={handleChangePassword}
-              disabled={loading}
-              className="w-full bg-surface border border-border text-text py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-border transition-colors active:scale-95"
-            >
-              Update Password
-            </button>
-          </section>
+          {/* Security & Logout (Only for Logged-In Users) */}
+          {user && (
+            <>
+              <section className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-sm space-y-3">
+                <h3 className="font-bold text-sm sm:text-base text-text flex items-center gap-2">
+                  <Lock size={16} className="text-primary" /> Security
+                </h3>
+                
+                <input
+                  type="password"
+                  placeholder="Current Password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
+                />
+                <input
+                  type="password"
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-text text-sm"
+                />
+                
+                <button 
+                  onClick={handleChangePassword}
+                  disabled={loading}
+                  className="w-full bg-surface border border-border text-text py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-border transition-colors active:scale-95"
+                >
+                  Update Password
+                </button>
+              </section>
 
-          {/* Logout */}
-          <button 
-            onClick={handleLogout}
-            className="w-full bg-danger/10 text-danger py-3 rounded-xl text-sm font-bold hover:bg-danger/20 transition-colors flex items-center justify-center gap-2 active:scale-95"
-          >
-            <LogOut size={18} />
-            Log Out
-          </button>
+              <button 
+                onClick={handleLogout}
+                className="w-full bg-danger/10 text-danger py-3 rounded-xl text-sm font-bold hover:bg-danger/20 transition-colors flex items-center justify-center gap-2 active:scale-95"
+              >
+                <LogOut size={18} />
+                Log Out
+              </button>
+            </>
+          )}
         </div>
 
       </div>

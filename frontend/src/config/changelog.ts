@@ -12,18 +12,24 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '2.7.0';
+export const CURRENT_APP_VERSION = '2.7.5';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
   releaseDate: 'August 2026',
-  headline: "What's New in Update v2.7.0",
+  headline: "What's New in Update v2.7.5",
   features: [
     {
-      icon: 'KeyRound',
-      title: '6-Digit Password Reset Code (OTP)',
-      description: 'Password reset now sends a 6-digit verification code with in-place reset forms on web and mobile, in addition to direct reset links.',
+      icon: 'Sparkles',
+      title: '100% Open Access & Instant Browser Launch',
+      description: 'The app now opens directly to the Dashboard on every browser without forced login. All Islamic features (Quran, Namaz, Hadith, Tasbeeh, Books, Qaza, Qibla) are completely free & accessible without an account.',
       badge: 'Major'
+    },
+    {
+      icon: 'ShieldCheck',
+      title: 'Gentle Ummah Habit Guest Protection',
+      description: 'Browse the Ummah Habit Hub and collective tree freely. Sign in or create an account only when you want to join challenges, check in, and save personal streaks.',
+      badge: 'Core'
     },
     {
       icon: 'ShieldCheck',

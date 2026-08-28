@@ -1,11 +1,13 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, Book, Settings, WifiOff, CheckCircle2, Clock, Sparkles } from 'lucide-react';
+import { Home, Book, Settings, WifiOff, CheckCircle2, Clock, Sparkles, User } from 'lucide-react';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { useAuth } from '../../context/AuthContext';
 import { TopInstallButton } from './InstallPrompt';
 
 const Layout: React.FC = () => {
   const { isOnline, showRestoredToast } = useNetworkStatus();
+  const { user } = useAuth();
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-text relative">
@@ -50,9 +52,26 @@ const Layout: React.FC = () => {
             <DesktopNavLink to="/settings" icon={<Settings size={15} />} label="Settings" />
           </nav>
 
-          {/* Action Button */}
+          {/* Action Button & Sign In */}
           <div className="flex items-center gap-3">
             <TopInstallButton />
+            {user ? (
+              <NavLink 
+                to="/settings" 
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full text-xs font-bold text-primary transition-all"
+              >
+                <User size={13} />
+                <span>@{user.username}</span>
+              </NavLink>
+            ) : (
+              <NavLink 
+                to="/login" 
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black rounded-full text-xs font-black shadow-sm shadow-amber-500/20 transition-all active:scale-95"
+              >
+                <User size={13} />
+                <span>Sign In</span>
+              </NavLink>
+            )}
           </div>
         </div>
       </header>
