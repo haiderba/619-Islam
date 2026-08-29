@@ -49,9 +49,11 @@ export function useNamaz() {
   const [completedPrayers, setCompletedPrayers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (!user) return;
     const today = getTodayDateString();
-    const fiqhKey = `${user.fiqh}_${user.latitude || ''}_${user.longitude || ''}`;
+    const fiqh = user?.fiqh || localStorage.getItem('619_guest_fiqh') || "Sunni (Hanafi)";
+    const latitude = user?.latitude || localStorage.getItem('619_guest_lat') || null;
+    const longitude = user?.longitude || localStorage.getItem('619_guest_lng') || null;
+    const fiqhKey = `${fiqh}_${latitude || ''}_${longitude || ''}`;
 
     // Return instant cached timings if already loaded for today
     if (cachedTimingsData && cachedTimingsData.dateKey === today && cachedTimingsData.fiqhKey === fiqhKey) {
@@ -59,7 +61,7 @@ export function useNamaz() {
       setHijriDate(cachedTimingsData.hijriDate);
       setLocationName(cachedTimingsData.locationName);
       setLoading(false);
-      loadCompletedPrayers();
+      if (user) loadCompletedPrayers();
       return;
     }
 
@@ -69,14 +71,14 @@ export function useNamaz() {
         let method = 1; // Default Karachi (Hanafi)
         let school = 1; // Default Hanafi Asr
 
-        if (user.fiqh === "Sunni (Shafi)") { method = 3; school = 0; }
-        else if (user.fiqh === "Sunni (Maliki)") { method = 3; school = 0; }
-        else if (user.fiqh === "Sunni (Hanbali)") { method = 4; school = 0; }
-        else if (user.fiqh === "Shia (Jafari)") { method = 0; school = 0; }
-        else if (user.fiqh === "Shia (Zaydi)") { method = 0; school = 0; }
-        else if (user.fiqh === "Shia (Ismaili)") { method = 0; school = 0; }
-        else if (user.fiqh === "Ibadi") { method = 3; school = 0; }
-        else if (user.fiqh === "Salafi / Ahle Hadith") { method = 4; school = 0; }
+        if (fiqh === "Sunni (Shafi)") { method = 3; school = 0; }
+        else if (fiqh === "Sunni (Maliki)") { method = 3; school = 0; }
+        else if (fiqh === "Sunni (Hanbali)") { method = 4; school = 0; }
+        else if (fiqh === "Shia (Jafari)") { method = 0; school = 0; }
+        else if (fiqh === "Shia (Zaydi)") { method = 0; school = 0; }
+        else if (fiqh === "Shia (Ismaili)") { method = 0; school = 0; }
+        else if (fiqh === "Ibadi") { method = 3; school = 0; }
+        else if (fiqh === "Salafi / Ahle Hadith") { method = 4; school = 0; }
 
         const timestamp = Math.floor(Date.now() / 1000);
         
@@ -113,7 +115,9 @@ export function useNamaz() {
           fiqhKey
         };
 
-        await loadCompletedPrayers();
+        if (user) {
+          await loadCompletedPrayers();
+        }
       } catch (err) {
         console.error("Error fetching prayer times:", err);
         setError("Could not load prayer times. Please check your internet connection.");
@@ -123,8 +127,8 @@ export function useNamaz() {
     };
 
     // 1. Manual user coordinates take first priority
-    if (user.latitude && user.longitude) {
-      fetchTimings(parseFloat(user.latitude), parseFloat(user.longitude));
+    if (latitude && longitude) {
+      fetchTimings(parseFloat(latitude), parseFloat(longitude));
       return;
     }
 

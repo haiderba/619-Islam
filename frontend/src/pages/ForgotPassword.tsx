@@ -61,9 +61,14 @@ export const ForgotPassword: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    const normEmail = email.trim().toLowerCase();
-    if (!normEmail || !normEmail.includes('@')) {
-      setError('Please enter a valid email address');
+    let normEmail = email.trim().toLowerCase();
+    if (normEmail.endsWith('.con')) {
+      normEmail = normEmail.slice(0, -4) + '.com';
+      setEmail(normEmail);
+    }
+
+    if (!normEmail || !normEmail.includes('@') || !normEmail.includes('.')) {
+      setError('Please enter a valid email address (e.g. name@gmail.com)');
       return;
     }
 
@@ -137,8 +142,11 @@ export const ForgotPassword: React.FC = () => {
 
   const handleResendCode = async () => {
     if (!canResend || loading) return;
-    setError('');
-    const normEmail = email.trim().toLowerCase();
+    let normEmail = email.trim().toLowerCase();
+    if (normEmail.endsWith('.con')) {
+      normEmail = normEmail.slice(0, -4) + '.com';
+      setEmail(normEmail);
+    }
 
     try {
       setLoading(true);

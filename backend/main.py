@@ -304,12 +304,16 @@ def debug_email(to: str = "uhaider695@gmail.com"):
 @app.post("/forgot-password")
 def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
     norm_email = req.email.strip().lower()
+    
+    if not norm_email or "@" not in norm_email:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
     user = db.query(models.User).filter(models.User.email == norm_email).first()
     if not user:
-        return {
-            "status": "success",
-            "message": "If an account with this email exists, a 6-digit password reset code has been sent."
-        }
+        raise HTTPException(
+            status_code=404, 
+            detail=f"No registered account found with email '{norm_email}'. Please check for typos (e.g. .com) or sign up."
+        )
 
     # Invalidate previous unused reset tokens for this email
     db.query(models.PasswordResetToken).filter(
@@ -342,9 +346,15 @@ def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(ge
         expire_minutes=15
     )
 
+    if not email_sent:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not deliver reset email: {email_msg}. Please check your email address or try again."
+        )
+
     return {
         "status": "success",
-        "message": "A 6-digit password reset code (valid for 15 minutes) has been sent to your email.",
+        "message": f"A 6-digit password reset code has been sent to {user.email}.",
         "email_sent": email_sent,
         "email_msg": email_msg
     }

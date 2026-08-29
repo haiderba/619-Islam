@@ -216,6 +216,7 @@ export const notificationService = {
 
   // Check and dispatch scheduled notifications based on current time & prayer times
   checkAndDispatchScheduled(prayerTimes: Record<string, string> | null): void {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
     const settings = this.getSettings();
     if (!settings.enabled || Notification.permission !== 'granted') return;
 
