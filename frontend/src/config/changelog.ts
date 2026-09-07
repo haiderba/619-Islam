@@ -12,60 +12,36 @@ export interface AppRelease {
   features: ChangelogItem[];
 }
 
-export const CURRENT_APP_VERSION = '2.7.5';
+export const CURRENT_APP_VERSION = '2.8.0';
 
 export const LATEST_RELEASE: AppRelease = {
   version: CURRENT_APP_VERSION,
-  releaseDate: 'August 2026',
-  headline: "What's New in Update v2.7.5",
+  releaseDate: 'September 2026',
+  headline: "What's New in Update v2.8.0",
   features: [
     {
       icon: 'Sparkles',
-      title: '100% Open Access & Instant Browser Launch',
-      description: 'The app now opens directly to the Dashboard on every browser without forced login. All Islamic features (Quran, Namaz, Hadith, Tasbeeh, Books, Qaza, Qibla) are completely free & accessible without an account.',
-      badge: 'Major'
+      title: 'Dynamic Island & Notch Safe-Area Optimization',
+      description: 'Full responsive layout support for iPhone 15 Pro Max, iPads, and Android devices. Headers, status bar clocks, and navigation bars now fit with pixel-perfect clearance.',
+      badge: 'Design'
     },
     {
       icon: 'ShieldCheck',
-      title: 'Gentle Ummah Habit Guest Protection',
-      description: 'Browse the Ummah Habit Hub and collective tree freely. Sign in or create an account only when you want to join challenges, check in, and save personal streaks.',
-      badge: 'Core'
-    },
-    {
-      icon: 'ShieldCheck',
-      title: 'Bulletproof Email & Username Registration Security',
-      description: 'Enforced unique email and username verification guards preventing multi-username signup abuse and race conditions.',
-      badge: 'Security'
+      title: 'Responsive Grid & Quran Tab Fitting',
+      description: 'Refined Quick Access 8-grid and Quran browse tabs to eliminate all text truncation across all phone screen sizes.',
+      badge: 'UI/UX'
     },
     {
       icon: 'Mail',
-      title: 'In-Place Email OTP Verification on Sign In',
-      description: 'Unverified accounts now trigger an immediate in-place 6-digit OTP verification prompt with 1-tap resend.',
-      badge: 'Auth'
+      title: 'Smart Email Typo Auto-Correction',
+      description: 'Automatic domain typo correction (.con to .com) and immediate verification feedback on password reset and registration.',
+      badge: 'Security'
     },
     {
-      icon: 'Headphones',
-      title: 'Ambient Haram & Masjid Focus Soundscapes',
-      description: 'Immerse in peaceful ambient audio while reciting Quran or Dhikr (Madinah Munawwarah birds, Makkah rain on Ka\'bah marble, Al-Aqsa garden breeze).',
-      badge: 'Audio'
-    },
-    {
-      icon: 'Sparkles',
-      title: 'Daily Micro-Sunnah of the Day (< 60 Seconds)',
-      description: 'Revive 30 authentic daily micro-Sunnahs with Hadith references and 1-tap "I Revived This Sunnah Today 👑" tracking.',
-      badge: 'New'
-    },
-    {
-      icon: 'Droplets',
-      title: 'Virtual Jannah Ummah Tree of Good Deeds',
-      description: 'Watch an animated SVG tree blossom with radiant leaves and golden fruits as the global Ummah fulfills prayers, dhikr, and Quran verses together.',
-      badge: 'Visual'
-    },
-    {
-      icon: 'Moon',
-      title: 'Sacred Seasons & Khatam 30-Day Bootcamp',
-      description: 'Calculate exact Quran pacing (4 pages/prayer = 1 Juz/day = Khatam in 30 days) and GPS-accurate Last Third of Night (Tahajjud) prime prayer window.',
-      badge: 'New'
+      icon: 'RefreshCw',
+      title: 'Instant 1-Tap Update & Cache Sync',
+      description: 'Streamlined background update delivery and cache refresh for seamless PWA and mobile performance.',
+      badge: 'Core'
     }
   ]
 };
