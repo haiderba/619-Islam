@@ -108,7 +108,7 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-6 safe-area-pt safe-area-pb">
       <div className="w-full max-w-sm rounded-3xl bg-card p-7 sm:p-8 shadow-2xl border border-border relative overflow-hidden">
         
         {/* Top Logo and Header */}

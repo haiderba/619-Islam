@@ -174,7 +174,7 @@ const Quran: React.FC = () => {
   const BROWSE_TABS: { id: BrowseMode; label: string; icon: React.ReactNode }[] = [
     { id: 'surah', label: 'Surah', icon: <Book size={14} /> },
     { id: 'juz', label: 'Juz', icon: <Layers size={14} /> },
-    { id: 'revelation', label: 'Revelation', icon: <MapPin size={14} /> },
+    { id: 'revelation', label: 'Origin', icon: <MapPin size={14} /> },
     { id: 'search', label: 'Search', icon: <SearchCode size={14} /> },
   ];
 
@@ -428,11 +428,11 @@ const Quran: React.FC = () => {
         <div className="grid grid-cols-4 gap-1 bg-surface border border-border rounded-2xl p-1">
           {BROWSE_TABS.map(tab => (
             <button key={tab.id} onClick={() => setBrowseMode(tab.id)}
-              className={`flex items-center justify-center gap-1 py-2 px-1 rounded-xl text-xs font-bold transition-all duration-200 ${
+              className={`flex items-center justify-center gap-1.5 py-2.5 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 ${
                 browseMode === tab.id ? 'bg-primary text-white shadow-md shadow-primary/30' : 'text-subtext hover:text-text'
               }`}>
               {tab.icon}
-              <span className="truncate">{tab.label}</span>
+              <span className="whitespace-nowrap">{tab.label}</span>
             </button>
           ))}
         </div>

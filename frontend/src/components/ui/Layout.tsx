@@ -76,13 +76,13 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Area: Fully fluid and responsive */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 safe-content-pb md:pb-12 pt-2 md:pt-4 overflow-y-auto safe-area-pl safe-area-pr">
+      {/* Main Content Area: Fully fluid and responsive with safe area padding */}
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 safe-content-pb md:pb-12 safe-area-pt md:pt-4 overflow-y-auto safe-area-pl safe-area-pr">
         <Outlet />
       </main>
 
       {/* 📱 Mobile Streamlined Bottom Navigation Bar (hidden on desktop) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full bg-card/95 backdrop-blur-xl border-t border-border px-3 pt-2 safe-bottom-nav z-50 shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full bg-card/95 backdrop-blur-xl border-t border-border px-3 pt-2.5 safe-bottom-nav z-50 shadow-2xl">
         <div className="flex justify-around items-center max-w-md mx-auto">
           <NavItem to="/" icon={<Home size={20} />} label="Today" />
           <NavItem to="/quran" icon={<Book size={20} />} label="Quran" />

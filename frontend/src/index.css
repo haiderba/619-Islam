@@ -92,12 +92,15 @@ tajweed[class="ham_wasl"], tajweed[class="laam_shamsiyah"], tajweed[class="silen
 }
 
 @layer utilities {
-  /* iOS Safe Area Inset Helpers */
+  /* iOS & Android Safe Area Inset Helpers for iPhone 15 Pro Max, Dynamic Island & variable screens */
   .safe-area-pt {
-    padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
+    padding-top: max(1.25rem, env(safe-area-inset-top, 1.25rem));
+  }
+  .safe-area-mt {
+    margin-top: max(1.25rem, env(safe-area-inset-top, 1.25rem));
   }
   .safe-area-pb {
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
   }
   .safe-area-pl {
     padding-left: max(0.75rem, env(safe-area-inset-left, 0.75rem));
@@ -106,9 +109,17 @@ tajweed[class="ham_wasl"], tajweed[class="laam_shamsiyah"], tajweed[class="silen
     padding-right: max(0.75rem, env(safe-area-inset-right, 0.75rem));
   }
   .safe-bottom-nav {
-    padding-bottom: calc(0.45rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(0.85rem, calc(0.5rem + env(safe-area-inset-bottom, 0px)));
   }
   .safe-content-pb {
-    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(6.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)));
+  }
+  /* Hide scrollbar for clean horizontal tab chips */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

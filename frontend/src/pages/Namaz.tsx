@@ -84,22 +84,22 @@ const Namaz: React.FC = () => {
           {/* Bottom Row: Dual Islamic Hijri & Desi Solar Calendars */}
           <div className="grid grid-cols-2 gap-2">
             {/* Islamic Hijri */}
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 flex items-center gap-2">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 sm:p-2.5 flex items-center gap-2">
               <span className="text-base shrink-0">🌙</span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <span className="text-[9px] font-extrabold uppercase text-emerald-400/80 block leading-tight tracking-wider">Islamic Hijri</span>
-                <span className="text-xs font-bold text-emerald-300 truncate block">
-                  {hijriDate ? `${hijriDate.day} ${hijriDate.month.en} ${hijriDate.year} ${hijriDate.designation.abbreviated}` : 'Loading...'}
+                <span className="text-[11px] sm:text-xs font-bold text-emerald-300 leading-tight block truncate">
+                  {hijriDate ? `${hijriDate.day} ${hijriDate.month.en} ${hijriDate.year}` : 'Loading...'}
                 </span>
               </div>
             </div>
 
             {/* Desi Calendar */}
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 flex items-center gap-2">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 sm:p-2.5 flex items-center gap-2">
               <span className="text-base shrink-0">🌾</span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <span className="text-[9px] font-extrabold uppercase text-amber-400/80 block leading-tight tracking-wider">Desi Solar</span>
-                <span className="text-xs font-bold text-amber-300 truncate block">
+                <span className="text-[11px] sm:text-xs font-bold text-amber-300 leading-tight block truncate">
                   {desiDate.day} {desiDate.monthEn} ({desiDate.monthUr})
                 </span>
               </div>

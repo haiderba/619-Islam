@@ -123,7 +123,7 @@ export const Dashboard: React.FC = () => {
     },
     {
       id: 'sleep-station',
-      title: 'Sleep Sanctuary',
+      title: 'Sleep',
       to: '/sleep-station',
       icon: <Moon size={20} className="text-cyan-400" />,
     },
@@ -135,13 +135,13 @@ export const Dashboard: React.FC = () => {
     },
     {
       id: 'duas',
-      title: 'Duas & Azkar',
+      title: 'Duas',
       to: '/duas',
       icon: <BookOpen size={20} className="text-amber-400" />,
     },
     {
       id: 'qaza',
-      title: 'Qaza Tracker',
+      title: 'Qaza',
       to: '/qaza',
       icon: <Target size={20} className="text-emerald-400" />,
     },
@@ -301,7 +301,7 @@ export const Dashboard: React.FC = () => {
               <div className="w-10 h-10 rounded-2xl bg-surface border border-border/60 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform shadow-inner">
                 {item.icon}
               </div>
-              <span className="text-xs font-bold text-text truncate w-full group-hover:text-amber-500 transition-colors">
+              <span className="text-[11px] sm:text-xs font-bold text-text text-center w-full group-hover:text-amber-500 transition-colors leading-tight">
                 {item.title}
               </span>
             </button>
